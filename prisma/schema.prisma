@@ -1,0 +1,289 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model Transformation {
+  id               String       @id @default(cuid())
+  character        Character    @relation(fields: [characterId], references: [id])
+  characterId      String
+  name             String
+  description      String?
+  levelRequirement Int          @default(1)
+  energyModifier   Float        @default(0) // percentage delta e.g. 0.15 for +15%
+  attackModifier   Float        @default(0)
+  defenseModifier  Float        @default(0)
+  speedModifier    Float        @default(0)
+  flatHpBonus      Int          @default(0)
+  flatAttackBonus  Int          @default(0)
+  flatDefenseBonus Int          @default(0)
+  flatSpeedBonus   Int          @default(0)
+  drainPerTurn     Int          @default(0) // energy drain each turn
+  unlocksSkill     Skill?       @relation("TransformationUnlockSkill", fields: [unlocksSkillId], references: [id])
+  unlocksSkillId   String?
+  triggerType      TransformationTrigger @default(MANUAL)
+  triggerPayload   Json?
+  imageUrl         String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  userTransformations UserCharacterTransformation[]
+  activeFor          UserCharacter[] @relation("ActiveTransformation")
+
+  @@index([characterId, levelRequirement])
+}
+
+model UserCharacterTransformation {
+  id                String         @id @default(cuid())
+  userCharacter     UserCharacter  @relation(fields: [userCharacterId], references: [id])
+  userCharacterId   String
+  transformation    Transformation @relation(fields: [transformationId], references: [id])
+  transformationId  String
+  unlockedAt        DateTime       @default(now())
+  unlockedAtLevel   Int
+
+  @@unique([userCharacterId, transformationId])
+}
+
+enum TransformationTrigger {
+  MANUAL
+  LOW_HP
+  ON_DAMAGE_TAKEN
+  ENERGY_CHARGE
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Core domain for the game
+model Anime {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  slug      String      @unique
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  characters Character[]
+  affiliations Affiliation[]
+}
+
+model Affiliation {
+  id        String   @id @default(cuid())
+  name      String
+  anime     Anime    @relation(fields: [animeId], references: [id])
+  animeId   String
+  characters Character[]
+  @@unique([animeId, name])
+}
+
+model Character {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String?       @unique
+  imageUrl     String?
+  description  String?
+  anime        Anime         @relation(fields: [animeId], references: [id])
+  animeId      String
+  affiliation  Affiliation?  @relation(fields: [affiliationId], references: [id])
+  affiliationId String?
+
+  // Base stats
+  hp           Int           @default(100)
+  attack       Int           @default(10)
+  defense      Int           @default(10)
+  speed        Int           @default(10)
+  energy       Int           @default(100)
+
+  // Relations
+  characterSkills CharacterSkill[]
+  treeNodes        SkillTreeNode[]
+  userCharacters   UserCharacter[]
+  enemyBattles     Battle[]        @relation("EnemyCharacter")
+  transformations  Transformation[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([animeId, name])
+}
+
+enum SkillCategory {
+  NINJUTSU
+  GENJUTSU
+  TAIJUTSU
+  HADO
+  BAKUDO
+  KIDO
+  KI
+  OTHER
+}
+
+model Skill {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  category    SkillCategory
+  power       Int           @default(10) // base multiplier or flat power
+  energyCost  Int           @default(10)
+  cooldown    Int           @default(0)
+  tags        Json          // JSON array of strings, e.g., ["bleed", "stun", "fire"]
+
+  // Ownership is many-to-many with characters
+  characterLinks CharacterSkill[]
+  // Back-relations
+  treeNodes       SkillTreeNode[]
+  turns           Turn[]
+  grantedByTransformations Transformation[] @relation("TransformationUnlockSkill")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, category])
+}
+
+model CharacterSkill {
+  // Join table for Character <-> Skill with extra metadata
+  id           String    @id @default(cuid())
+  character    Character @relation(fields: [characterId], references: [id])
+  characterId  String
+  skill        Skill     @relation(fields: [skillId], references: [id])
+  skillId      String
+  requiredLevel Int      @default(1)
+  learnedByDefault Boolean @default(false)
+
+  @@unique([characterId, skillId])
+}
+
+model SkillTreeNode {
+  id           String     @id @default(cuid())
+  character    Character  @relation(fields: [characterId], references: [id])
+  characterId  String
+  // A node may unlock a Skill or be a passive stat node
+  skill        Skill?     @relation(fields: [skillId], references: [id])
+  skillId      String?
+  name         String
+  description  String?
+  tier         Int        @default(1)
+  pointCost    Int        @default(1)
+
+  // Self-referential many-to-many for prerequisites
+  prerequisites SkillTreeNode[] @relation("Prerequisites")
+  unlocks       SkillTreeNode[] @relation("Prerequisites")
+
+  userUnlocks   UserSkillUnlock[]
+
+  @@index([characterId, tier])
+}
+
+model User {
+  id           String      @id @default(cuid())
+  username     String      @unique @default("devuser")
+  email        String      @unique
+  name         String?
+  passwordHash String      // Simple auth placeholder; swap to Auth.js later
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  characters   UserCharacter[]
+  battles      Battle[]
+  role         UserRole    @default(USER)
+  // Currently selected character for dashboard
+  selectedCharacter   UserCharacter? @relation("SelectedCharacter", fields: [selectedCharacterId], references: [id])
+  selectedCharacterId String?
+  sessions     Session[]
+}
+
+model UserCharacter {
+  id             String     @id @default(cuid())
+  user           User       @relation(fields: [userId], references: [id])
+  userId         String
+  character      Character  @relation(fields: [characterId], references: [id])
+  characterId    String
+  level          Int        @default(1)
+  experience     Int        @default(0)
+  pointsAvailable Int       @default(0)
+  nickname       String     @default("Hero")
+  pvpWins        Int        @default(0)
+  npcWins        Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  activeTransformation   Transformation? @relation("ActiveTransformation", fields: [activeTransformationId], references: [id])
+  activeTransformationId String?
+
+  skillUnlocks   UserSkillUnlock[]
+  playerBattles  Battle[]   @relation("PlayerCharacter")
+  selectedBy     User[]     @relation("SelectedCharacter")
+  transformationUnlocks UserCharacterTransformation[]
+
+  @@unique([userId, characterId])
+}
+
+model UserSkillUnlock {
+  id               String         @id @default(cuid())
+  userCharacter    UserCharacter  @relation(fields: [userCharacterId], references: [id])
+  userCharacterId  String
+  node             SkillTreeNode  @relation(fields: [nodeId], references: [id])
+  nodeId           String
+  unlockedAt       DateTime       @default(now())
+
+  @@unique([userCharacterId, nodeId])
+}
+
+enum BattleStatus {
+  PENDING
+  ACTIVE
+  FINISHED
+}
+
+enum ActorSide {
+  PLAYER
+  ENEMY
+}
+
+model Battle {
+  id                String         @id @default(cuid())
+  user              User           @relation(fields: [userId], references: [id])
+  userId            String
+  playerCharacter   UserCharacter  @relation("PlayerCharacter", fields: [playerCharacterId], references: [id])
+  playerCharacterId String
+  enemyCharacter    Character      @relation("EnemyCharacter", fields: [enemyCharacterId], references: [id])
+  enemyCharacterId  String
+  status            BattleStatus   @default(PENDING)
+  turnNumber        Int            @default(1)
+  // JSON state snapshot for current combat (HP, energy, effects)
+  state             Json
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  turns             Turn[]
+}
+
+model Turn {
+  id         String     @id @default(cuid())
+  battle     Battle     @relation(fields: [battleId], references: [id])
+  battleId   String
+  number     Int
+  actor      ActorSide
+  skill      Skill?     @relation(fields: [skillId], references: [id])
+  skillId    String?
+  result     Json        // damage dealt, effects applied, crits, etc.
+  createdAt  DateTime    @default(now())
+
+  @@index([battleId, number])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
