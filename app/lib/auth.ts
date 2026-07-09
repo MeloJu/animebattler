@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { prisma } from '@/app/lib/prisma'
 
@@ -44,7 +45,10 @@ export async function createSession(userId: string) {
   return cookie
 }
 
-export async function getSessionUser() {
+// cache() dedupes calls within a single request — AppNav (root layout) and
+// individual pages each call getCurrentUser() independently, which would
+// otherwise hit the session table once per call on every navigation.
+export const getSessionUser = cache(async () => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value
   if (!token) return null
   const session = await prisma.session.findFirst({
@@ -52,7 +56,7 @@ export async function getSessionUser() {
     include: { user: true },
   })
   return session?.user ?? null
-}
+})
 
 export async function clearSession() {
   const cookieStore = await cookies()

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Swords } from "lucide-react";
 import { getCurrentUser } from "@/app/lib/session";
+import { logoutAction } from "@/app/lib/auth-actions";
 
 export default async function AppNav() {
   const user = await getCurrentUser();
@@ -14,7 +15,7 @@ export default async function AppNav() {
     ...(authed ? [{ href: "/equipment", label: "Equipment" }] : []),
     { href: "/battle", label: "Battle" },
     ...(authed ? [{ href: "/status", label: "Status" }] : []),
-    ...(!authed ? [{ href: "/login", label: "Login" }, { href: "/register", label: "Register" }] : [{ href: "/logout", label: "Logout" }]),
+    ...(!authed ? [{ href: "/login", label: "Login" }, { href: "/register", label: "Register" }] : []),
   ];
 
   return (
@@ -36,6 +37,16 @@ export default async function AppNav() {
               {l.label}
             </Link>
           ))}
+          {authed && (
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="rounded-full px-4 py-2 transition-colors hover:bg-blue-600 hover:text-white"
+              >
+                Logout
+              </button>
+            </form>
+          )}
         </div>
       </nav>
     </header>
