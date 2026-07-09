@@ -134,7 +134,8 @@ model Skill {
   power       Int           @default(10) // base multiplier or flat power
   energyCost  Int           @default(10)
   cooldown    Int           @default(0)
-  tags        Json          // JSON array of strings, e.g., ["bleed", "stun", "fire"]
+  tags        Json          // JSON array of strings, e.g., ["bleed", "stun", "fire"] - flavor only
+  effects     Json          @default("[]") // JSON array of SkillEffect (see app/lib/battle/types.ts) - mechanical source of truth
 
   // Ownership is many-to-many with characters
   characterLinks CharacterSkill[]
@@ -142,11 +143,40 @@ model Skill {
   treeNodes       SkillTreeNode[]
   turns           Turn[]
   grantedByTransformations Transformation[] @relation("TransformationUnlockSkill")
+  monsterLinks    MonsterSkill[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([name, category])
+}
+
+/// Foundation model for future raid/dungeon-style content. Not wired into
+/// any battle logic or UI yet - just data, ready for when that gets designed.
+model Monster {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  description   String?
+  imageUrl      String?
+  tier          Int            @default(1) // future difficulty/progression gate
+  hp            Int            @default(100)
+  attack        Int            @default(10)
+  defense       Int            @default(10)
+  speed         Int            @default(10)
+  energy        Int            @default(100)
+  monsterSkills MonsterSkill[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model MonsterSkill {
+  id        String  @id @default(cuid())
+  monster   Monster @relation(fields: [monsterId], references: [id])
+  monsterId String
+  skill     Skill   @relation(fields: [skillId], references: [id])
+  skillId   String
+
+  @@unique([monsterId, skillId])
 }
 
 model CharacterSkill {
@@ -173,6 +203,12 @@ model SkillTreeNode {
   description  String?
   tier         Int        @default(1)
   pointCost    Int        @default(1)
+
+  // Flat stat bonuses applied while unlocked (for nodes with no skillId, i.e. pure stat nodes)
+  flatHpBonus      Int    @default(0)
+  flatAttackBonus  Int    @default(0)
+  flatDefenseBonus Int    @default(0)
+  flatSpeedBonus   Int    @default(0)
 
   // Self-referential many-to-many for prerequisites
   prerequisites SkillTreeNode[] @relation("Prerequisites")
