@@ -16,6 +16,22 @@ Anime Battler é uma aplicação web interativa que permite aos jogadores coleci
 - **Gestão de Personagens**: Customize e evolua seus personagens
 - **Dashboard**: Acompanhe suas estatísticas, vitórias e progresso
 
+## ⚠️ Estado Atual do Projeto
+
+O projeto está em desenvolvimento inicial. O que já funciona:
+- Autenticação (registro, login, sessão)
+- CRUD de personagens do usuário (criar, selecionar, listar)
+- Dashboard com stats do personagem selecionado
+- Listagem e detalhe de personagens do catálogo (via API + páginas)
+
+O que **ainda não existe** (só placeholders "em construção"):
+- Sistema de batalha (`/battle/ai`, `/battle/pvp`) — o motor de combate em si não foi implementado
+- Árvore de habilidades / progressão (`/status`)
+- Sistema de equipamentos (`/equipment`)
+- PvP multiplayer
+
+O schema Prisma já modela batalha, turnos, skill tree e transformações, mas a lógica de jogo que usa esses modelos ainda precisa ser escrita.
+
 ## 🛠️ Tecnologias Utilizadas
 
 ### Frontend
@@ -27,15 +43,13 @@ Anime Battler é uma aplicação web interativa que permite aos jogadores coleci
 
 ### Backend
 - **Next.js API Routes** - Endpoints serverless
-- **tRPC** - TypeScript RPC para comunicação type-safe
 - **Prisma ORM** - ORM moderno para TypeScript/Node.js
 - **SQLite** - Banco de dados relacional
-- **Zod** - Validação de schemas TypeScript-first
 
 ### Ferramentas de Desenvolvimento
 - **ESLint** - Linting de código
 - **PostCSS** - Processamento de CSS
-- **React Query (TanStack Query)** - Gerenciamento de estado servidor
+- **Docker / Docker Compose** - Ambiente de desenvolvimento containerizado
 
 ### Inteligência Artificial
 - **Claude Sonnet 4.5** - Assistência no desenvolvimento via GitHub Copilot
@@ -64,11 +78,27 @@ O projeto utiliza um schema Prisma robusto com os seguintes modelos principais:
 
 ## 🚀 Como Executar
 
-### Pré-requisitos
-- Node.js 20+ instalado
-- npm ou yarn
+### Opção A: Docker (recomendado)
 
-### Instalação
+Pré-requisito: Docker + Docker Compose instalados.
+
+```bash
+docker compose up --build
+```
+
+Isso instala as dependências, gera o client do Prisma, aplica as migrations e sobe o servidor de dev em `http://localhost:3000`. O código-fonte fica montado como volume, então alterações no host refletem no container automaticamente. Para popular o banco com dados iniciais:
+
+```bash
+docker compose exec app npm run prisma:seed
+```
+
+### Opção B: Local (Node.js)
+
+#### Pré-requisitos
+- Node.js 20+ instalado
+- npm
+
+#### Instalação
 
 1. Clone o repositório:
 ```bash
@@ -81,23 +111,28 @@ cd anime-battler
 npm install
 ```
 
-3. Configure o banco de dados:
+3. Configure as variáveis de ambiente:
+```bash
+cp .env.example .env
+```
+
+4. Configure o banco de dados:
 ```bash
 npx prisma generate
 npx prisma migrate dev
 ```
 
-4. Popular o banco com dados iniciais:
+5. Popular o banco com dados iniciais:
 ```bash
 npm run prisma:seed
 ```
 
-5. Execute o servidor de desenvolvimento:
+6. Execute o servidor de desenvolvimento:
 ```bash
 npm run dev
 ```
 
-6. Acesse a aplicação em `http://localhost:3000`
+7. Acesse a aplicação em `http://localhost:3000`
 
 ## 📁 Estrutura do Projeto
 
@@ -135,43 +170,34 @@ anime-battler/
 │   ├── list-characters.js   # Listar personagens
 │   ├── set-character-slugs.js # Configurar slugs
 │   └── setup-character-folders.js # Configurar pastas
-└── generated/               # Código gerado (Prisma Client)
+├── Dockerfile                # Imagem Docker para dev
+├── docker-compose.yml         # Orquestração local via Docker
+└── .env.example               # Template de variáveis de ambiente
 ```
 
-## 🎮 Personagens Disponíveis
+## 🎮 Personagens no Seed Atual
 
-### Naruto/Boruto Universe
+O `prisma/seed.js` atualmente popula estes personagens (o restante mencionado no roadmap ainda não foi adicionado):
+
+### Naruto Universe
 - Naruto Uzumaki
 - Sasuke Uchiha
-- Kakashi Hatake
-- Minato Namikaze
-
-### Dragon Ball Universe
-- Goku
-- Vegeta
-- Broly
 
 ### Bleach Universe
 - Ichigo Kurosaki
 - Rukia Kuchiki
 
-### Jujutsu Kaisen Universe
-- Yuji Itadori
-- Megumi Fushiguro
-- Nobara Kugisaki
-- Maki Zenin
-- Ryomen Sukuna
+### Dragon Ball Z Universe
+- Goku
+- Vegeta
+- Broly
 
-### Sword Art Online
-- Kirito
-- Asuna
-
-### DC Comics
+### DC Universe
 - Batman
 - Superman
 - Wonder Woman
 
-### Marvel Comics
+### Marvel Universe
 - Daredevil
 - Jean Grey
 - Emma Frost
@@ -186,9 +212,11 @@ O projeto implementa um sistema de autenticação personalizado com:
 
 ## 🎯 Roadmap
 
+- [ ] Sistema de batalha (motor de combate contra IA)
+- [ ] Árvore de habilidades / progressão de personagem
 - [ ] Sistema PvP multiplayer
 - [ ] Sistema de equipamentos
-- [ ] Mais personagens e animes
+- [ ] Mais personagens: Kakashi, Minato, personagens de Jujutsu Kaisen (Yuji, Megumi, Nobara, Maki, Sukuna) e Sword Art Online (Kirito, Asuna)
 - [ ] Sistema de clãs/guildas
 - [ ] Eventos e torneios
 - [ ] Sistema de conquistas
