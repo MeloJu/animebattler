@@ -6,16 +6,17 @@ import { redirect } from 'next/navigation'
 export default async function SelectCharacterPage() {
   const user = await getCurrentUser()
   if (!user) return <main className="mx-auto max-w-7xl p-6">No user.</main>
+  const userId = user.id
 
   async function setSelected(formData: FormData) {
     "use server"
     const userCharacterId = String(formData.get('userCharacterId'))
-    await prisma.user.update({ where: { id: user.id }, data: { selectedCharacterId: userCharacterId } })
+    await prisma.user.update({ where: { id: userId }, data: { selectedCharacterId: userCharacterId } })
     redirect('/dashboard')
   }
 
   const list = await prisma.userCharacter.findMany({
-    where: { userId: user.id },
+    where: { userId },
     include: { character: true },
   })
 

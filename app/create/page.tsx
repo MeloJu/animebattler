@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 export default async function CreateCharacterPage() {
   const user = await getCurrentUser()
   if (!user) return <main className="mx-auto max-w-7xl p-6">No user.</main>
+  const userId = user.id
 
   const characters = await prisma.character.findMany({ orderBy: { name: 'asc' } })
 
@@ -13,10 +14,10 @@ export default async function CreateCharacterPage() {
     const characterId = String(formData.get('characterId'))
     const nickname = String(formData.get('nickname') || '').trim() || 'Hero'
     const created = await prisma.userCharacter.create({
-      data: { userId: user.id, characterId, nickname },
+      data: { userId, characterId, nickname },
       select: { id: true }
     })
-    await prisma.user.update({ where: { id: user.id }, data: { selectedCharacterId: created.id } })
+    await prisma.user.update({ where: { id: userId }, data: { selectedCharacterId: created.id } })
     redirect('/dashboard')
   }
 

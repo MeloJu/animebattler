@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
 
-const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/characters'])
 const PROTECTED_PREFIXES = ['/dashboard', '/select', '/create', '/equipment', '/battle', '/status']
 
 export function middleware(req: NextRequest) {
@@ -8,9 +7,6 @@ export function middleware(req: NextRequest) {
   const hasSession = Boolean(req.cookies.get('session')?.value)
 
   const isProtected = PROTECTED_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))
-  const isPublic = PUBLIC_ROUTES.has(pathname)
-
-  // Root is public landing now; no auto-redirect
 
   if (isProtected && !hasSession) {
     const url = req.nextUrl.clone()

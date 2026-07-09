@@ -5,8 +5,9 @@ import { prisma } from '@/app/lib/prisma'
 
 const exts = new Set(['.png', '.jpg', '.jpeg', '.webp'])
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const char = await prisma.character.findUnique({ where: { id: params.id } })
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const char = await prisma.character.findUnique({ where: { id } })
   if (!char) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const dir = path.join(process.cwd(), 'public', 'images', 'characters', char.id)
