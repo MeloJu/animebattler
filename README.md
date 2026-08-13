@@ -18,19 +18,26 @@ Anime Battler é uma aplicação web interativa que permite aos jogadores coleci
 
 ## ⚠️ Estado Atual do Projeto
 
-O projeto está em desenvolvimento inicial. O que já funciona:
+O que já funciona:
 - Autenticação (registro, login, sessão)
 - CRUD de personagens do usuário (criar, selecionar, listar)
 - Dashboard com stats do personagem selecionado
 - Listagem e detalhe de personagens do catálogo (via API + páginas)
+- **Sistema de batalha contra IA** (`/battle/ai`) — motor de combate por turnos com energia, habilidades, status effects e transformações
+- **Raid contra monstro** (`/battle/raid`)
+- **Árvore de habilidades / progressão** (`/status`)
 
 O que **ainda não existe** (só placeholders "em construção"):
-- Sistema de batalha (`/battle/ai`, `/battle/pvp`) — o motor de combate em si não foi implementado
-- Árvore de habilidades / progressão (`/status`)
+- PvP multiplayer (`/battle/pvp`)
 - Sistema de equipamentos (`/equipment`)
-- PvP multiplayer
 
-O schema Prisma já modela batalha, turnos, skill tree e transformações, mas a lógica de jogo que usa esses modelos ainda precisa ser escrita.
+## ☁️ Deploy
+
+A aplicação é containerizada e o deploy é automatizado: GitHub Actions builda
+a imagem arm64, publica no GHCR e sobe numa VM Ampere (Oracle Always Free)
+provisionada por Terraform, com Caddy na frente fazendo TLS.
+
+O passo a passo completo está em [docs/deploy.md](docs/deploy.md).
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -44,7 +51,13 @@ O schema Prisma já modela batalha, turnos, skill tree e transformações, mas a
 ### Backend
 - **Next.js API Routes** - Endpoints serverless
 - **Prisma ORM** - ORM moderno para TypeScript/Node.js
-- **SQLite** - Banco de dados relacional
+- **PostgreSQL 16** - Banco de dados relacional
+
+### Infraestrutura
+- **Docker / Docker Compose** - Ambientes de dev e produção containerizados
+- **Terraform** - Provisionamento da VM (Oracle Cloud Always Free)
+- **Caddy** - Reverse proxy com HTTPS automático (Let's Encrypt)
+- **GitHub Actions** - CI (lint, typecheck, build, imagem) e CD (build arm64 + deploy)
 
 ### Ferramentas de Desenvolvimento
 - **ESLint** - Linting de código
@@ -212,8 +225,8 @@ O projeto implementa um sistema de autenticação personalizado com:
 
 ## 🎯 Roadmap
 
-- [ ] Sistema de batalha (motor de combate contra IA)
-- [ ] Árvore de habilidades / progressão de personagem
+- [x] Sistema de batalha (motor de combate contra IA)
+- [x] Árvore de habilidades / progressão de personagem
 - [ ] Sistema PvP multiplayer
 - [ ] Sistema de equipamentos
 - [ ] Mais personagens: Kakashi, Minato, personagens de Jujutsu Kaisen (Yuji, Megumi, Nobara, Maki, Sukuna) e Sword Art Online (Kirito, Asuna)

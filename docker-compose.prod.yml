@@ -1,0 +1,69 @@
+# Compose de produção — roda na VM, não localmente. Diferenças pro
+# docker-compose.yml de dev: sem bind mount (usa a imagem já publicada no
+# GHCR pelo CD), Caddy na frente fazendo TLS, nenhuma porta de app/db
+# exposta direto pro host. Segredos vêm de um .env que só existe na VM
+# (nunca commitado — ver .env.prod.example / docs/deploy.md).
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+  app:
+    # IMAGE_TAG é fixado no SHA do commit pelo workflow de deploy — dá pra saber
+    # exatamente qual commit está no ar, e rollback é só trocar a tag.
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-owner}/animebattler:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-animebattler}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-animebattler}?schema=public
+      # Sem domínio (acessando pelo IP), o Caddy serve HTTP puro e o navegador
+      # descarta cookie Secure — o login falha calado. Ver .env.prod.example.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    # Sem `command:` aqui de propósito: o CMD da imagem já roda
+    # `prisma migrate deploy` antes de subir o servidor.
+    healthcheck:
+      # 127.0.0.1, não `localhost`: no Alpine/musl o `localhost` resolve pra
+      # ::1 (IPv6) primeiro, e o Next escuta em 0.0.0.0 (só IPv4) — o wget
+      # levava "connection refused" e o container ficava eternamente unhealthy
+      # mesmo com a aplicação respondendo normalmente.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      # start_period cobre o tempo do migrate deploy antes do servidor existir,
+      # sem contar como falha.
+      start_period: 60s
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-animebattler}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-animebattler}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-animebattler}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

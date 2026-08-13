@@ -1,0 +1,7 @@
+# SITE_ADDRESS pode ser o IP público da VM (ex: 123.45.67.89) ou um domínio
+# de verdade (ex: animebattler.exemplo.com). Com IP/localhost, Caddy serve
+# HTTP puro; com um domínio real, ele detecta sozinho e emite TLS via
+# Let's Encrypt automaticamente — nenhuma outra config precisa mudar.
+{$SITE_ADDRESS:localhost} {
+	reverse_proxy app:3000
+}

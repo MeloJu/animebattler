@@ -1,0 +1,33 @@
+#cloud-config
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - iptables-persistent
+
+runcmd:
+  # Docker Engine + plugin do compose (docker compose v2)
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - >
+    sh -c 'echo "deb [arch=$(dpkg --print-architecture)
+    signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu
+    $(. /etc/os-release && echo $VERSION_CODENAME) stable"
+    > /etc/apt/sources.list.d/docker.list'
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -aG docker ubuntu
+
+  # Pasta onde o docker-compose.prod.yml/Caddyfile/.env vão morar (ver docs/deploy.md)
+  - mkdir -p /home/ubuntu/animebattler
+  - chown ubuntu:ubuntu /home/ubuntu/animebattler
+
+  # A imagem Ubuntu da Oracle vem com iptables bloqueando por padrão além
+  # da security list do Terraform — libera 80/443 direto no SO e persiste
+  # entre reboots. Inserido no topo da chain (posição 1) pra sempre vencer
+  # qualquer regra de DROP que já exista mais abaixo.
+  - iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
+  - iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+  - netfilter-persistent save

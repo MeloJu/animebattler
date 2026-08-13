@@ -1,0 +1,121 @@
+name: Deploy
+
+# Manual (workflow_dispatch) até a VM existir e os secrets estarem cadastrados.
+# Depois do primeiro deploy bem-sucedido, adicione o gatilho automático:
+#   on:
+#     workflow_dispatch:
+#     push:
+#       branches: [master]
+# Secrets necessários: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY
+# (ver docs/deploy.md).
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/animebattler
+
+jobs:
+  build-and-push:
+    # Runner ARM64 nativo — grátis em repositório público. A VM Always Free da
+    # Oracle é Ampere (aarch64): uma imagem amd64 não roda lá, morre na hora
+    # com "exec format error". Dava pra buildar ARM por emulação QEMU num
+    # runner x86, mas leva 20-30min contra ~3min nativo.
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Mantém compose e Caddyfile da VM em sincronia com o repo. Antes isso
+      # era um scp manual feito uma vez, que ia silenciosamente ficando velho a
+      # cada mudança no repositório.
+      - name: Copy compose files to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "docker-compose.prod.yml,Caddyfile"
+          target: "~/animebattler"
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: GHCR_TOKEN,GHCR_USER,IMAGE_TAG
+          script: |
+            set -e
+            cd ~/animebattler
+
+            # A imagem no GHCR nasce privada, então a VM precisa autenticar pra
+            # dar pull. Este token vale só enquanto este job roda — melhor que
+            # deixar um PAT permanente guardado na VM.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            # Fixa a imagem no SHA do commit em vez de :latest — dá pra saber
+            # exatamente o que está no ar, e rollback vira só rodar o workflow
+            # de novo a partir de outro commit.
+            export IMAGE_TAG
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Deploy só termina quando o healthcheck passa de verdade. Sem isso
+            # o job ficava verde mesmo com o container em loop de restart.
+            echo "Aguardando o app ficar healthy..."
+            for i in $(seq 1 40); do
+              cid=$(docker compose -f docker-compose.prod.yml ps -q app)
+              status=$(docker inspect --format '{{.State.Health.Status}}' "$cid" 2>/dev/null || echo starting)
+              if [ "$status" = "healthy" ]; then
+                echo "✔ app healthy ($IMAGE_TAG)"
+                break
+              fi
+              if [ "$i" -eq 40 ]; then
+                echo "✖ app não ficou healthy. Últimos logs:"
+                docker compose -f docker-compose.prod.yml logs --tail=80 app
+                exit 1
+              fi
+              sleep 5
+            done
+
+            # Imagens antigas acumulam a cada deploy e enchem o disco da VM.
+            docker image prune -f

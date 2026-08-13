@@ -1,8 +1,20 @@
 node_modules
 .next
 .git
+.github
 .env
-.env.local
+.env.*
+!.env.example
 *.db
 *.db-journal
 npm-debug.log*
+
+# Nada disso entra na imagem: é infra/documentação, não código da aplicação.
+infra
+docs
+scripts
+Dockerfile
+docker-compose*.yml
+Caddyfile
+README.md
+tsconfig.tsbuildinfo

@@ -1,0 +1,21 @@
+# Copie para terraform.tfvars (gitignored) e preencha com seus valores.
+
+# Profile (canto superior direito no console OCI) > Tenancy: "<nome>"
+tenancy_ocid = "ocid1.tenancy.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Profile > User Settings
+user_ocid = "ocid1.user.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Profile > User Settings > API Keys > Add API Key (gera o fingerprint E o .pem)
+fingerprint       = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+private_key_path  = "~/.oci/oci_api_key.pem"
+
+# Região onde a VM vai nascer (aparece no canto superior direito do console)
+region = "sa-saopaulo-1"
+
+# Pode ser o mesmo da tenancy_ocid pra começar (compartment raiz)
+compartment_ocid = "ocid1.tenancy.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Chave SSH que vai acessar a VM — gere uma nova só pra isso:
+#   ssh-keygen -t ed25519 -f ~/.ssh/animebattler -C "animebattler-deploy"
+ssh_public_key_path = "~/.ssh/animebattler.pub"

@@ -6,6 +6,15 @@ import { prisma } from '@/app/lib/prisma'
 const SESSION_COOKIE = 'session'
 const SESSION_DAYS = 30
 
+// Cookie `Secure` só é aceito pelo navegador em HTTPS. Em produção com domínio
+// de verdade o Caddy emite TLS sozinho e isso fica true — que é o certo. Mas
+// acessando a VM pelo IP puro (HTTP), o navegador descarta o cookie em silêncio
+// e o login falha sem nenhuma mensagem de erro. COOKIE_SECURE=false é a saída
+// pra esse caso; ver docs/deploy.md.
+const SECURE_COOKIE = process.env.COOKIE_SECURE
+  ? process.env.COOKIE_SECURE === 'true'
+  : process.env.NODE_ENV === 'production'
+
 export async function hashPassword(password: string) {
   const salt = crypto.randomBytes(16).toString('hex')
   const derivedKey = await new Promise<Buffer>((resolve, reject) => {
@@ -39,7 +48,7 @@ export async function createSession(userId: string) {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
-    secure: process.env.NODE_ENV === 'production',
+    secure: SECURE_COOKIE,
     expires: expiresAt,
   })
   return cookie

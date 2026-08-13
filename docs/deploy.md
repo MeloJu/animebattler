@@ -1,0 +1,147 @@
+# Deploy — checklist manual
+
+Tudo que dá pra automatizar já está no repo (schema Postgres, CI, CD,
+Terraform). O que resta aqui exige a sua conta Oracle/GitHub e não tem como
+ser feito por fora.
+
+## 1. Gerar a API key da Oracle Cloud
+
+O Terraform precisa de uma credencial pra falar com a sua conta. No console
+OCI: **Profile (canto superior direito) → User Settings → API Keys → Add
+API Key → Generate API Key Pair**. Baixe a chave privada (`.pem`) e guarde
+em `~/.oci/oci_api_key.pem`. A tela final mostra um bloco de config com
+`tenancy`, `user`, `fingerprint`, `region` — é exatamente o que vai no
+`terraform.tfvars`.
+
+## 2. Provisionar a VM
+
+```bash
+cd infra
+cp terraform.tfvars.example terraform.tfvars
+# preencha com os valores do passo 1
+
+# chave SSH só pra essa VM, se ainda não tiver uma
+ssh-keygen -t ed25519 -f ~/.ssh/animebattler -C "animebattler-deploy"
+
+terraform init
+terraform validate
+terraform apply
+```
+
+O `apply` cria a VCN, security list (22/80/443), a instância Ampere
+(Always Free) e já instala Docker via cloud-init. No fim, ele imprime o
+`public_ip` — anota esse IP, é o `SITE_ADDRESS` e o `DEPLOY_HOST`.
+
+> Nota: a shape `VM.Standard.A1.Flex` (Ampere) às vezes dá erro de
+> "Out of host capacity" em algumas regiões — é a Oracle sem capacidade
+> Always Free disponível ali naquele momento, não é erro seu. Tentar de
+> novo mais tarde ou trocar a `region` no `tfvars` costuma resolver.
+
+## 3. Criar o `.env` na VM
+
+Só o `.env` precisa ser criado à mão — o `docker-compose.prod.yml` e o
+`Caddyfile` são enviados pela própria pipeline a cada deploy, então não
+precisam de `scp` manual (e não ficam desatualizados na VM).
+
+```bash
+ssh -i ~/.ssh/animebattler ubuntu@<public_ip>
+cd ~/animebattler          # o cloud-init já criou esta pasta
+nano .env                  # conteúdo: ver .env.prod.example
+```
+
+**Atenção ao `COOKIE_SECURE`.** Se `SITE_ADDRESS` for o IP puro, o Caddy
+serve HTTP sem TLS e o navegador descarta o cookie de sessão marcado como
+`Secure` — o login falha sem exibir erro nenhum. Nesse caso use
+`COOKIE_SECURE=false`. Com domínio de verdade, deixe `true`.
+
+Se depois de tudo a porta 80/443 não responder de fora mesmo com a
+security list liberada, é o gotcha clássico da imagem Ubuntu da Oracle: o
+iptables interno dela também bloqueia por padrão. O cloud-init já libera
+isso automaticamente, mas se precisar checar/corrigir manualmente:
+
+```bash
+sudo iptables -L INPUT -n --line-numbers   # confirma se 80/443 estão ACCEPT
+sudo iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
+sudo netfilter-persistent save
+```
+
+## 4. Cadastrar os secrets no GitHub
+
+```bash
+gh secret set DEPLOY_HOST --body "<public_ip>"
+gh secret set DEPLOY_USER --body "ubuntu"
+gh secret set DEPLOY_SSH_KEY < ~/.ssh/animebattler
+```
+
+(Ou pela UI: repo → Settings → Secrets and variables → Actions.)
+
+Não precisa de token pro GHCR: o workflow autentica a VM no registry com o
+`GITHUB_TOKEN` do próprio run, que expira quando o job acaba — melhor que
+deixar um PAT permanente guardado na VM.
+
+## 5. Primeiro deploy
+
+Aba **Actions** do repo → workflow **Deploy** → **Run workflow**. Ele:
+
+1. builda a imagem **arm64** num runner ARM nativo (a VM Ampere é aarch64 —
+   imagem amd64 não roda lá);
+2. publica no GHCR com duas tags: `latest` e o SHA do commit;
+3. envia `docker-compose.prod.yml` e `Caddyfile` pra VM;
+4. autentica no GHCR, dá `pull` e sobe tudo, fixando a imagem no SHA;
+5. **espera o healthcheck (`/api/health`) passar** antes de dar o job por
+   concluído — se o container entrar em loop de restart, o deploy falha e
+   imprime os logs em vez de ficar verde mentindo.
+
+## 6. Popular o catálogo (uma vez só)
+
+O `migrate deploy` cria as tabelas vazias, mas não insere os 49 personagens.
+Sem isso o cadastro funciona e não há o que selecionar. Rode **uma vez**,
+logo depois do primeiro deploy:
+
+```bash
+ssh ubuntu@<public_ip>
+cd ~/animebattler
+docker compose -f docker-compose.prod.yml exec -e SEED_FORCE=true app npm run prisma:seed
+```
+
+> ⚠️ **O seed é destrutivo.** Ele apaga todos os usuários, sessões, batalhas
+> e progresso antes de repovoar o catálogo. Por isso ele se recusa a rodar
+> com `NODE_ENV=production` a menos que você passe `SEED_FORCE=true`
+> explicitamente. Só faça isso com o banco vazio. Depois que houver
+> jogadores cadastrados, rodar esse comando apaga a conta de todos eles.
+
+## 7. Deploy automático
+
+Depois de confirmar que funcionou, edite `.github/workflows/deploy.yml` e
+adicione o gatilho automático (a branch principal aqui é `master`, não
+`main`):
+
+```yaml
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+```
+
+## 8. (Opcional, mas recomendado) Domínio próprio
+
+Sem domínio, `SITE_ADDRESS` fica só o IP, o Caddy serve HTTP puro e você
+fica preso a `COOKIE_SECURE=false`. Com um domínio apontando pro IP
+(registro `A`), o Caddy detecta sozinho e emite HTTPS via Let's Encrypt —
+aí é só trocar `SITE_ADDRESS` e voltar `COOKIE_SECURE=true` no `.env`.
+
+Não precisa comprar: um subdomínio grátis do [DuckDNS](https://www.duckdns.org)
+(`animebattler.duckdns.org`) apontando pro IP público já resolve e o Caddy
+emite certificado normalmente.
+
+## Destruir tudo
+
+Pra não deixar nada rodando (a VM em si é grátis pra sempre no Always
+Free, mas é bom saber que dá pra desmontar e remontar à vontade — é a
+graça do Terraform):
+
+```bash
+cd infra
+terraform destroy
+```

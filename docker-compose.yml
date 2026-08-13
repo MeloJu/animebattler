@@ -1,12 +1,44 @@
+# Ambiente de desenvolvimento. Produção é o docker-compose.prod.yml.
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: animebattler
+      POSTGRES_PASSWORD: animebattler
+      POSTGRES_DB: animebattler
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U animebattler"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   app:
-    build: .
+    # Para no stage `deps`: tem o node_modules completo (com devDependencies) e
+    # nenhum build embutido, que é exatamente o que o `next dev` quer. O stage
+    # `runner`, com o build de produção, só é usado pelo compose de prod.
+    build:
+      context: .
+      target: deps
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: file:./dev.db
+      DATABASE_URL: postgresql://animebattler:animebattler@db:5432/animebattler?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - .:/app
       - /app/node_modules
       - /app/.next
-    command: sh -c "npx prisma migrate deploy && npm run dev -- -H 0.0.0.0"
+    # `prisma generate` de novo aqui porque o bind mount troca /app pelo código
+    # do host: se o schema mudou desde o build da imagem, o client no volume
+    # está velho.
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev -- -H 0.0.0.0"
+
+volumes:
+  pgdata:

@@ -33,6 +33,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!.env.prod.example
 
 # vercel
 .vercel
@@ -44,3 +45,10 @@ next-env.d.ts
 # sqlite database files
 *.db
 *.db-journal
+
+# terraform (.terraform.lock.hcl IS committed — pins provider versions)
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/terraform.tfvars
+infra/*.auto.tfvars
