@@ -68,19 +68,39 @@ for i in $(seq 1 60); do
 done
 
 # 1. health de verdade: o endpoint consulta o banco, então isso também prova
-#    que as migrations rodaram e que a conexão está de pé.
+#    que as migrations rodaram — inclusive na ordem certa, já que este Postgres
+#    sobe do zero a cada execução — e que a conexão está de pé.
 body="$(curl -fsS "$BASE/api/health")"
 echo "$body" | grep -q '"database":"up"' || fail "health respondeu sem banco: $body"
 echo "✔ /api/health — $body"
 
-# 2. páginas renderizam (exercita SSR + Prisma no caminho da requisição)
+# 2. a trava do seed continua de pé. É ela que impede um `prisma:seed`
+#    acidental de apagar todas as contas e progresso em produção. Se alguém
+#    removê-la num refactor, o CI tem que falhar.
+#
+#    Precisa vir ANTES do seed forçado abaixo: uma vez populado, não dá mais
+#    pra distinguir "a trava funcionou" de "não tinha nada pra apagar".
+if docker exec "$APP" npm run prisma:seed >"$SEED_LOG" 2>&1; then
+  fail "o seed RODOU com NODE_ENV=production — a trava de proteção sumiu"
+fi
+grep -q "Seed abortado" "$SEED_LOG" || fail "seed falhou por outro motivo: $(tail -3 "$SEED_LOG")"
+echo "✔ trava do seed ativa"
+
+# 3. o seed em si funciona. Vale testar porque é exatamente este comando que
+#    popula o catálogo em produção depois do primeiro deploy — se ele quebrar,
+#    o jogo sobe sem personagem nenhum.
+docker exec -e SEED_FORCE=true "$APP" npm run prisma:seed >"$SEED_LOG" 2>&1 ||
+  fail "seed forçado falhou: $(tail -5 "$SEED_LOG")"
+echo "✔ seed populou o banco — $(grep -o 'Seeded .*' "$SEED_LOG")"
+
+# 4. páginas renderizam (exercita SSR + Prisma no caminho da requisição)
 for path in / /login /register /characters; do
   code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE$path")"
   [ "$code" = "200" ] || fail "$path respondeu $code"
   echo "✔ $path 200"
 done
 
-# 3. autenticação de ponta a ponta: registra um usuário exatamente como faria
+# 5. autenticação de ponta a ponta: registra um usuário exatamente como faria
 #    um navegador sem JavaScript — lê o id do server action direto do HTML e
 #    envia o form multipart.
 #
@@ -92,7 +112,12 @@ done
 action_id="$(curl -s "$BASE/register" | grep -o 'name="\$ACTION_ID_[^"]*"' | head -1 | sed 's/^name="//; s/"$//')"
 [ -n "$action_id" ] || fail "não encontrei o \$ACTION_ID no form de registro"
 
+# O header Origin é obrigatório: o Next 16 recusa Server Actions sem ele
+# ("Missing `origin` header from a forwarded Server Actions request") como
+# proteção contra CSRF. Um navegador sempre manda; o curl não, a menos que
+# peçam.
 code="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/register" \
+  -H "Origin: $BASE" \
   -F "$action_id=" \
   -F "username=smokeuser" \
   -F "email=smoke@test.local" \
@@ -110,14 +135,12 @@ code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE/dashboard")"
 [ "$code" = "307" ] || fail "/dashboard anônimo respondeu $code (esperado 307)"
 echo "✔ /dashboard bloqueia anônimo"
 
-# 4. a trava do seed continua de pé. É ela que impede um `prisma:seed`
-#    acidental de apagar todas as contas e progresso em produção. Se alguém
-#    removê-la num refactor, o CI tem que falhar.
-if docker exec "$APP" npm run prisma:seed >"$SEED_LOG" 2>&1; then
-  fail "o seed RODOU com NODE_ENV=production — a trava de proteção sumiu"
-fi
-grep -q "Seed abortado" "$SEED_LOG" || fail "seed falhou por outro motivo: $(tail -3 "$SEED_LOG")"
-echo "✔ trava do seed ativa"
+# Modo história: renderiza a lista de capítulos lida do banco, então cobre de
+# uma vez as tabelas novas e a query que deriva bloqueio/progresso.
+code="$(curl -s -o /dev/null -w '%{http_code}' -b "$COOKIE_JAR" "$BASE/story")"
+[ "$code" = "200" ] || fail "/story com sessão respondeu $code (esperado 200)"
+curl -s -b "$COOKIE_JAR" "$BASE/story" | grep -q 'Soul Society' || fail "/story não listou o capítulo Soul Society"
+echo "✔ /story lista o arco Soul Society"
 
 echo ""
 echo "✔ smoke test passou"

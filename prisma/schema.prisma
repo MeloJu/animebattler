@@ -11,43 +11,43 @@ enum UserRole {
 }
 
 model Transformation {
-  id               String       @id @default(cuid())
-  character        Character    @relation(fields: [characterId], references: [id])
+  id               String                @id @default(cuid())
+  character        Character             @relation(fields: [characterId], references: [id])
   characterId      String
   name             String
   description      String?
-  levelRequirement Int          @default(1)
-  energyModifier   Float        @default(0) // percentage delta e.g. 0.15 for +15%
-  attackModifier   Float        @default(0)
-  defenseModifier  Float        @default(0)
-  speedModifier    Float        @default(0)
-  flatHpBonus      Int          @default(0)
-  flatAttackBonus  Int          @default(0)
-  flatDefenseBonus Int          @default(0)
-  flatSpeedBonus   Int          @default(0)
-  drainPerTurn     Int          @default(0) // energy drain each turn
-  unlocksSkill     Skill?       @relation("TransformationUnlockSkill", fields: [unlocksSkillId], references: [id])
+  levelRequirement Int                   @default(1)
+  energyModifier   Float                 @default(0) // percentage delta e.g. 0.15 for +15%
+  attackModifier   Float                 @default(0)
+  defenseModifier  Float                 @default(0)
+  speedModifier    Float                 @default(0)
+  flatHpBonus      Int                   @default(0)
+  flatAttackBonus  Int                   @default(0)
+  flatDefenseBonus Int                   @default(0)
+  flatSpeedBonus   Int                   @default(0)
+  drainPerTurn     Int                   @default(0) // energy drain each turn
+  unlocksSkill     Skill?                @relation("TransformationUnlockSkill", fields: [unlocksSkillId], references: [id])
   unlocksSkillId   String?
   triggerType      TransformationTrigger @default(MANUAL)
   triggerPayload   Json?
   imageUrl         String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   userTransformations UserCharacterTransformation[]
-  activeFor          UserCharacter[] @relation("ActiveTransformation")
+  activeFor           UserCharacter[]               @relation("ActiveTransformation")
 
   @@index([characterId, levelRequirement])
 }
 
 model UserCharacterTransformation {
-  id                String         @id @default(cuid())
-  userCharacter     UserCharacter  @relation(fields: [userCharacterId], references: [id])
-  userCharacterId   String
-  transformation    Transformation @relation(fields: [transformationId], references: [id])
-  transformationId  String
-  unlockedAt        DateTime       @default(now())
-  unlockedAtLevel   Int
+  id               String         @id @default(cuid())
+  userCharacter    UserCharacter  @relation(fields: [userCharacterId], references: [id])
+  userCharacterId  String
+  transformation   Transformation @relation(fields: [transformationId], references: [id])
+  transformationId String
+  unlockedAt       DateTime       @default(now())
+  unlockedAtLevel  Int
 
   @@unique([userCharacterId, transformationId])
 }
@@ -66,51 +66,54 @@ datasource db {
 
 /// Core domain for the game
 model Anime {
-  id        String      @id @default(cuid())
-  name      String      @unique
-  slug      String      @unique
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  characters Character[]
-  affiliations Affiliation[]
+  id            String         @id @default(cuid())
+  name          String         @unique
+  slug          String         @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  characters    Character[]
+  affiliations  Affiliation[]
+  storyChapters StoryChapter[]
 }
 
 model Affiliation {
-  id        String   @id @default(cuid())
-  name      String
-  anime     Anime    @relation(fields: [animeId], references: [id])
-  animeId   String
+  id         String      @id @default(cuid())
+  name       String
+  anime      Anime       @relation(fields: [animeId], references: [id])
+  animeId    String
   characters Character[]
+
   @@unique([animeId, name])
 }
 
 model Character {
-  id           String        @id @default(cuid())
-  name         String
-  slug         String?       @unique
-  imageUrl     String?
-  description  String?
-  anime        Anime         @relation(fields: [animeId], references: [id])
-  animeId      String
-  affiliation  Affiliation?  @relation(fields: [affiliationId], references: [id])
+  id            String       @id @default(cuid())
+  name          String
+  slug          String?      @unique
+  imageUrl      String?
+  description   String?
+  anime         Anime        @relation(fields: [animeId], references: [id])
+  animeId       String
+  affiliation   Affiliation? @relation(fields: [affiliationId], references: [id])
   affiliationId String?
 
   // Base stats
-  hp           Int           @default(100)
-  attack       Int           @default(10)
-  defense      Int           @default(10)
-  speed        Int           @default(10)
-  energy       Int           @default(100)
+  hp      Int @default(100)
+  attack  Int @default(10)
+  defense Int @default(10)
+  speed   Int @default(10)
+  energy  Int @default(100)
 
   // Relations
   characterSkills CharacterSkill[]
-  treeNodes        SkillTreeNode[]
-  userCharacters   UserCharacter[]
-  enemyBattles     Battle[]        @relation("EnemyCharacter")
-  transformations  Transformation[]
+  treeNodes       SkillTreeNode[]
+  userCharacters  UserCharacter[]
+  enemyBattles    Battle[]         @relation("EnemyCharacter")
+  transformations Transformation[]
+  storyStages     StoryStage[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([animeId, name])
 }
@@ -134,20 +137,21 @@ model Skill {
   power       Int           @default(10) // base multiplier or flat power
   energyCost  Int           @default(10)
   cooldown    Int           @default(0)
-  tags        Json          // JSON array of strings, e.g., ["bleed", "stun", "fire"] - flavor only
+  tags        Json // JSON array of strings, e.g., ["bleed", "stun", "fire"] - flavor only
   effects     Json          @default("[]") // JSON array of SkillEffect (see app/lib/battle/types.ts) - mechanical source of truth
 
   // Ownership is many-to-many with characters
-  characterLinks CharacterSkill[]
+  characterLinks           CharacterSkill[]
   // Back-relations
-  treeNodes       SkillTreeNode[]
-  turns           Turn[]
-  grantedByTransformations Transformation[] @relation("TransformationUnlockSkill")
-  monsterLinks    MonsterSkill[]
-  equippedBy      UserCharacterEquippedSkill[]
+  treeNodes                SkillTreeNode[]
+  turns                    Turn[]
+  grantedByTransformations Transformation[]             @relation("TransformationUnlockSkill")
+  monsterLinks             MonsterSkill[]
+  equippedBy               UserCharacterEquippedSkill[]
+  grantedTo                UserCharacterSkill[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([name, category])
 }
@@ -167,6 +171,7 @@ model Monster {
   energy        Int            @default(100)
   monsterSkills MonsterSkill[]
   battles       Battle[]
+  storyStages   StoryStage[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -183,94 +188,99 @@ model MonsterSkill {
 
 model CharacterSkill {
   // Join table for Character <-> Skill with extra metadata
-  id           String    @id @default(cuid())
-  character    Character @relation(fields: [characterId], references: [id])
-  characterId  String
-  skill        Skill     @relation(fields: [skillId], references: [id])
-  skillId      String
-  requiredLevel Int      @default(1)
-  learnedByDefault Boolean @default(false)
+  id               String    @id @default(cuid())
+  character        Character @relation(fields: [characterId], references: [id])
+  characterId      String
+  skill            Skill     @relation(fields: [skillId], references: [id])
+  skillId          String
+  requiredLevel    Int       @default(1)
+  learnedByDefault Boolean   @default(false)
 
   @@unique([characterId, skillId])
 }
 
 model SkillTreeNode {
-  id           String     @id @default(cuid())
-  character    Character  @relation(fields: [characterId], references: [id])
-  characterId  String
+  id          String    @id @default(cuid())
+  character   Character @relation(fields: [characterId], references: [id])
+  characterId String
   // A node may unlock a Skill or be a passive stat node
-  skill        Skill?     @relation(fields: [skillId], references: [id])
-  skillId      String?
-  name         String
-  description  String?
-  tier         Int        @default(1)
-  pointCost    Int        @default(1)
+  skill       Skill?    @relation(fields: [skillId], references: [id])
+  skillId     String?
+  name        String
+  description String?
+  tier        Int       @default(1)
+  pointCost   Int       @default(1)
 
   // Flat stat bonuses applied while unlocked (for nodes with no skillId, i.e. pure stat nodes)
-  flatHpBonus      Int    @default(0)
-  flatAttackBonus  Int    @default(0)
-  flatDefenseBonus Int    @default(0)
-  flatSpeedBonus   Int    @default(0)
+  flatHpBonus      Int @default(0)
+  flatAttackBonus  Int @default(0)
+  flatDefenseBonus Int @default(0)
+  flatSpeedBonus   Int @default(0)
 
   // Self-referential many-to-many for prerequisites
   prerequisites SkillTreeNode[] @relation("Prerequisites")
   unlocks       SkillTreeNode[] @relation("Prerequisites")
 
-  userUnlocks   UserSkillUnlock[]
+  userUnlocks UserSkillUnlock[]
 
   @@index([characterId, tier])
 }
 
 model User {
-  id           String      @id @default(cuid())
-  username     String      @unique @default("devuser")
-  email        String      @unique
-  name         String?
-  passwordHash String      // Simple auth placeholder; swap to Auth.js later
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  characters   UserCharacter[]
-  battles      Battle[]
-  role         UserRole    @default(USER)
+  id                  String              @id @default(cuid())
+  username            String              @unique @default("devuser")
+  email               String              @unique
+  name                String?
+  passwordHash        String // Simple auth placeholder; swap to Auth.js later
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  characters          UserCharacter[]
+  battles             Battle[]
+  role                UserRole            @default(USER)
   // Currently selected character for dashboard
-  selectedCharacter   UserCharacter? @relation("SelectedCharacter", fields: [selectedCharacterId], references: [id])
+  selectedCharacter   UserCharacter?      @relation("SelectedCharacter", fields: [selectedCharacterId], references: [id])
   selectedCharacterId String?
-  sessions     Session[]
+  sessions            Session[]
+  storyProgress       UserStoryProgress[]
+  // Carteira da conta, compartilhada entre todos os personagens do usuário.
+  // Ganha no modo história; gasta na loja (ainda não implementada).
+  coins               Int                 @default(0)
 }
 
 model UserCharacter {
-  id             String     @id @default(cuid())
-  user           User       @relation(fields: [userId], references: [id])
-  userId         String
-  character      Character  @relation(fields: [characterId], references: [id])
-  characterId    String
-  level          Int        @default(1)
-  experience     Int        @default(0)
-  pointsAvailable Int       @default(0)
-  nickname       String     @default("Hero")
-  pvpWins        Int        @default(0)
-  npcWins        Int        @default(0)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @default(now()) @updatedAt
+  id                     String          @id @default(cuid())
+  user                   User            @relation(fields: [userId], references: [id])
+  userId                 String
+  character              Character       @relation(fields: [characterId], references: [id])
+  characterId            String
+  level                  Int             @default(1)
+  experience             Int             @default(0)
+  pointsAvailable        Int             @default(0)
+  nickname               String          @default("Hero")
+  pvpWins                Int             @default(0)
+  npcWins                Int             @default(0)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @default(now()) @updatedAt
   activeTransformation   Transformation? @relation("ActiveTransformation", fields: [activeTransformationId], references: [id])
   activeTransformationId String?
 
-  skillUnlocks   UserSkillUnlock[]
-  playerBattles  Battle[]   @relation("PlayerCharacter")
-  selectedBy     User[]     @relation("SelectedCharacter")
+  skillUnlocks          UserSkillUnlock[]
+  playerBattles         Battle[]                      @relation("PlayerCharacter")
+  selectedBy            User[]                        @relation("SelectedCharacter")
   transformationUnlocks UserCharacterTransformation[]
-  equippedSkills UserCharacterEquippedSkill[]
+  equippedSkills        UserCharacterEquippedSkill[]
+  grantedSkills         UserCharacterSkill[]
 
   @@unique([userId, characterId])
 }
 
 model UserSkillUnlock {
-  id               String         @id @default(cuid())
-  userCharacter    UserCharacter  @relation(fields: [userCharacterId], references: [id])
-  userCharacterId  String
-  node             SkillTreeNode  @relation(fields: [nodeId], references: [id])
-  nodeId           String
-  unlockedAt       DateTime       @default(now())
+  id              String        @id @default(cuid())
+  userCharacter   UserCharacter @relation(fields: [userCharacterId], references: [id])
+  userCharacterId String
+  node            SkillTreeNode @relation(fields: [nodeId], references: [id])
+  nodeId          String
+  unlockedAt      DateTime      @default(now())
 
   @@unique([userCharacterId, nodeId])
 }
@@ -301,46 +311,136 @@ enum ActorSide {
 }
 
 model Battle {
-  id                String         @id @default(cuid())
-  user              User           @relation(fields: [userId], references: [id])
+  id                String        @id @default(cuid())
+  user              User          @relation(fields: [userId], references: [id])
   userId            String
-  playerCharacter   UserCharacter  @relation("PlayerCharacter", fields: [playerCharacterId], references: [id])
+  playerCharacter   UserCharacter @relation("PlayerCharacter", fields: [playerCharacterId], references: [id])
   playerCharacterId String
   // Exactly one of enemyCharacter/enemyMonster is set - enforced in app code,
   // not the DB (SQLite has no simple declarative CHECK constraint here).
-  enemyCharacter    Character?     @relation("EnemyCharacter", fields: [enemyCharacterId], references: [id])
+  enemyCharacter    Character?    @relation("EnemyCharacter", fields: [enemyCharacterId], references: [id])
   enemyCharacterId  String?
-  enemyMonster      Monster?       @relation(fields: [enemyMonsterId], references: [id])
+  enemyMonster      Monster?      @relation(fields: [enemyMonsterId], references: [id])
   enemyMonsterId    String?
-  status            BattleStatus   @default(PENDING)
-  turnNumber        Int            @default(1)
+  // Set when the battle was started from a story stage, so finishing it can
+  // record progress. Null for AI/raid battles.
+  storyStage        StoryStage?   @relation(fields: [storyStageId], references: [id])
+  storyStageId      String?
+  status            BattleStatus  @default(PENDING)
+  turnNumber        Int           @default(1)
   // JSON state snapshot for current combat (HP, energy, effects)
   state             Json
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  turns             Turn[]
+  turns Turn[]
 }
 
 model Turn {
-  id         String     @id @default(cuid())
-  battle     Battle     @relation(fields: [battleId], references: [id])
-  battleId   String
-  number     Int
-  actor      ActorSide
-  skill      Skill?     @relation(fields: [skillId], references: [id])
-  skillId    String?
-  result     Json        // damage dealt, effects applied, crits, etc.
-  createdAt  DateTime    @default(now())
+  id        String    @id @default(cuid())
+  battle    Battle    @relation(fields: [battleId], references: [id])
+  battleId  String
+  number    Int
+  actor     ActorSide
+  skill     Skill?    @relation(fields: [skillId], references: [id])
+  skillId   String?
+  result    Json // damage dealt, effects applied, crits, etc.
+  createdAt DateTime  @default(now())
 
   @@index([battleId, number])
 }
 
 model Session {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  token      String   @unique
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+/// Modo história: capítulos lineares de um anime, cada um com estágios
+/// ordenados. Um estágio é uma batalha roteirizada com narrativa antes e
+/// depois, liberado só quando o anterior foi concluído.
+model StoryChapter {
+  id          String       @id @default(cuid())
+  anime       Anime        @relation(fields: [animeId], references: [id])
+  animeId     String
+  slug        String       @unique
+  title       String
+  description String?
+  order       Int
+  stages      StoryStage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([animeId, order])
+}
+
+model StoryStage {
+  id        String       @id @default(cuid())
+  chapter   StoryChapter @relation(fields: [chapterId], references: [id])
+  chapterId String
+  order     Int
+  title     String
+
+  // Narrativa exibida antes da batalha e depois da vitória.
+  introText String
+  outroText String
+
+  // Exatamente um dos dois é preenchido — mesma convenção do model Battle,
+  // garantida no código da aplicação e não por constraint declarativa.
+  enemyCharacter   Character? @relation(fields: [enemyCharacterId], references: [id])
+  enemyCharacterId String?
+  enemyMonster     Monster?   @relation(fields: [enemyMonsterId], references: [id])
+  enemyMonsterId   String?
+  // Escala o inimigo sem precisar de uma linha própria por dificuldade.
+  enemyLevel       Int        @default(1)
+
+  xpReward   Int @default(50)
+  // Skill não é recompensa direta de estágio: elas vêm por nível (via
+  // CharacterSkill.requiredLevel) ou são compradas. O estágio paga em moeda,
+  // que é o que vai alimentar a loja.
+  coinReward Int @default(0)
+
+  progress UserStoryProgress[]
+  battles  Battle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chapterId, order])
+}
+
+model UserStoryProgress {
+  id          String     @id @default(cuid())
+  user        User       @relation(fields: [userId], references: [id])
+  userId      String
+  stage       StoryStage @relation(fields: [stageId], references: [id])
+  stageId     String
+  completedAt DateTime   @default(now())
+
+  @@unique([userId, stageId])
+  @@index([userId])
+}
+
+/// Skill que um UserCharacter específico ganhou fora do kit base e fora da
+/// árvore — hoje, só como recompensa de estágio do modo história.
+///
+/// Precisa existir porque nenhum dos dois mecanismos anteriores serve: o
+/// CharacterSkill pertence ao personagem do catálogo (concedê-la ali daria a
+/// skill a todos os jogadores daquele personagem), e o UserSkillUnlock exige
+/// um SkillTreeNode, que é modelado por personagem e não por recompensa.
+model UserCharacterSkill {
+  id              String        @id @default(cuid())
+  userCharacter   UserCharacter @relation(fields: [userCharacterId], references: [id])
+  userCharacterId String
+  skill           Skill         @relation(fields: [skillId], references: [id])
+  skillId         String
+  source          String        @default("STORY")
+  grantedAt       DateTime      @default(now())
+
+  @@unique([userCharacterId, skillId])
+  @@index([userCharacterId])
 }

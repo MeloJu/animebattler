@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
 const characterImages = require('./character-images');
+const kido = require('./kido');
 const prisma = new PrismaClient();
 
 // Mirrors app/lib/auth.ts's hashPassword format (scrypt:salt:hash) so seeded
@@ -40,11 +41,13 @@ async function main() {
   }
 
   // Clear existing data (dev only)
+  await prisma.userStoryProgress.deleteMany();
   await prisma.turn.deleteMany();
   await prisma.battle.deleteMany();
   await prisma.userSkillUnlock.deleteMany();
   await prisma.userCharacterTransformation.deleteMany();
   await prisma.userCharacterEquippedSkill.deleteMany();
+  await prisma.userCharacterSkill.deleteMany();
   await prisma.userCharacter.deleteMany();
   await prisma.session.deleteMany();
   await prisma.user.deleteMany();
@@ -52,6 +55,9 @@ async function main() {
   await prisma.characterSkill.deleteMany();
   await prisma.transformation.deleteMany();
   await prisma.monsterSkill.deleteMany();
+  // Antes de monster/skill/character: StoryStage aponta pros três.
+  await prisma.storyStage.deleteMany();
+  await prisma.storyChapter.deleteMany();
   await prisma.monster.deleteMany();
   await prisma.skill.deleteMany();
   await prisma.character.deleteMany();
@@ -161,14 +167,11 @@ async function main() {
     { name: 'Amaterasu', category: 'NINJUTSU', power: 32, energyCost: 34, cooldown: 5, tags: ['burn', 'ultimate'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 3 }] },
 
     // Ichigo Kurosaki
-    { name: 'Hadō #31: Shakkahō', category: 'HADO', power: 22, energyCost: 18, cooldown: 2, tags: ['burn'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 6, duration: 2 }] },
     { name: 'Getsuga Tenshō', category: 'OTHER', power: 30, energyCost: 26, cooldown: 3, tags: ['ultimate'], effects: [] },
     { name: 'Bankai Focus', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 2 }, { type: 'BUFF', target: 'SELF', stat: 'speed', magnitude: 15, duration: 2 }] },
     { name: 'Zangetsu Parry', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 55, duration: 2 }] },
 
     // Rukia Kuchiki
-    { name: 'Bakudō #1: Sai', category: 'BAKUDO', power: 0, energyCost: 12, cooldown: 3, tags: ['stun'], effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 0, duration: 1 }] },
-    { name: 'Hadō #4: Byakurai', category: 'HADO', power: 20, energyCost: 16, cooldown: 2, tags: ['lightning'], effects: [] },
     { name: 'Sode no Shirayuki: Some Snow', category: 'OTHER', power: 0, energyCost: 14, cooldown: 3, tags: ['ice', 'debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'speed', magnitude: 20, duration: 3 }] },
     { name: 'Dance of the White Moon', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['ice', 'shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 30, duration: 3 }] },
 
@@ -232,14 +235,11 @@ async function main() {
     { name: 'Tensa Zangetsu: Final Getsuga', category: 'OTHER', power: 34, energyCost: 32, cooldown: 5, tags: ['ultimate'], effects: [{ type: 'DEBUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 }] },
 
     // Rukia Kuchiki (extra)
-    { name: 'Hadō #33: Sōkatsui', category: 'HADO', power: 24, energyCost: 20, cooldown: 3, tags: ['burn'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 7, duration: 2 }] },
-    { name: 'Bakudō #61: Rikujōkōrō', category: 'BAKUDO', power: 0, energyCost: 22, cooldown: 5, tags: ['stun', 'bind'], effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 0, duration: 2 }] },
 
     // Yamamoto Genryūsai
     { name: 'Ryūjin Jakka: Flame Strike', category: 'OTHER', power: 26, energyCost: 22, cooldown: 2, tags: ['fire'], effects: [] },
     { name: 'Zanka no Tachi: Cremation', category: 'OTHER', power: 36, energyCost: 34, cooldown: 5, tags: ['fire', 'ultimate'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 3 }] },
     { name: "Commander's Will", category: 'OTHER', power: 0, energyCost: 22, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 20, duration: 3 }] },
-    { name: 'Hadō #96: Ittō Kasō', category: 'HADO', power: 0, energyCost: 20, cooldown: 4, tags: ['fire'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 3 }] },
 
     // Shunsui Kyōraku
     { name: 'Katen Kyōkotsu: Twin Strike', category: 'OTHER', power: 21, energyCost: 17, cooldown: 2, tags: [], effects: [] },
@@ -290,7 +290,6 @@ async function main() {
     { name: 'Ash Veil', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 26, duration: 3 }] },
 
     // Momo Hinamori
-    { name: 'Hadō #63: Raikōhō', category: 'HADO', power: 24, energyCost: 22, cooldown: 3, tags: ['lightning'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 15, duration: 2 }] },
     { name: 'Tobiume: Plum Blossom Fire', category: 'OTHER', power: 18, energyCost: 16, cooldown: 2, tags: ['fire'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 6, duration: 2 }] },
     { name: 'Kido Focus', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 3 }] },
 
@@ -315,7 +314,6 @@ async function main() {
     { name: 'Kyōka Suigetsu: Complete Hypnosis', category: 'OTHER', power: 0, energyCost: 20, cooldown: 3, tags: ['illusion', 'debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 25, duration: 3 }] },
     { name: 'Shattered Shield', category: 'OTHER', power: 26, energyCost: 22, cooldown: 3, tags: [], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 2 }] },
     { name: 'Perfect Anticipation', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 60, duration: 2 }] },
-    { name: 'Hadō #90: Kurohitsugi', category: 'HADO', power: 36, energyCost: 34, cooldown: 5, tags: ['ultimate'], effects: [] },
 
     // Byakuya Kuchiki
     { name: 'Senbonzakura', category: 'OTHER', power: 24, energyCost: 20, cooldown: 2, tags: ['blades'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 7, duration: 3 }] },
@@ -457,6 +455,30 @@ async function main() {
   const createdSkills = await prisma.$transaction(skillDefs.map((s) => prisma.skill.create({ data: s })));
   const skillByName = Object.fromEntries(createdSkills.map((s, i) => [skillDefs[i].name, s]));
   const skillId = (name) => skillByName[name].id;
+
+  // Kidō completo: 99 Hadō + 99 Bakudō, gerados em prisma/kido.js (canônicos
+  // escritos à mão, números nunca revelados preenchidos por fórmula). Ficam
+  // fora do skillDefs acima justamente por serem gerados — e são a única fonte
+  // de verdade dos kidō, inclusive dos que antes estavam soltos aqui.
+  const createdKido = await prisma.$transaction(
+    kido.all.map((k) =>
+      prisma.skill.create({
+        data: {
+          name: k.name,
+          description: k.description,
+          category: k.category,
+          power: k.power,
+          energyCost: k.energyCost,
+          cooldown: k.cooldown,
+          tags: k.tags,
+          effects: k.effects,
+        },
+      })
+    )
+  );
+  // Precisa entrar no mapa antes dos characterSkillDefs abaixo: os kits de
+  // Ichigo e Rukia referenciam kidō por nome.
+  for (const k of createdKido) skillByName[k.name] = k;
 
   // CharacterSkill links. Everything defaults to requiredLevel 1 / learnedByDefault
   // so kits are fully usable right away; Spirit Bomb/Final Flash keep their original
@@ -616,6 +638,161 @@ async function main() {
     )
   );
 
+  // --- Kidō liberados por nível ------------------------------------------
+  // Escada de kidō canônicos disponível pra todo personagem da Soul Society,
+  // já que kidō é treinamento padrão de shinigami. Usa o requiredLevel do
+  // CharacterSkill, que é o mecanismo de progressão que já existia — os kidō
+  // mais fortes e os 161 gerados ficam pra loja, comprados com moeda.
+  const kidoLadder = [
+    ['Hadō #1: Shō', 1],
+    ['Bakudō #1: Sai', 1],
+    ['Hadō #4: Byakurai', 3],
+    ['Bakudō #4: Hainawa', 4],
+    ['Hadō #31: Shakkahō', 6],
+    ['Bakudō #9: Hōrin', 8],
+    ['Hadō #33: Sōkatsui', 10],
+    ['Bakudō #39: Enkōsen', 12],
+    ['Hadō #63: Raikōhō', 16],
+    ['Bakudō #61: Rikujōkōrō', 18],
+    ['Hadō #73: Sōren Sōkatsui', 22],
+    ['Bakudō #81: Dankū', 26],
+    ['Hadō #90: Kurohitsugi', 32],
+    ['Bakudō #99: Kin', 38],
+    ['Hadō #99: Goryūtenmetsu', 45],
+  ];
+
+  const shinigami = [ichigo, rukia, ...createdBleachChars.filter((c) => c.affiliationId === soulSociety.id)];
+  // skipDuplicates porque Ichigo e Rukia já recebem alguns destes kidō no kit
+  // inicial acima, e CharacterSkill é unique em (characterId, skillId).
+  await prisma.characterSkill.createMany({
+    data: shinigami.flatMap((c) =>
+      kidoLadder.map(([name, requiredLevel]) => ({
+        characterId: c.id,
+        skillId: skillId(name),
+        requiredLevel,
+        learnedByDefault: false,
+      }))
+    ),
+    skipDuplicates: true,
+  });
+
+  // --- Modo história: arco Soul Society ----------------------------------
+  // Estágios lineares — o de ordem N só libera depois de concluir o N-1.
+  // A curva de dificuldade é a da própria obra: um Hollow de treino, depois
+  // tenentes, depois capitães, e Aizen no fim. A recompensa de cada estágio é
+  // um kidō, subindo junto com o inimigo.
+  const monsterByName = Object.fromEntries(createdMonsters.map((m) => [m.name, m]));
+  const bleachCharId = (name) => charByName[name].id;
+
+  const soulSocietyChapter = await prisma.storyChapter.create({
+    data: {
+      animeId: bleach.id,
+      slug: 'soul-society',
+      title: 'Arco Soul Society',
+      description:
+        'Rukia Kuchiki foi levada para execução no Sōkyoku. Invadir o Seireitei significa atravessar o Gotei 13 inteiro — tenente por tenente, capitão por capitão.',
+      order: 1,
+    },
+  });
+
+  const stageDefs = [
+    {
+      title: 'O Portão Oeste',
+      introText:
+        'O Sekaimon se fecha atrás de vocês e o ar do Rukongai pesa diferente. Antes de chegar perto do Seireitei, uma alma perdida bloqueia o caminho — máscara branca, rugido de quem já foi gente.',
+      outroText:
+        'O Hollow se desfaz em partículas de reiatsu. Foi fácil demais. Se todo o Seireitei fosse assim, Rukia já estaria livre.',
+      enemyMonsterId: monsterByName['Hollow'].id,
+      enemyLevel: 1,
+      xpReward: 60,
+      coinReward: 40,
+    },
+    {
+      title: 'Primeiro Sangue',
+      introText:
+        'Izuru Kira aguarda de espada em punho, o olhar escondido pela franja. "Não sei quem você é. Só sei que ninguém passa daqui."',
+      outroText:
+        'Kira cai de joelhos, ainda tentando erguer a Wabisuke. Ele não pediu para estar ali — mas obedecer era a única coisa que lhe restava.',
+      enemyCharacterId: bleachCharId('Izuru Kira'),
+      enemyLevel: 2,
+      xpReward: 90,
+      coinReward: 60,
+    },
+    {
+      title: 'O Tenente do Sexto Esquadrão',
+      introText:
+        'Renji Abarai bloqueia a rua inteira, Zabimaru já liberada. "Você veio salvar a Rukia? Então vai ter que passar por cima de mim. Eu tenho mais direito a isso do que você."',
+      outroText:
+        'Renji desaba contra a parede, rindo de raiva e alívio ao mesmo tempo. "Salva ela. Salva ela por mim."',
+      enemyCharacterId: bleachCharId('Renji Abarai'),
+      enemyLevel: 3,
+      xpReward: 130,
+      coinReward: 90,
+    },
+    {
+      title: 'A Lâmina Sem Nome',
+      introText:
+        'O reiatsu cai sobre você como uma laje. Kenpachi Zaraki sorri, tapa-olho e cicatrizes, e larga a espada de leve no ombro. "Não corre. Faz muito tempo que ninguém me diverte."',
+      outroText:
+        'Kenpachi cai de costas, gargalhando para o céu. "Ótimo. Da próxima vez eu uso as duas mãos."',
+      enemyCharacterId: bleachCharId('Kenpachi Zaraki'),
+      enemyLevel: 5,
+      xpReward: 180,
+      coinReward: 130,
+    },
+    {
+      title: 'Ciência e Crueldade',
+      introText:
+        'Mayuri Kurotsuchi inclina a cabeça, curioso do jeito errado. "Fascinante. Vou precisar do seu corpo depois — inteiro, de preferência. Mas não faço questão."',
+      outroText:
+        'Mayuri se liquefaz para escapar, prometendo continuar a dissecação em outra ocasião. Você não duvida.',
+      enemyCharacterId: bleachCharId('Mayuri Kurotsuchi'),
+      enemyLevel: 7,
+      xpReward: 240,
+      coinReward: 180,
+    },
+    {
+      title: 'Mil Pétalas',
+      introText:
+        'Byakuya Kuchiki não levanta a voz. "Você não faz ideia do que está tentando desfazer." Senbonzakura se dissolve em uma nuvem de lâminas rosa.',
+      outroText:
+        'O turbilhão de pétalas se assenta. Byakuya permanece de pé, mas a lâmina baixa. Pela primeira vez, ele fala de Rukia como irmã.',
+      enemyCharacterId: bleachCharId('Byakuya Kuchiki'),
+      enemyLevel: 9,
+      xpReward: 300,
+      coinReward: 240,
+    },
+    {
+      title: 'A Serpente Sorridente',
+      introText:
+        'Gin Ichimaru sorri sem abrir os olhos. "Ara ara. Chegou longe, hein? Que pena." Shinsō se estica antes de você registrar o movimento.',
+      outroText:
+        'Gin recua com o mesmo sorriso, como se nada tivesse acontecido. Ele nunca esteve lutando a sério — estava medindo.',
+      enemyCharacterId: bleachCharId('Gin Ichimaru'),
+      enemyLevel: 11,
+      xpReward: 380,
+      coinReward: 320,
+    },
+    {
+      title: 'A Traição',
+      introText:
+        'O Sōkyoku está destruído, mas ninguém comemora. Sōsuke Aizen desce a colina sem pressa, os óculos partidos no chão. "Ninguém jamais esteve no topo do céu. Nem você. Nem eu. Nem os deuses." Kyōka Suigetsu já foi liberada — e você não viu quando.',
+      outroText:
+        'Aizen sobe ao Negación, escoltado pelos Menos, e o céu se fecha. Rukia está viva. Mas a Soul Society acabou de perder muito mais do que uma execução.',
+      enemyCharacterId: bleachCharId('Sosuke Aizen'),
+      enemyLevel: 14,
+      xpReward: 500,
+      coinReward: 500,
+    },
+  ];
+
+  await prisma.$transaction(
+    stageDefs.map((s, i) =>
+      prisma.storyStage.create({ data: { chapterId: soulSocietyChapter.id, order: i + 1, ...s } })
+    )
+  );
+
+  console.log(`Seeded ${kido.all.length} kidō and ${stageDefs.length} story stages.`);
   console.log('Seed completed.');
 }
 

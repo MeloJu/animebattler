@@ -10,6 +10,7 @@ import { pickAiSkill } from './ai'
 import { applyExperience } from './leveling'
 import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
 import { autoFillLoadout } from '@/app/lib/progression/queries'
+import { recordStoryProgress } from '@/app/lib/story/queries'
 import { MAX_ROUNDS, NPC_WINS_ON_WIN, XP_ON_LOSS, XP_ON_WIN } from './constants'
 import type { BattleState, Outcome, PlayerAction, TurnResult } from './types'
 
@@ -131,10 +132,19 @@ async function persistRound(
   // the current route on their own, which turned out not to happen reliably
   // for this dynamic, cookie-gated route in Next 16 — revalidate explicitly
   // instead of assuming it.
+  // Vitória em batalha vinda do modo história libera o próximo estágio e
+  // entrega a recompensa. Fica fora da transação acima porque é no-op para
+  // toda batalha que não veio de um estágio (IA avulsa, raid) — a função
+  // mesma decide isso olhando o storyStageId da batalha.
+  if (isFinished && finalState.outcome === 'PLAYER_WIN') {
+    await recordStoryProgress(battleId)
+  }
+
   revalidatePath(`/battle/ai/${battleId}`)
   if (isFinished) {
     revalidatePath('/dashboard')
     revalidatePath('/status')
+    revalidatePath('/story')
   }
 }
 

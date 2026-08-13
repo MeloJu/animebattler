@@ -69,9 +69,12 @@ export async function getTreeBonus(userCharacterId: string) {
 }
 
 export async function getEligiblePlayerSkills(userCharacterId: string, characterId: string, level: number): Promise<Record<string, SkillDef>> {
-  const [levelSkills, treeUnlocks] = await Promise.all([
+  const [levelSkills, treeUnlocks, granted] = await Promise.all([
     prisma.characterSkill.findMany({ where: { characterId, requiredLevel: { lte: level } }, include: { skill: true } }),
     prisma.userSkillUnlock.findMany({ where: { userCharacterId }, include: { node: { include: { skill: true } } } }),
+    // Recompensas do modo história: pertencem a este UserCharacter, não ao
+    // personagem do catálogo, então não podem vir de characterSkill.
+    prisma.userCharacterSkill.findMany({ where: { userCharacterId }, include: { skill: true } }),
   ])
   const skills: Record<string, SkillDef> = {}
   for (const cs of levelSkills) {
@@ -80,6 +83,9 @@ export async function getEligiblePlayerSkills(userCharacterId: string, character
   for (const unlock of treeUnlocks) {
     const skill = unlock.node.skill
     if (skill && hasBattleValue(skill)) skills[skill.id] = toSkillDef(skill)
+  }
+  for (const g of granted) {
+    if (hasBattleValue(g.skill)) skills[g.skill.id] = toSkillDef(g.skill)
   }
   return skills
 }
