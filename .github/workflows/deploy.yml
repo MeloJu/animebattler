@@ -50,6 +50,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Roda a imagem arm64 recém-publicada, nativamente, neste runner ARM.
+      # É o artefato exato que vai pra VM — não um primo amd64 dele. Se falhar
+      # aqui, o job `deploy` nem começa e a VM não é tocada.
+      - name: Smoke test the arm64 image
+        run: |
+          docker pull ${{ env.IMAGE }}:${{ github.sha }}
+          bash scripts/smoke-test.sh ${{ env.IMAGE }}:${{ github.sha }}
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
