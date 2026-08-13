@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 
 export default async function SelectCharacterPage() {
   const user = await getCurrentUser()
-  if (!user) return <main className="mx-auto max-w-7xl p-6">No user.</main>
+  if (!user) redirect('/login')
   const userId = user.id
 
   async function setSelected(formData: FormData) {

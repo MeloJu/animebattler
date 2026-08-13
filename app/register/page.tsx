@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { createSession, hashPassword } from '@/app/lib/auth'
+import { getCurrentUser } from '@/app/lib/session'
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -12,6 +13,11 @@ const REGISTER_ERROR_MESSAGES: Record<string, string> = {
 }
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  // Same reasoning as login/page.tsx: check the real session, not just
+  // whether a (possibly stale) cookie happens to be present.
+  const existingUser = await getCurrentUser()
+  if (existingUser) redirect('/dashboard')
+
   const { error } = await searchParams
   const errorMessage = error ? REGISTER_ERROR_MESSAGES[error] ?? 'Ocorreu um erro.' : null
 

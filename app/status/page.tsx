@@ -1,13 +1,26 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { getCurrentUser } from '@/app/lib/session'
-import { unlockSkillNode } from '@/app/lib/progression/actions'
+import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression/actions'
+import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
+import { computeBaseStats } from '@/app/lib/battle/engine'
+import { getEligiblePlayerSkills, getTreeBonus } from '@/app/lib/battle/queries'
+import { describeEffect } from '@/app/lib/battle/presentation'
+import { XP_PER_LEVEL } from '@/app/lib/battle/constants'
+import type { SkillEffect } from '@/app/lib/battle/types'
 
 const STATUS_ERROR_MESSAGES: Record<string, string> = {
   not_found: 'Personagem não encontrado.',
   invalid_node: 'Nó inválido para esse personagem.',
   insufficient_points: 'Pontos insuficientes.',
   missing_prerequisite: 'Pré-requisito ainda não desbloqueado.',
+  invalid_skill: 'Essa skill não está disponível pra equipar.',
+  invalid_slot: 'Slot de loadout inválido.',
+}
+
+function parseEffects(json: unknown): SkillEffect[] {
+  return Array.isArray(json) ? (json as SkillEffect[]) : []
 }
 
 export default async function StatusPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -15,7 +28,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
   const errorMessage = error ? STATUS_ERROR_MESSAGES[error] ?? 'Ocorreu um erro.' : null
 
   const user = await getCurrentUser()
-  if (!user) return <main className="mx-auto max-w-3xl p-6">No user.</main>
+  if (!user) redirect('/login')
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -35,15 +48,25 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
     )
   }
 
-  const [nodes, unlocks] = await Promise.all([
+  const [nodes, unlocks, treeBonus, eligibleSkills, equippedRows] = await Promise.all([
     prisma.skillTreeNode.findMany({
       where: { characterId: selected.characterId },
       include: { skill: true, prerequisites: true },
       orderBy: { tier: 'asc' },
     }),
     prisma.userSkillUnlock.findMany({ where: { userCharacterId: selected.id }, select: { nodeId: true } }),
+    getTreeBonus(selected.id),
+    getEligiblePlayerSkills(selected.id, selected.characterId, selected.level),
+    prisma.userCharacterEquippedSkill.findMany({ where: { userCharacterId: selected.id }, include: { skill: true } }),
   ])
   const unlockedIds = new Set(unlocks.map((u) => u.nodeId))
+  const effectiveStats = computeBaseStats(selected.character, treeBonus)
+  const xpForNextLevel = selected.level * XP_PER_LEVEL
+  const slotCount = getLoadoutSlotCount(selected.level)
+
+  const equippedBySlot = new Map(equippedRows.map((r) => [r.slot, r]))
+  const equippedSkillIds = new Set(equippedRows.map((r) => r.skillId))
+  const unequippedEligible = Object.values(eligibleSkills).filter((s) => !equippedSkillIds.has(s.id))
 
   const nodesByTier = new Map<number, typeof nodes>()
   for (const node of nodes) {
@@ -65,6 +88,56 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
       {errorMessage && (
         <div className="rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700">{errorMessage}</div>
       )}
+
+      <div className="card p-4 space-y-3">
+        <h2 className="font-semibold">Atributos</h2>
+        <div className="text-sm opacity-70">Nível {selected.level} · EXP {selected.experience} / {xpForNextLevel}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+          <div className="rounded-md border border-black/10 p-3">HP <span className="font-semibold">{effectiveStats.hp}</span></div>
+          <div className="rounded-md border border-black/10 p-3">ATK <span className="font-semibold">{effectiveStats.attack}</span></div>
+          <div className="rounded-md border border-black/10 p-3">DEF <span className="font-semibold">{effectiveStats.defense}</span></div>
+          <div className="rounded-md border border-black/10 p-3">SPD <span className="font-semibold">{effectiveStats.speed}</span></div>
+          <div className="rounded-md border border-black/10 p-3">EN <span className="font-semibold">{effectiveStats.energy}</span></div>
+        </div>
+      </div>
+
+      <div className="card p-4 space-y-3">
+        <h2 className="font-semibold">Loadout ({equippedRows.length}/{slotCount})</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Array.from({ length: slotCount }, (_, slot) => {
+            const row = equippedBySlot.get(slot)
+            if (row) {
+              const effects = parseEffects(row.skill.effects)
+              return (
+                <div key={slot} className="rounded-md border border-accent/40 bg-accent/5 p-3">
+                  <div className="font-medium">{row.skill.name}</div>
+                  {effects.length > 0 && <div className="text-xs opacity-70 mt-0.5">{effects.map(describeEffect).join(' · ')}</div>}
+                  <form action={unequipSkill.bind(null, selected.id, slot)} className="mt-2">
+                    <button type="submit" className="rounded-md px-3 py-1.5 text-xs border border-black/10 hover:bg-black/5">Desequipar</button>
+                  </form>
+                </div>
+              )
+            }
+            return (
+              <div key={slot} className="rounded-md border border-dashed border-black/20 p-3">
+                <div className="text-sm opacity-60 mb-2">Slot vazio</div>
+                {unequippedEligible.length > 0 ? (
+                  <form action={equipSkill.bind(null, selected.id, slot)} className="flex gap-2">
+                    <select name="skillId" className="flex-1 rounded-md border border-black/10 px-2 py-1 text-sm bg-white">
+                      {unequippedEligible.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    <button type="submit" className="rounded-md px-3 py-1.5 text-xs border border-black/10 hover:bg-black/5">Equipar</button>
+                  </form>
+                ) : (
+                  <div className="text-xs opacity-50">Nenhuma skill disponível pra equipar</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
       {nodes.length === 0 && <div className="card p-6 opacity-70">Esse personagem ainda não tem árvore de habilidades.</div>}
 

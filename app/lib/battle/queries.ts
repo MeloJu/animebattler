@@ -1,5 +1,6 @@
 import { prisma } from '@/app/lib/prisma'
-import type { SkillDef, SkillEffect, TransformationDef } from './types'
+import { computeBaseStats } from './engine'
+import type { BaseStats, SkillDef, SkillEffect, TransformationDef } from './types'
 
 function parseEffects(json: unknown): SkillEffect[] {
   return Array.isArray(json) ? (json as SkillEffect[]) : []
@@ -90,6 +91,59 @@ export async function getEnemySkills(characterId: string): Promise<Record<string
     if (hasBattleValue(cs.skill)) skills[cs.skill.id] = toSkillDef(cs.skill)
   }
   return skills
+}
+
+export async function getMonsterSkills(monsterId: string): Promise<Record<string, SkillDef>> {
+  const rows = await prisma.monsterSkill.findMany({ where: { monsterId }, include: { skill: true } })
+  const skills: Record<string, SkillDef> = {}
+  for (const ms of rows) {
+    if (hasBattleValue(ms.skill)) skills[ms.skill.id] = toSkillDef(ms.skill)
+  }
+  return skills
+}
+
+/** Only the subset of the eligible pool the player has equipped for battle (see app/lib/progression). */
+export async function getEquippedSkills(userCharacterId: string): Promise<Record<string, SkillDef>> {
+  const rows = await prisma.userCharacterEquippedSkill.findMany({ where: { userCharacterId }, include: { skill: true } })
+  const skills: Record<string, SkillDef> = {}
+  for (const row of rows) {
+    if (hasBattleValue(row.skill)) skills[row.skill.id] = toSkillDef(row.skill)
+  }
+  return skills
+}
+
+/**
+ * Resolves "who is the enemy" for an already-created Battle row, which may
+ * point at either a Character (regular AI battle) or a Monster (raid) -
+ * exactly one of enemyCharacterId/enemyMonsterId is set. Shared by the
+ * server actions and the arena page so neither has to duplicate the branch.
+ */
+export async function loadEnemyProfile(
+  battle: { enemyCharacterId: string | null; enemyMonsterId: string | null }
+): Promise<{ name: string; imageUrl: string | null; stats: BaseStats; skills: Record<string, SkillDef>; xpMultiplier: number } | null> {
+  if (battle.enemyCharacterId) {
+    const character = await prisma.character.findUnique({ where: { id: battle.enemyCharacterId } })
+    if (!character) return null
+    return {
+      name: character.name,
+      imageUrl: character.imageUrl,
+      stats: computeBaseStats(character, { hp: 0, attack: 0, defense: 0, speed: 0 }),
+      skills: await getEnemySkills(character.id),
+      xpMultiplier: 1,
+    }
+  }
+  if (battle.enemyMonsterId) {
+    const monster = await prisma.monster.findUnique({ where: { id: battle.enemyMonsterId } })
+    if (!monster) return null
+    return {
+      name: monster.name,
+      imageUrl: monster.imageUrl,
+      stats: computeBaseStats(monster, { hp: 0, attack: 0, defense: 0, speed: 0 }),
+      skills: await getMonsterSkills(monster.id),
+      xpMultiplier: monster.tier,
+    }
+  }
+  return null
 }
 
 export async function getPlayerTransformations(characterId: string, level: number): Promise<Record<string, TransformationDef>> {

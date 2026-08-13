@@ -1,11 +1,12 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { getCurrentUser } from '@/app/lib/session'
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
-  if (!user) return <main className="mx-auto max-w-7xl p-6">No user.</main>
+  if (!user) redirect('/login')
 
   const data = await prisma.user.findUnique({
     where: { id: user.id },

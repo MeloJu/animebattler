@@ -1,10 +1,11 @@
 import { prisma } from '@/app/lib/prisma'
 import { getCurrentUser } from '@/app/lib/session'
+import { autoFillLoadout } from '@/app/lib/progression/queries'
 import { redirect } from 'next/navigation'
 
 export default async function CreateCharacterPage() {
   const user = await getCurrentUser()
-  if (!user) return <main className="mx-auto max-w-7xl p-6">No user.</main>
+  if (!user) redirect('/login')
   const userId = user.id
 
   const characters = await prisma.character.findMany({ orderBy: { name: 'asc' } })
@@ -18,6 +19,7 @@ export default async function CreateCharacterPage() {
       select: { id: true }
     })
     await prisma.user.update({ where: { id: userId }, data: { selectedCharacterId: created.id } })
+    await autoFillLoadout(created.id, characterId, 1)
     redirect('/dashboard')
   }
 

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { createSession, verifyPassword } from '@/app/lib/auth'
+import { getCurrentUser } from '@/app/lib/session'
 
 const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   missing_fields: 'Preencha usuário/email e senha.',
@@ -13,6 +14,12 @@ function sanitizeRedirectTarget(target: string): string {
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; redirect?: string }> }) {
+  // A real DB-backed check, not middleware's cookie-presence guess - a stale
+  // cookie (expired, revoked, or left over from a wiped Session table)
+  // must not trap a visitor out of their own login page.
+  const existingUser = await getCurrentUser()
+  if (existingUser) redirect('/dashboard')
+
   const { error, redirect: redirectParam } = await searchParams
   const errorMessage = error ? LOGIN_ERROR_MESSAGES[error] ?? 'Ocorreu um erro.' : null
   const redirectTo = sanitizeRedirectTarget(redirectParam ?? '/select')

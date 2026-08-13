@@ -8,7 +8,8 @@ import { getCurrentUser } from '@/app/lib/session'
 import { computeBaseStats, createInitialState, isLegalMove, resolveRound } from './engine'
 import { pickAiSkill } from './ai'
 import { applyExperience } from './leveling'
-import { getEligiblePlayerSkills, getEnemySkills, getPlayerTransformations, getTreeBonus } from './queries'
+import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
+import { autoFillLoadout } from '@/app/lib/progression/queries'
 import { MAX_ROUNDS, NPC_WINS_ON_WIN, XP_ON_LOSS, XP_ON_WIN } from './constants'
 import type { BattleState, Outcome, PlayerAction, TurnResult } from './types'
 
@@ -23,21 +24,20 @@ async function loadActiveBattleContext(battleId: string) {
   if (battle.status !== 'ACTIVE') redirect(`/battle/ai/${battleId}`)
 
   const userCharacter = await prisma.userCharacter.findUnique({ where: { id: battle.playerCharacterId }, include: { character: true } })
-  const enemyCharacter = await prisma.character.findUnique({ where: { id: battle.enemyCharacterId } })
-  if (!userCharacter || !enemyCharacter) redirect(`/battle/ai?error=not_found`)
+  const enemy = await loadEnemyProfile(battle)
+  if (!userCharacter || !enemy) redirect(`/battle/ai?error=not_found`)
 
-  const [playerSkills, enemySkills, playerTransformations] = await Promise.all([
-    getEligiblePlayerSkills(userCharacter.id, userCharacter.characterId, userCharacter.level),
-    getEnemySkills(enemyCharacter.id),
+  const [playerSkills, playerTransformations] = await Promise.all([
+    getEquippedSkills(userCharacter.id),
     getPlayerTransformations(userCharacter.characterId, userCharacter.level),
   ])
 
   return {
     battle: battle as NonNullable<BattleRow>,
     userCharacter,
-    enemyCharacter,
+    enemySkills: enemy.skills,
+    xpMultiplier: enemy.xpMultiplier,
     playerSkills,
-    enemySkills,
     playerTransformations,
     state: battle.state as unknown as BattleState,
   }
@@ -56,13 +56,25 @@ async function persistRound(
   newState: BattleState,
   turnResults: TurnResult[],
   userCharacterId: string,
+  userCharacterCharacterId: string,
   userCharacterLevel: number,
-  userCharacterExperience: number
+  userCharacterExperience: number,
+  xpMultiplier: number
 ) {
   const nextTurnNumber = expectedTurnNumber + 1
   const forcedEnd = newState.outcome === null && nextTurnNumber > MAX_ROUNDS
   const finalState: BattleState = forcedEnd ? { ...newState, outcome: decideDrawOrHpTiebreak(newState) } : newState
   const isFinished = finalState.outcome !== null
+
+  // Computed up front (pure function, no DB needed) so we know the resulting
+  // level outside the transaction too, without re-fetching afterward.
+  const reward = isFinished
+    ? applyExperience(
+        userCharacterLevel,
+        userCharacterExperience,
+        Math.round((finalState.outcome === 'PLAYER_WIN' ? XP_ON_WIN : finalState.outcome === 'ENEMY_WIN' ? XP_ON_LOSS : (XP_ON_WIN + XP_ON_LOSS) / 2) * xpMultiplier)
+      )
+    : null
 
   await prisma.$transaction(async (tx) => {
     const updateResult = await tx.battle.updateMany({
@@ -96,20 +108,24 @@ async function persistRound(
       }
     }
 
-    if (isFinished) {
-      const xpGained = finalState.outcome === 'PLAYER_WIN' ? XP_ON_WIN : finalState.outcome === 'ENEMY_WIN' ? XP_ON_LOSS : Math.round((XP_ON_WIN + XP_ON_LOSS) / 2)
-      const { level, experience, pointsGained } = applyExperience(userCharacterLevel, userCharacterExperience, xpGained)
+    if (reward) {
       await tx.userCharacter.update({
         where: { id: userCharacterId },
         data: {
-          level,
-          experience,
-          pointsAvailable: { increment: pointsGained },
+          level: reward.level,
+          experience: reward.experience,
+          pointsAvailable: { increment: reward.pointsGained },
           ...(finalState.outcome === 'PLAYER_WIN' ? { npcWins: { increment: NPC_WINS_ON_WIN } } : {}),
         },
       })
     }
   })
+
+  // A level-up may have made new skills eligible - backfill any free loadout
+  // slots with them so a win doesn't quietly leave new moves unequipped.
+  if (reward && reward.level > userCharacterLevel) {
+    await autoFillLoadout(userCharacterId, userCharacterCharacterId, reward.level)
+  }
 
   // Server Actions invoked without a redirect() rely on the router refreshing
   // the current route on their own, which turned out not to happen reliably
@@ -131,7 +147,7 @@ export async function startAiBattle(userCharacterId: string): Promise<never> {
   if (!userCharacter) redirect('/select')
 
   const existing = await prisma.battle.findFirst({
-    where: { userId, playerCharacterId: userCharacterId, status: 'ACTIVE' },
+    where: { userId, playerCharacterId: userCharacterId, status: 'ACTIVE', enemyCharacterId: { not: null } },
     select: { id: true },
   })
   if (existing) redirect(`/battle/ai/${existing.id}`)
@@ -158,6 +174,43 @@ export async function startAiBattle(userCharacterId: string): Promise<never> {
   redirect(`/battle/ai/${battle.id}`)
 }
 
+export async function startRaidBattle(userCharacterId: string): Promise<never> {
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
+  const userId = user.id
+
+  const userCharacter = await prisma.userCharacter.findFirst({ where: { id: userCharacterId, userId }, include: { character: true } })
+  if (!userCharacter) redirect('/select')
+
+  const existing = await prisma.battle.findFirst({
+    where: { userId, playerCharacterId: userCharacterId, status: 'ACTIVE', enemyMonsterId: { not: null } },
+    select: { id: true },
+  })
+  if (existing) redirect(`/battle/ai/${existing.id}`)
+
+  // Only the tier-1 Hollow exists for now - no selection screen yet.
+  const monster = await prisma.monster.findFirst({ where: { name: 'Hollow' } })
+  if (!monster) redirect('/battle/raid?error=not_found')
+
+  const treeBonus = await getTreeBonus(userCharacterId)
+  const playerBase = computeBaseStats(userCharacter.character, treeBonus)
+  const enemyBase = computeBaseStats(monster, { hp: 0, attack: 0, defense: 0, speed: 0 })
+  const state = createInitialState(playerBase, enemyBase)
+
+  const battle = await prisma.battle.create({
+    data: {
+      userId,
+      playerCharacterId: userCharacterId,
+      enemyMonsterId: monster.id,
+      status: 'ACTIVE',
+      turnNumber: 1,
+      state: state as unknown as Prisma.InputJsonValue,
+    },
+  })
+
+  redirect(`/battle/ai/${battle.id}`)
+}
+
 export async function takeTurn(battleId: string, skillId: string | null): Promise<void> {
   const ctx = await loadActiveBattleContext(battleId)
   const chosenSkill = skillId ? ctx.playerSkills[skillId] ?? null : null
@@ -174,7 +227,17 @@ export async function takeTurn(battleId: string, skillId: string | null): Promis
   )
 
   try {
-    await persistRound(battleId, ctx.battle.turnNumber, newState, turnResults, ctx.userCharacter.id, ctx.userCharacter.level, ctx.userCharacter.experience)
+    await persistRound(
+      battleId,
+      ctx.battle.turnNumber,
+      newState,
+      turnResults,
+      ctx.userCharacter.id,
+      ctx.userCharacter.characterId,
+      ctx.userCharacter.level,
+      ctx.userCharacter.experience,
+      ctx.xpMultiplier
+    )
   } catch (e) {
     if (e instanceof Error && e.message === 'CONCURRENT_UPDATE') redirect(`/battle/ai/${battleId}?error=conflict`)
     throw e
@@ -196,7 +259,17 @@ export async function activateTransformation(battleId: string, transformationId:
   )
 
   try {
-    await persistRound(battleId, ctx.battle.turnNumber, newState, turnResults, ctx.userCharacter.id, ctx.userCharacter.level, ctx.userCharacter.experience)
+    await persistRound(
+      battleId,
+      ctx.battle.turnNumber,
+      newState,
+      turnResults,
+      ctx.userCharacter.id,
+      ctx.userCharacter.characterId,
+      ctx.userCharacter.level,
+      ctx.userCharacter.experience,
+      ctx.xpMultiplier
+    )
   } catch (e) {
     if (e instanceof Error && e.message === 'CONCURRENT_UPDATE') redirect(`/battle/ai/${battleId}?error=conflict`)
     throw e

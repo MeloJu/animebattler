@@ -15,11 +15,13 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if ((pathname === '/login' || pathname === '/register') && hasSession) {
-    const url = req.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
+  // Whether an authenticated visitor should be bounced away from /login and
+  // /register is decided by those pages themselves (a real DB-backed check
+  // via getCurrentUser()), not here — a cookie can be present but stale
+  // (expired, revoked, or the Session table was reset under it), and this
+  // middleware has no cheap way to tell the difference. Redirecting on
+  // cookie-presence alone used to trap visitors with a dead cookie: blocked
+  // from reaching /login to get a fresh session, yet not actually logged in.
 
   return NextResponse.next()
 }
