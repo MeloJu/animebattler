@@ -60,7 +60,7 @@ enum TransformationTrigger {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -144,6 +144,7 @@ model Skill {
   turns           Turn[]
   grantedByTransformations Transformation[] @relation("TransformationUnlockSkill")
   monsterLinks    MonsterSkill[]
+  equippedBy      UserCharacterEquippedSkill[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -165,6 +166,7 @@ model Monster {
   speed         Int            @default(10)
   energy        Int            @default(100)
   monsterSkills MonsterSkill[]
+  battles       Battle[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -257,6 +259,7 @@ model UserCharacter {
   playerBattles  Battle[]   @relation("PlayerCharacter")
   selectedBy     User[]     @relation("SelectedCharacter")
   transformationUnlocks UserCharacterTransformation[]
+  equippedSkills UserCharacterEquippedSkill[]
 
   @@unique([userId, characterId])
 }
@@ -270,6 +273,20 @@ model UserSkillUnlock {
   unlockedAt       DateTime       @default(now())
 
   @@unique([userCharacterId, nodeId])
+}
+
+/// Which of a UserCharacter's eligible skills are equipped for battle
+/// (max slots enforced in app code via MAX_LOADOUT_SLOTS).
+model UserCharacterEquippedSkill {
+  id              String        @id @default(cuid())
+  userCharacter   UserCharacter @relation(fields: [userCharacterId], references: [id])
+  userCharacterId String
+  skill           Skill         @relation(fields: [skillId], references: [id])
+  skillId         String
+  slot            Int
+
+  @@unique([userCharacterId, skillId])
+  @@unique([userCharacterId, slot])
 }
 
 enum BattleStatus {
@@ -289,8 +306,12 @@ model Battle {
   userId            String
   playerCharacter   UserCharacter  @relation("PlayerCharacter", fields: [playerCharacterId], references: [id])
   playerCharacterId String
-  enemyCharacter    Character      @relation("EnemyCharacter", fields: [enemyCharacterId], references: [id])
-  enemyCharacterId  String
+  // Exactly one of enemyCharacter/enemyMonster is set - enforced in app code,
+  // not the DB (SQLite has no simple declarative CHECK constraint here).
+  enemyCharacter    Character?     @relation("EnemyCharacter", fields: [enemyCharacterId], references: [id])
+  enemyCharacterId  String?
+  enemyMonster      Monster?       @relation(fields: [enemyMonsterId], references: [id])
+  enemyMonsterId    String?
   status            BattleStatus   @default(PENDING)
   turnNumber        Int            @default(1)
   // JSON state snapshot for current combat (HP, energy, effects)

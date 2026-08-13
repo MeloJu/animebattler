@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
+const characterImages = require('./character-images');
 const prisma = new PrismaClient();
 
 // Mirrors app/lib/auth.ts's hashPassword format (scrypt:salt:hash) so seeded
@@ -16,11 +17,34 @@ async function hashPassword(password) {
 }
 
 async function main() {
+  // ⚠️ Este seed é DESTRUTIVO: os deleteMany() abaixo apagam usuários, sessões,
+  // batalhas e todo o progresso antes de repovoar o catálogo. Em dev é o
+  // comportamento desejado (banco limpo a cada seed). Em produção seria perda
+  // total dos dados dos jogadores — por isso ele se recusa a rodar lá.
+  //
+  // O caso legítimo em produção é um só: popular o catálogo logo após o
+  // primeiro deploy, com o banco ainda vazio. Aí sim, conscientemente:
+  //   docker compose -f docker-compose.prod.yml exec -e SEED_FORCE=true app npm run prisma:seed
+  if (process.env.NODE_ENV === 'production' && process.env.SEED_FORCE !== 'true') {
+    console.error(
+      '\n✖ Seed abortado: NODE_ENV=production.\n' +
+      '  Este script apaga TODOS os usuários, sessões e batalhas antes de repovoar.\n' +
+      '  Se o banco está vazio (primeiro deploy) e você quer mesmo rodar, use SEED_FORCE=true.\n'
+    );
+    process.exit(1);
+  }
+
+  const doomedUsers = await prisma.user.count();
+  if (doomedUsers > 0) {
+    console.warn(`⚠ Apagando ${doomedUsers} usuário(s) existente(s) e todo o progresso associado.`);
+  }
+
   // Clear existing data (dev only)
   await prisma.turn.deleteMany();
   await prisma.battle.deleteMany();
   await prisma.userSkillUnlock.deleteMany();
   await prisma.userCharacterTransformation.deleteMany();
+  await prisma.userCharacterEquippedSkill.deleteMany();
   await prisma.userCharacter.deleteMany();
   await prisma.session.deleteMany();
   await prisma.user.deleteMany();
@@ -52,19 +76,19 @@ async function main() {
 
   const [narutoChar, sasuke, ichigo, rukia, goku, vegeta, broly, daredevil, batman, jeanGrey, emmaFrost, superman, wonderWoman] =
     await Promise.all([
-      prisma.character.create({ data: { name: 'Naruto Uzumaki', slug: 'naruto-uzumaki', animeId: naruto.id, affiliationId: leaf.id, hp: 120, attack: 14, defense: 10, speed: 12, energy: 110, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Sasuke Uchiha', slug: 'sasuke-uchiha', animeId: naruto.id, affiliationId: leaf.id, hp: 110, attack: 16, defense: 10, speed: 13, energy: 110, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Ichigo Kurosaki', slug: 'ichigo-kurosaki', animeId: bleach.id, affiliationId: soulSociety.id, hp: 130, attack: 18, defense: 11, speed: 12, energy: 100, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Rukia Kuchiki', slug: 'rukia-kuchiki', animeId: bleach.id, affiliationId: soulSociety.id, hp: 105, attack: 12, defense: 10, speed: 14, energy: 115, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Goku', slug: 'goku', animeId: dbz.id, affiliationId: saiyan.id, hp: 150, attack: 20, defense: 12, speed: 14, energy: 120, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Vegeta', slug: 'vegeta', animeId: dbz.id, affiliationId: saiyan.id, hp: 145, attack: 19, defense: 12, speed: 14, energy: 120, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Broly', slug: 'broly', animeId: dbz.id, affiliationId: saiyan.id, hp: 180, attack: 23, defense: 14, speed: 13, energy: 140, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Daredevil', slug: 'daredevil', animeId: marvel.id, affiliationId: avengers.id, hp: 115, attack: 17, defense: 11, speed: 15, energy: 90, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Batman', slug: 'batman', animeId: dc.id, affiliationId: justiceLeague.id, hp: 125, attack: 16, defense: 12, speed: 13, energy: 95, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Jean Grey', slug: 'jean-grey', animeId: marvel.id, affiliationId: xMen.id, hp: 110, attack: 22, defense: 10, speed: 12, energy: 140, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Emma Frost', slug: 'emma-frost', animeId: marvel.id, affiliationId: xMen.id, hp: 115, attack: 18, defense: 13, speed: 11, energy: 130, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Superman', slug: 'superman', animeId: dc.id, affiliationId: justiceLeague.id, hp: 200, attack: 24, defense: 18, speed: 16, energy: 160, imageUrl: null } }),
-      prisma.character.create({ data: { name: 'Wonder Woman', slug: 'wonder-woman', animeId: dc.id, affiliationId: justiceLeague.id, hp: 170, attack: 21, defense: 15, speed: 15, energy: 130, imageUrl: null } }),
+      prisma.character.create({ data: { name: 'Naruto Uzumaki', slug: 'naruto-uzumaki', animeId: naruto.id, affiliationId: leaf.id, hp: 120, attack: 14, defense: 10, speed: 12, energy: 110, imageUrl: characterImages['naruto-uzumaki'] || null } }),
+      prisma.character.create({ data: { name: 'Sasuke Uchiha', slug: 'sasuke-uchiha', animeId: naruto.id, affiliationId: leaf.id, hp: 110, attack: 16, defense: 10, speed: 13, energy: 110, imageUrl: characterImages['sasuke-uchiha'] || null } }),
+      prisma.character.create({ data: { name: 'Ichigo Kurosaki', slug: 'ichigo-kurosaki', animeId: bleach.id, affiliationId: soulSociety.id, hp: 130, attack: 18, defense: 11, speed: 12, energy: 100, imageUrl: characterImages['ichigo-kurosaki'] || null } }),
+      prisma.character.create({ data: { name: 'Rukia Kuchiki', slug: 'rukia-kuchiki', animeId: bleach.id, affiliationId: soulSociety.id, hp: 105, attack: 12, defense: 10, speed: 14, energy: 115, imageUrl: characterImages['rukia-kuchiki'] || null } }),
+      prisma.character.create({ data: { name: 'Goku', slug: 'goku', animeId: dbz.id, affiliationId: saiyan.id, hp: 150, attack: 20, defense: 12, speed: 14, energy: 120, imageUrl: characterImages['goku'] || null } }),
+      prisma.character.create({ data: { name: 'Vegeta', slug: 'vegeta', animeId: dbz.id, affiliationId: saiyan.id, hp: 145, attack: 19, defense: 12, speed: 14, energy: 120, imageUrl: characterImages['vegeta'] || null } }),
+      prisma.character.create({ data: { name: 'Broly', slug: 'broly', animeId: dbz.id, affiliationId: saiyan.id, hp: 180, attack: 23, defense: 14, speed: 13, energy: 140, imageUrl: characterImages['broly'] || null } }),
+      prisma.character.create({ data: { name: 'Daredevil', slug: 'daredevil', animeId: marvel.id, affiliationId: avengers.id, hp: 115, attack: 17, defense: 11, speed: 15, energy: 90, imageUrl: characterImages['daredevil'] || null } }),
+      prisma.character.create({ data: { name: 'Batman', slug: 'batman', animeId: dc.id, affiliationId: justiceLeague.id, hp: 125, attack: 16, defense: 12, speed: 13, energy: 95, imageUrl: characterImages['batman'] || null } }),
+      prisma.character.create({ data: { name: 'Jean Grey', slug: 'jean-grey', animeId: marvel.id, affiliationId: xMen.id, hp: 110, attack: 22, defense: 10, speed: 12, energy: 140, imageUrl: characterImages['jean-grey'] || null } }),
+      prisma.character.create({ data: { name: 'Emma Frost', slug: 'emma-frost', animeId: marvel.id, affiliationId: xMen.id, hp: 115, attack: 18, defense: 13, speed: 11, energy: 130, imageUrl: characterImages['emma-frost'] || null } }),
+      prisma.character.create({ data: { name: 'Superman', slug: 'superman', animeId: dc.id, affiliationId: justiceLeague.id, hp: 200, attack: 24, defense: 18, speed: 16, energy: 160, imageUrl: characterImages['superman'] || null } }),
+      prisma.character.create({ data: { name: 'Wonder Woman', slug: 'wonder-woman', animeId: dc.id, affiliationId: justiceLeague.id, hp: 170, attack: 21, defense: 15, speed: 15, energy: 130, imageUrl: characterImages['wonder-woman'] || null } }),
     ]);
 
   // Full Bleach roster expansion: Gotei 13 captains/lieutenants, human allies,
@@ -115,7 +139,9 @@ async function main() {
     { name: 'Aaroniero Arruruerie', slug: 'aaroniero-arruruerie', animeId: bleach.id, affiliationId: espadaAffiliation.id, hp: 150, attack: 19, defense: 15, speed: 10, energy: 120 },
     { name: 'Yammy Llargo', slug: 'yammy-llargo', animeId: bleach.id, affiliationId: espadaAffiliation.id, hp: 175, attack: 25, defense: 14, speed: 8, energy: 100 },
   ];
-  const createdBleachChars = await prisma.$transaction(bleachCharacterDefs.map((c) => prisma.character.create({ data: c })));
+  const createdBleachChars = await prisma.$transaction(
+    bleachCharacterDefs.map((c) => prisma.character.create({ data: { ...c, imageUrl: characterImages[c.slug] || null } }))
+  );
   const charByName = Object.fromEntries(createdBleachChars.map((c, i) => [bleachCharacterDefs[i].name, c]));
 
   // Skills. Each character gets a small kit spanning damage, buff, debuff/DOT/stun
@@ -577,7 +603,18 @@ async function main() {
 
   // Dev user and owned character
   const user = await prisma.user.create({ data: { email: 'dev@example.com', username: 'devuser', name: 'Dev', passwordHash: await hashPassword('dev'), role: 'ADMIN' } });
-  await prisma.userCharacter.create({ data: { userId: user.id, characterId: narutoChar.id, level: 1, experience: 0, pointsAvailable: 1 } });
+  const devUserCharacter = await prisma.userCharacter.create({ data: { userId: user.id, characterId: narutoChar.id, level: 1, experience: 0, pointsAvailable: 1 } });
+
+  // Initial loadout: Naruto's whole starter kit is requiredLevel 1, so this
+  // fills all 4 slots immediately (mirrors autoFillLoadout(), which runs at
+  // creation time for characters made through the app - the dev user is
+  // created directly here instead, so it's replicated manually).
+  const narutoStarterSkills = ['Rasengan', 'Shadow Clone Barrage', 'Nine-Tails Chakra Cloak', 'Uzumaki Barrier'];
+  await prisma.$transaction(
+    narutoStarterSkills.map((name, slot) =>
+      prisma.userCharacterEquippedSkill.create({ data: { userCharacterId: devUserCharacter.id, skillId: skillId(name), slot } })
+    )
+  );
 
   console.log('Seed completed.');
 }
