@@ -1,20 +1,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/app/lib/prisma'
+import { getCharacterById } from '@/app/lib/characters/queries'
 
 export default async function CharacterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   if (!id || typeof id !== 'string') return notFound()
 
-  const c = await prisma.character.findUnique({
-    where: { id },
-    include: {
-      anime: true,
-      affiliation: true,
-      characterSkills: { include: { skill: true }, orderBy: { skill: { name: 'asc' } } },
-    }
-  })
+  const c = await getCharacterById(id)
   if (!c) return notFound()
 
   return (

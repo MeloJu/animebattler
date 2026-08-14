@@ -1,18 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { prisma } from '@/app/lib/prisma'
+import { listCharacters } from '@/app/lib/characters/queries'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CharactersPage() {
-  const characters = await prisma.character.findMany({
-    include: {
-      anime: true,
-      affiliation: true,
-      characterSkills: { include: { skill: true } },
-    },
-    orderBy: { name: 'asc' },
-  })
+  const characters = await listCharacters()
 
   return (
     <main className="mx-auto max-w-6xl p-6">
