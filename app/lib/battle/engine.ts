@@ -5,6 +5,7 @@ import {
   CRIT_MULTIPLIER,
   CRIT_SPEED_COEFFICIENT,
   ENERGY_REGEN_PCT,
+  LEVEL_SCALING,
 } from './constants'
 import type {
   AppliedEffect,
@@ -67,6 +68,31 @@ export function computeBaseStats(
 
 export function createInitialState(player: BaseStats, enemy: BaseStats): BattleState {
   return { version: 1, player: makeCombatant(player), enemy: makeCombatant(enemy), outcome: null }
+}
+
+/**
+ * Scales a combatant's raw stat block by level — story mode's enemies are
+ * catalog characters/monsters with `enemyLevel` applied, so a stage's enemy
+ * is stronger without needing a stat row of its own.
+ */
+export function scaleForLevel<T extends { hp: number; attack: number; defense: number; speed: number; energy: number }>(
+  base: T,
+  level: number
+): T {
+  const m = 1 + (level - 1) * LEVEL_SCALING
+  return {
+    ...base,
+    hp: Math.round(base.hp * m),
+    attack: Math.round(base.attack * m),
+    defense: Math.round(base.defense * m),
+    speed: Math.round(base.speed * m),
+    energy: Math.round(base.energy * m),
+  }
+}
+
+/** A skill only counts as usable in battle if it deals damage or does something (has effects) — a 0-power, no-effect row is inert data. */
+export function hasBattleValue(skill: { power: number; effects: unknown }): boolean {
+  return skill.power > 0 || (Array.isArray(skill.effects) && skill.effects.length > 0)
 }
 
 export function isLegalMove(combatant: CombatantState, skill: SkillDef | null): boolean {

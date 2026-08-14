@@ -1,13 +1,10 @@
 import { prisma } from '@/app/lib/prisma'
-import { computeBaseStats } from './engine'
+import { computeBaseStats, hasBattleValue } from './engine'
+import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
 import type { BaseStats, SkillDef, SkillEffect, TransformationDef } from './types'
 
 function parseEffects(json: unknown): SkillEffect[] {
   return Array.isArray(json) ? (json as SkillEffect[]) : []
-}
-
-function hasBattleValue(skill: { power: number; effects: unknown }): boolean {
-  return skill.power > 0 || parseEffects(skill.effects).length > 0
 }
 
 export function toSkillDef(skill: { id: string; name: string; power: number; energyCost: number; cooldown: number; effects: unknown }): SkillDef {
@@ -135,7 +132,7 @@ export async function loadEnemyProfile(
       imageUrl: character.imageUrl,
       stats: computeBaseStats(character, { hp: 0, attack: 0, defense: 0, speed: 0 }),
       skills: await getEnemySkills(character.id),
-      xpMultiplier: 1,
+      xpMultiplier: NORMAL_BATTLE_XP_MULTIPLIER,
     }
   }
   if (battle.enemyMonsterId) {

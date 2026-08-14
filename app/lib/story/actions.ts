@@ -3,31 +3,10 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { computeBaseStats } from '@/app/lib/battle/engine'
+import { computeBaseStats, scaleForLevel } from '@/app/lib/battle/engine'
 import { createBattleAndRedirect } from '@/app/lib/battle/actions'
 import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStageForUser } from './queries'
-
-// Um estágio guarda `enemyLevel` em vez de uma linha própria de stats por
-// dificuldade: o inimigo é o personagem/monstro do catálogo, escalado por esse
-// multiplicador. Assim Byakuya no estágio 6 usa a mesma ficha do Byakuya do
-// catálogo, só que mais forte — e ajustar a curva é mexer em um número só.
-const LEVEL_SCALING = 0.12
-
-function scaleForLevel<T extends { hp: number; attack: number; defense: number; speed: number; energy: number }>(
-  base: T,
-  level: number
-) {
-  const m = 1 + (level - 1) * LEVEL_SCALING
-  return {
-    ...base,
-    hp: Math.round(base.hp * m),
-    attack: Math.round(base.attack * m),
-    defense: Math.round(base.defense * m),
-    speed: Math.round(base.speed * m),
-    energy: Math.round(base.energy * m),
-  }
-}
 
 export async function startStoryBattle(stageId: string): Promise<never> {
   const user = await requireUser()
