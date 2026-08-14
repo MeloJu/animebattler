@@ -50,17 +50,26 @@ function decideDrawOrHpTiebreak(state: BattleState): Outcome {
   return playerRatio > enemyRatio ? 'PLAYER_WIN' : 'ENEMY_WIN'
 }
 
+type Reward = ReturnType<typeof applyExperience>
+
+/**
+ * Persists a resolved round: the Battle's new state/turnNumber/status, the
+ * Turn rows, any transformation unlock, and (if the round ended the battle)
+ * the XP/level/points update — all in one transaction. Deliberately does NOT
+ * touch progression or story; see applyPostBattleEffects for that split.
+ * Throws 'CONCURRENT_UPDATE' if another request already advanced this
+ * battle's turnNumber first.
+ */
 async function persistRound(
   battleId: string,
   expectedTurnNumber: number,
   newState: BattleState,
   turnResults: TurnResult[],
   userCharacterId: string,
-  userCharacterCharacterId: string,
   userCharacterLevel: number,
   userCharacterExperience: number,
   xpMultiplier: number
-) {
+): Promise<{ finalState: BattleState; isFinished: boolean; reward: Reward | null }> {
   const nextTurnNumber = expectedTurnNumber + 1
   const forcedEnd = newState.outcome === null && nextTurnNumber > MAX_ROUNDS
   const finalState: BattleState = forcedEnd ? { ...newState, outcome: decideDrawOrHpTiebreak(newState) } : newState
@@ -121,29 +130,77 @@ async function persistRound(
     }
   })
 
+  return { finalState, isFinished, reward }
+}
+
+/**
+ * The explicit integration seam between battle and its sibling feature
+ * modules. Everything here runs outside persistRound's transaction on
+ * purpose: a level-up backfilling the loadout, or a story stage recording
+ * progress, are both reactions to the round having finished, not part of
+ * the atomic write of the round itself.
+ */
+async function applyPostBattleEffects(
+  battleId: string,
+  userCharacterId: string,
+  userCharacterCharacterId: string,
+  userCharacterLevel: number,
+  result: { finalState: BattleState; isFinished: boolean; reward: Reward | null }
+): Promise<void> {
+  const { finalState, isFinished, reward } = result
+
   // A level-up may have made new skills eligible - backfill any free loadout
   // slots with them so a win doesn't quietly leave new moves unequipped.
   if (reward && reward.level > userCharacterLevel) {
     await autoFillLoadout(userCharacterId, userCharacterCharacterId, reward.level)
   }
 
-  // Server Actions invoked without a redirect() rely on the router refreshing
-  // the current route on their own, which turned out not to happen reliably
-  // for this dynamic, cookie-gated route in Next 16 — revalidate explicitly
-  // instead of assuming it.
   // Vitória em batalha vinda do modo história libera o próximo estágio e
-  // entrega a recompensa. Fica fora da transação acima porque é no-op para
-  // toda batalha que não veio de um estágio (IA avulsa, raid) — a função
-  // mesma decide isso olhando o storyStageId da batalha.
+  // entrega a recompensa. Fica fora da transação de persistRound porque é
+  // no-op para toda batalha que não veio de um estágio (IA avulsa, raid) —
+  // a função mesma decide isso olhando o storyStageId da batalha.
   if (isFinished && finalState.outcome === 'PLAYER_WIN') {
     await recordStoryProgress(battleId)
   }
 
+  // Server Actions invoked without a redirect() rely on the router refreshing
+  // the current route on their own, which turned out not to happen reliably
+  // for this dynamic, cookie-gated route in Next 16 — revalidate explicitly
+  // instead of assuming it.
   revalidatePath(`/battle/ai/${battleId}`)
   if (isFinished) {
     revalidatePath('/dashboard')
     revalidatePath('/status')
     revalidatePath('/story')
+  }
+}
+
+/**
+ * Shared by takeTurn/activateTransformation: persist the round, react to it
+ * finishing, and translate a concurrent-update race into a user-facing
+ * redirect instead of an unhandled error — previously duplicated in both.
+ */
+async function finalizeRound(
+  battleId: string,
+  ctx: Awaited<ReturnType<typeof loadActiveBattleContext>>,
+  newState: BattleState,
+  turnResults: TurnResult[]
+): Promise<void> {
+  try {
+    const result = await persistRound(
+      battleId,
+      ctx.battle.turnNumber,
+      newState,
+      turnResults,
+      ctx.userCharacter.id,
+      ctx.userCharacter.level,
+      ctx.userCharacter.experience,
+      ctx.xpMultiplier
+    )
+    await applyPostBattleEffects(battleId, ctx.userCharacter.id, ctx.userCharacter.characterId, ctx.userCharacter.level, result)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'CONCURRENT_UPDATE') redirect(`/battle/ai/${battleId}?error=conflict`)
+    throw e
   }
 }
 
@@ -249,22 +306,7 @@ export async function takeTurn(battleId: string, skillId: string | null): Promis
     { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
   )
 
-  try {
-    await persistRound(
-      battleId,
-      ctx.battle.turnNumber,
-      newState,
-      turnResults,
-      ctx.userCharacter.id,
-      ctx.userCharacter.characterId,
-      ctx.userCharacter.level,
-      ctx.userCharacter.experience,
-      ctx.xpMultiplier
-    )
-  } catch (e) {
-    if (e instanceof Error && e.message === 'CONCURRENT_UPDATE') redirect(`/battle/ai/${battleId}?error=conflict`)
-    throw e
-  }
+  await finalizeRound(battleId, ctx, newState, turnResults)
 }
 
 export async function activateTransformation(battleId: string, transformationId: string): Promise<void> {
@@ -281,20 +323,5 @@ export async function activateTransformation(battleId: string, transformationId:
     { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
   )
 
-  try {
-    await persistRound(
-      battleId,
-      ctx.battle.turnNumber,
-      newState,
-      turnResults,
-      ctx.userCharacter.id,
-      ctx.userCharacter.characterId,
-      ctx.userCharacter.level,
-      ctx.userCharacter.experience,
-      ctx.xpMultiplier
-    )
-  } catch (e) {
-    if (e instanceof Error && e.message === 'CONCURRENT_UPDATE') redirect(`/battle/ai/${battleId}?error=conflict`)
-    throw e
-  }
+  await finalizeRound(battleId, ctx, newState, turnResults)
 }
