@@ -1,9 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { activateTransformation, takeTurn } from '@/app/lib/battle/actions'
-import { getEquippedSkills, getPlayerTransformations, loadEnemyProfile } from '@/app/lib/battle/queries'
+import { getBattleView, getEquippedSkills, getPlayerTransformations } from '@/app/lib/battle/queries'
 import { isLegalMove } from '@/app/lib/battle/engine'
 import { battleErrorMessage, describeEffect } from '@/app/lib/battle/presentation'
 import { FighterCard } from '@/app/components/battle/FighterCard'
@@ -23,15 +22,9 @@ export default async function BattleArenaPage({
 
   const user = await requireUser()
 
-  const battle = await prisma.battle.findFirst({ where: { id: battleId, userId: user.id } })
-  if (!battle) notFound()
-
-  const [userCharacter, enemy, turns] = await Promise.all([
-    prisma.userCharacter.findUnique({ where: { id: battle.playerCharacterId }, include: { character: true } }),
-    loadEnemyProfile(battle),
-    prisma.turn.findMany({ where: { battleId }, orderBy: { number: 'desc' } }),
-  ])
-  if (!userCharacter || !enemy) notFound()
+  const view = await getBattleView(battleId, user.id)
+  if (!view) notFound()
+  const { battle, userCharacter, enemy, turns } = view
 
   const state = battle.state as unknown as BattleState
   const isActive = battle.status === 'ACTIVE'

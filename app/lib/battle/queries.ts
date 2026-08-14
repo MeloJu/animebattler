@@ -159,3 +159,24 @@ export async function getPlayerTransformations(characterId: string, level: numbe
   return result
 }
 
+/**
+ * Everything the arena page (app/battle/ai/[battleId]) needs to render: the
+ * Battle row (ownership-checked against userId first), the player's
+ * UserCharacter, the resolved enemy profile, and the turn log. Returns null
+ * on either failure mode - not found, or not yours, or a dangling FK - so the
+ * page can just call notFound() without knowing which case it was.
+ */
+export async function getBattleView(battleId: string, userId: string) {
+  const battle = await prisma.battle.findFirst({ where: { id: battleId, userId } })
+  if (!battle) return null
+
+  const [userCharacter, enemy, turns] = await Promise.all([
+    prisma.userCharacter.findUnique({ where: { id: battle.playerCharacterId }, include: { character: true } }),
+    loadEnemyProfile(battle),
+    prisma.turn.findMany({ where: { battleId }, orderBy: { number: 'desc' } }),
+  ])
+  if (!userCharacter || !enemy) return null
+
+  return { battle, userCharacter, enemy, turns }
+}
+
