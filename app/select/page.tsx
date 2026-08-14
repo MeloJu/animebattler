@@ -1,23 +1,12 @@
 import Link from "next/link";
-import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { redirect } from 'next/navigation'
+import { getUserCharacters } from '@/app/lib/progression/queries'
+import { selectCharacter } from '@/app/lib/progression/actions'
 
 export default async function SelectCharacterPage() {
   const user = await requireUser()
-  const userId = user.id
 
-  async function setSelected(formData: FormData) {
-    "use server"
-    const userCharacterId = String(formData.get('userCharacterId'))
-    await prisma.user.update({ where: { id: userId }, data: { selectedCharacterId: userCharacterId } })
-    redirect('/dashboard')
-  }
-
-  const list = await prisma.userCharacter.findMany({
-    where: { userId },
-    include: { character: true },
-  })
+  const list = await getUserCharacters(user.id)
 
   return (
     <main className="mx-auto max-w-7xl p-6">
@@ -27,7 +16,7 @@ export default async function SelectCharacterPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {list.map((uc) => (
-          <form key={uc.id} action={setSelected} className="card p-5 flex flex-col gap-3">
+          <form key={uc.id} action={selectCharacter} className="card p-5 flex flex-col gap-3">
             <input type="hidden" name="userCharacterId" value={uc.id} />
             <div className="flex items-center justify-between">
               <div>

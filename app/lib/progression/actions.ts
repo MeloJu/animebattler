@@ -8,6 +8,31 @@ import { getEligiblePlayerSkills } from '@/app/lib/battle/queries'
 import { autoFillLoadout } from './queries'
 import { getLoadoutSlotCount } from './constants'
 
+export async function selectCharacter(formData: FormData): Promise<void> {
+  const user = await requireUser()
+  const userCharacterId = String(formData.get('userCharacterId'))
+  await prisma.user.update({ where: { id: user.id }, data: { selectedCharacterId: userCharacterId } })
+  redirect('/dashboard')
+}
+
+export async function createCharacter(formData: FormData): Promise<void> {
+  const user = await requireUser()
+  const characterId = String(formData.get('characterId'))
+  const nickname = String(formData.get('nickname') || '').trim() || 'Hero'
+
+  // Atomic: a UserCharacter that got created but never became selected (or
+  // never got its starter loadout) would leave the player stuck. redirect()
+  // throws, so it happens strictly after the transaction resolves — inside
+  // it, that throw would trigger a rollback instead of a clean redirect.
+  await prisma.$transaction(async (tx) => {
+    const uc = await tx.userCharacter.create({ data: { userId: user.id, characterId, nickname }, select: { id: true } })
+    await tx.user.update({ where: { id: user.id }, data: { selectedCharacterId: uc.id } })
+    await autoFillLoadout(uc.id, characterId, 1, tx)
+  })
+
+  redirect('/dashboard')
+}
+
 export async function unlockSkillNode(userCharacterId: string, nodeId: string): Promise<void> {
   const user = await requireUser()
 

@@ -27,3 +27,8 @@ export function getCharacterById(id: string) {
     },
   })
 }
+
+/** app/create's base-character dropdown — no relations needed, just id/name. */
+export function listCharacterChoices() {
+  return prisma.character.findMany({ orderBy: { name: 'asc' } })
+}
