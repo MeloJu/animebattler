@@ -9,6 +9,7 @@ import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { describeEffect } from '@/app/lib/battle/presentation'
 import { XP_PER_LEVEL } from '@/app/lib/battle/constants'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
+import { StatGrid } from '@/app/components/StatGrid'
 import type { SkillEffect } from '@/app/lib/battle/types'
 
 const STATUS_ERROR_MESSAGES: Record<string, string> = {
@@ -88,13 +89,15 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
       <div className="card p-4 space-y-3">
         <h2 className="font-semibold">Atributos</h2>
         <div className="text-sm opacity-70">Nível {selected.level} · EXP {selected.experience} / {xpForNextLevel}</div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
-          <div className="rounded-md border border-black/10 p-3">HP <span className="font-semibold">{effectiveStats.hp}</span></div>
-          <div className="rounded-md border border-black/10 p-3">ATK <span className="font-semibold">{effectiveStats.attack}</span></div>
-          <div className="rounded-md border border-black/10 p-3">DEF <span className="font-semibold">{effectiveStats.defense}</span></div>
-          <div className="rounded-md border border-black/10 p-3">SPD <span className="font-semibold">{effectiveStats.speed}</span></div>
-          <div className="rounded-md border border-black/10 p-3">EN <span className="font-semibold">{effectiveStats.energy}</span></div>
-        </div>
+        <StatGrid
+          stats={[
+            { label: 'HP', value: effectiveStats.hp },
+            { label: 'ATK', value: effectiveStats.attack },
+            { label: 'DEF', value: effectiveStats.defense },
+            { label: 'SPD', value: effectiveStats.speed },
+            { label: 'EN', value: effectiveStats.energy },
+          ]}
+        />
       </div>
 
       <div className="card p-4 space-y-3">

@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
@@ -7,117 +6,9 @@ import { activateTransformation, takeTurn } from '@/app/lib/battle/actions'
 import { getEquippedSkills, getPlayerTransformations, loadEnemyProfile } from '@/app/lib/battle/queries'
 import { isLegalMove } from '@/app/lib/battle/engine'
 import { battleErrorMessage, describeEffect } from '@/app/lib/battle/presentation'
-import type { BattleState, CombatantState, StatusEffectInstance, TurnResult } from '@/app/lib/battle/types'
-
-function StatBar({ label, current, max, colorClass }: { label: string; current: number; max: number; colorClass: string }) {
-  const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((current / max) * 100))) : 0
-  return (
-    <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span>{label}</span>
-        <span>{Math.max(0, current)} / {max}</span>
-      </div>
-      <div className="h-2 w-full rounded-full bg-black/10 overflow-hidden">
-        <div className={`h-full ${colorClass}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  )
-}
-
-function StatusBadges({ effects }: { effects: StatusEffectInstance[] }) {
-  if (effects.length === 0) return null
-  return (
-    <div className="flex flex-wrap gap-1">
-      {effects.map((e) => (
-        <span key={e.id} title={e.sourceSkillName} className="text-xs rounded-full bg-black/5 px-2 py-0.5">
-          {describeEffect(e)} ({e.remainingRounds})
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function FighterCard({
-  name,
-  imageUrl,
-  levelBadge,
-  transformationName,
-  combatant,
-}: {
-  name: string
-  imageUrl: string | null
-  levelBadge?: number
-  transformationName?: string
-  combatant: CombatantState
-}) {
-  return (
-    <div className="card p-4 space-y-3">
-      <div className="relative h-40 w-full rounded-lg overflow-hidden bg-gray-200">
-        {imageUrl ? (
-          <Image src={imageUrl} alt={name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 320px" />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center text-sm text-gray-500">No Image</div>
-        )}
-        {levelBadge !== undefined && (
-          <span className="absolute top-2 right-2 rounded-full bg-accent text-white text-xs font-semibold px-2 py-1">Lv.{levelBadge}</span>
-        )}
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="font-semibold">{name}</div>
-        {transformationName && (
-          <span className="text-xs rounded-full bg-accent/20 text-accent px-2 py-0.5">{transformationName}</span>
-        )}
-      </div>
-      <StatBar label="HP" current={combatant.currentHp} max={combatant.maxHp} colorClass="bg-green-500" />
-      <StatBar label="Energia" current={combatant.currentEnergy} max={combatant.maxEnergy} colorClass="bg-blue-500" />
-      <StatusBadges effects={combatant.statusEffects} />
-    </div>
-  )
-}
-
-function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult; playerName: string; enemyName: string }) {
-  const actorName = turn.side === 'PLAYER' ? playerName : enemyName
-
-  if (turn.kind === 'TRANSFORM') {
-    return (
-      <>
-        <span className="font-medium">{actorName}</span> se transformou em <span className="font-medium">{turn.skillName}</span>.
-      </>
-    )
-  }
-  if (turn.kind === 'STUNNED') {
-    return (
-      <>
-        <span className="font-medium">{actorName}</span> estava atordoado e perdeu a vez.
-      </>
-    )
-  }
-  if (turn.kind === 'DOT_TICK') {
-    return (
-      <>
-        <span className="font-medium">{actorName}</span> sofreu {turn.damage} de dano de <span className="font-medium">{turn.skillName}</span>.
-      </>
-    )
-  }
-
-  // ATTACK or SUPPORT
-  return (
-    <>
-      <span className="font-medium">{actorName}</span> usou <span className="font-medium">{turn.skillName}</span>
-      {turn.countered && (
-        <>, mas foi contra-atacado{typeof turn.reflectedDamage === 'number' ? ` e sofreu ${turn.reflectedDamage} de dano refletido` : ''}</>
-      )}
-      {!turn.countered && typeof turn.damage === 'number' && turn.damage > 0 && (
-        <> e causou {turn.damage} de dano{turn.isCrit ? ' (CRÍTICO)' : ''}</>
-      )}
-      {typeof turn.healed === 'number' && turn.healed > 0 && <> e curou {turn.healed} de HP</>}
-      {turn.effectsApplied && turn.effectsApplied.length > 0 && (
-        <> ({turn.effectsApplied.map(describeEffect).join(', ')})</>
-      )}
-      .
-    </>
-  )
-}
+import { FighterCard } from '@/app/components/battle/FighterCard'
+import { TurnLogEntry } from '@/app/components/battle/TurnLogEntry'
+import type { BattleState, TurnResult } from '@/app/lib/battle/types'
 
 export default async function BattleArenaPage({
   params,

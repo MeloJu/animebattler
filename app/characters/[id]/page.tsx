@@ -1,7 +1,8 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCharacterById } from '@/app/lib/characters/queries'
+import { CharacterImage } from '@/app/components/CharacterImage'
+import { StatGrid } from '@/app/components/StatGrid'
 
 export default async function CharacterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,13 +27,12 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Portrait */}
         <div className="card p-4">
-          <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-gray-100">
-            {c.imageUrl ? (
-              <Image src={c.imageUrl} alt={c.name} fill className="object-cover" />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-gray-500">No Image</div>
-            )}
-          </div>
+          <CharacterImage
+            src={c.imageUrl}
+            alt={c.name}
+            containerClassName="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-gray-100"
+            placeholderClassName="h-full w-full flex items-center justify-center text-gray-500"
+          />
           {c.imageUrl && (
             <div className="text-xs opacity-60 mt-2">Image source: {c.imageUrl}</div>
           )}
@@ -41,13 +41,17 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
         {/* Stats */}
         <div className="md:col-span-2 card p-6">
           <h2 className="text-lg font-semibold mb-3">Stats</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
-            <div className="rounded-md border border-white/10 p-3 bg-white/10">HP <span className="font-semibold">{c.hp}</span></div>
-            <div className="rounded-md border border-white/10 p-3 bg-white/10">ATK <span className="font-semibold">{c.attack}</span></div>
-            <div className="rounded-md border border-white/10 p-3 bg-white/10">DEF <span className="font-semibold">{c.defense}</span></div>
-            <div className="rounded-md border border-white/10 p-3 bg-white/10">SPD <span className="font-semibold">{c.speed}</span></div>
-            <div className="rounded-md border border-white/10 p-3 bg-white/10">EN <span className="font-semibold">{c.energy}</span></div>
-          </div>
+          <StatGrid
+            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm"
+            itemClassName="rounded-md border border-white/10 p-3 bg-white/10"
+            stats={[
+              { label: 'HP', value: c.hp },
+              { label: 'ATK', value: c.attack },
+              { label: 'DEF', value: c.defense },
+              { label: 'SPD', value: c.speed },
+              { label: 'EN', value: c.energy },
+            ]}
+          />
         </div>
       </div>
 
