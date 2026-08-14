@@ -1,11 +1,10 @@
 import Link from 'next/link'
-import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression/actions'
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
 import { computeBaseStats } from '@/app/lib/battle/engine'
 import { getEligiblePlayerSkills, getTreeBonus } from '@/app/lib/battle/queries'
-import { getSelectedCharacter } from '@/app/lib/progression/queries'
+import { getEquippedSkillRows, getSelectedCharacter, getSkillTree, getUnlockedNodeIds } from '@/app/lib/progression/queries'
 import { describeEffect } from '@/app/lib/battle/presentation'
 import { XP_PER_LEVEL } from '@/app/lib/battle/constants'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
@@ -45,18 +44,13 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
     )
   }
 
-  const [nodes, unlocks, treeBonus, eligibleSkills, equippedRows] = await Promise.all([
-    prisma.skillTreeNode.findMany({
-      where: { characterId: selected.characterId },
-      include: { skill: true, prerequisites: true },
-      orderBy: { tier: 'asc' },
-    }),
-    prisma.userSkillUnlock.findMany({ where: { userCharacterId: selected.id }, select: { nodeId: true } }),
+  const [nodes, unlockedIds, treeBonus, eligibleSkills, equippedRows] = await Promise.all([
+    getSkillTree(selected.characterId),
+    getUnlockedNodeIds(selected.id),
     getTreeBonus(selected.id),
     getEligiblePlayerSkills(selected.id, selected.characterId, selected.level),
-    prisma.userCharacterEquippedSkill.findMany({ where: { userCharacterId: selected.id }, include: { skill: true } }),
+    getEquippedSkillRows(selected.id),
   ])
-  const unlockedIds = new Set(unlocks.map((u) => u.nodeId))
   const effectiveStats = computeBaseStats(selected.character, treeBonus)
   const xpForNextLevel = selected.level * XP_PER_LEVEL
   const slotCount = getLoadoutSlotCount(selected.level)

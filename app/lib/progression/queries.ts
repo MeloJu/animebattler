@@ -28,6 +28,26 @@ export async function getUserCharacters(userId: string) {
   return prisma.userCharacter.findMany({ where: { userId }, include: { character: true } })
 }
 
+/** The full skill tree for a character, tier-ordered, for app/status. */
+export async function getSkillTree(characterId: string) {
+  return prisma.skillTreeNode.findMany({
+    where: { characterId },
+    include: { skill: true, prerequisites: true },
+    orderBy: { tier: 'asc' },
+  })
+}
+
+/** Which of this UserCharacter's tree nodes are already unlocked. */
+export async function getUnlockedNodeIds(userCharacterId: string): Promise<Set<string>> {
+  const rows = await prisma.userSkillUnlock.findMany({ where: { userCharacterId }, select: { nodeId: true } })
+  return new Set(rows.map((r) => r.nodeId))
+}
+
+/** This UserCharacter's current loadout, one row per occupied slot. */
+export async function getEquippedSkillRows(userCharacterId: string) {
+  return prisma.userCharacterEquippedSkill.findMany({ where: { userCharacterId }, include: { skill: true } })
+}
+
 type Db = Prisma.TransactionClient | typeof prisma
 
 /**
