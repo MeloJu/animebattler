@@ -62,7 +62,6 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
       <div className="card p-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Skills</h2>
-          <Link href={`/characters/${c.id}/skills`} className="text-sm underline">Open skill tree</Link>
         </div>
         {c.characterSkills.length === 0 ? (
           <div className="text-sm opacity-70">No skills linked yet.</div>

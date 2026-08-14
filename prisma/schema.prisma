@@ -156,8 +156,8 @@ model Skill {
   @@unique([name, category])
 }
 
-/// Foundation model for future raid/dungeon-style content. Not wired into
-/// any battle logic or UI yet - just data, ready for when that gets designed.
+/// Enemy for raid battles (app/lib/battle/actions.ts's startRaidBattle) and
+/// story-mode stages (StoryStage.enemyMonster).
 model Monster {
   id            String         @id @default(cuid())
   name          String         @unique
