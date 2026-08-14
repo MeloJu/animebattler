@@ -1,11 +1,8 @@
 import { redirect } from 'next/navigation'
-import { Prisma } from '@prisma/client'
-import { prisma } from '@/app/lib/prisma'
-import { hashPassword } from '@/app/lib/password'
-import { createSession, getCurrentUser } from '@/app/lib/session'
+import { getCurrentUser } from '@/app/lib/session'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
-
-const MIN_PASSWORD_LENGTH = 8
+import { registerAction } from '@/app/lib/auth-actions'
+import { MIN_PASSWORD_LENGTH } from '@/app/lib/auth-helpers'
 
 const REGISTER_ERROR_MESSAGES: Record<string, string> = {
   missing_fields: 'Preencha todos os campos.',
@@ -21,31 +18,6 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
 
   const { error } = await searchParams
   const errorMessage = resolveErrorMessage(REGISTER_ERROR_MESSAGES, error, 'Ocorreu um erro.')
-
-  async function registerAction(formData: FormData) {
-    "use server"
-    const username = String(formData.get('username') || '').trim().toLowerCase()
-    const email = String(formData.get('email') || '').trim().toLowerCase()
-    const password = String(formData.get('password') || '')
-
-    if (!username || !email || !password) redirect('/register?error=missing_fields')
-    if (password.length < MIN_PASSWORD_LENGTH) redirect('/register?error=weak_password')
-
-    const passwordHash = await hashPassword(password)
-    let userId: string
-    try {
-      const user = await prisma.user.create({ data: { username, email, passwordHash } })
-      userId = user.id
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        redirect('/register?error=already_exists')
-      }
-      throw e
-    }
-
-    await createSession(userId)
-    redirect('/select')
-  }
 
   return (
     <main className="mx-auto max-w-md p-6">

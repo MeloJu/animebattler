@@ -1,17 +1,12 @@
 import { redirect } from 'next/navigation'
-import { prisma } from '@/app/lib/prisma'
-import { verifyPassword } from '@/app/lib/password'
-import { createSession, getCurrentUser } from '@/app/lib/session'
+import { getCurrentUser } from '@/app/lib/session'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
+import { loginAction } from '@/app/lib/auth-actions'
+import { sanitizeRedirectTarget } from '@/app/lib/auth-helpers'
 
 const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   missing_fields: 'Preencha usuário/email e senha.',
   invalid_credentials: 'Usuário/email ou senha incorretos.',
-}
-
-function sanitizeRedirectTarget(target: string): string {
-  if (target.startsWith('/') && !target.startsWith('//')) return target
-  return '/select'
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; redirect?: string }> }) {
@@ -24,21 +19,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { error, redirect: redirectParam } = await searchParams
   const errorMessage = resolveErrorMessage(LOGIN_ERROR_MESSAGES, error, 'Ocorreu um erro.')
   const redirectTo = sanitizeRedirectTarget(redirectParam ?? '/select')
-
-  async function loginAction(formData: FormData) {
-    "use server"
-    const id = String(formData.get('id') || '').trim().toLowerCase()
-    const password = String(formData.get('password') || '')
-    const target = sanitizeRedirectTarget(String(formData.get('redirectTo') || '/select'))
-    if (!id || !password) redirect('/login?error=missing_fields')
-
-    const user = await prisma.user.findFirst({ where: { OR: [{ email: id }, { username: id }] } })
-    const ok = user ? await verifyPassword(password, user.passwordHash) : false
-    if (!user || !ok) redirect('/login?error=invalid_credentials')
-
-    await createSession(user.id)
-    redirect(target)
-  }
 
   return (
     <main className="mx-auto max-w-md p-6">
