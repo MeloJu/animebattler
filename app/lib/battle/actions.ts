@@ -9,8 +9,8 @@ import { computeBaseStats, createInitialState, isLegalMove, resolveRound } from 
 import { pickAiSkill } from './ai'
 import { applyExperience } from './leveling'
 import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
-import { autoFillLoadout } from '@/app/lib/progression/queries'
-import { recordStoryProgress } from '@/app/lib/story/queries'
+import { autoFillLoadout } from '@/app/lib/progression/actions'
+import { recordStoryProgress } from '@/app/lib/story/actions'
 import { MAX_ROUNDS, NPC_WINS_ON_WIN, XP_ON_LOSS, XP_ON_WIN } from './constants'
 import type { BaseStats, BattleState, Outcome, PlayerAction, TurnResult } from './types'
 
