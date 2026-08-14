@@ -159,16 +159,3 @@ export async function getPlayerTransformations(characterId: string, level: numbe
   return result
 }
 
-const BATTLE_ERROR_MESSAGES: Record<string, string> = {
-  not_found: 'Batalha não encontrada.',
-  invalid_skill: 'Essa habilidade não está disponível pro seu personagem.',
-  illegal_move: 'Você não pode usar essa habilidade agora (energia insuficiente ou em cooldown).',
-  invalid_transformation: 'Essa transformação não está disponível pro seu personagem.',
-  already_transformed: 'Você já está transformado nessa batalha.',
-  conflict: 'Essa rodada já foi resolvida em outra aba — a tela foi atualizada.',
-}
-
-export function battleErrorMessage(code: string | undefined): string | null {
-  if (!code) return null
-  return BATTLE_ERROR_MESSAGES[code] ?? 'Ocorreu um erro inesperado.'
-}

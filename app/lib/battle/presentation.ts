@@ -1,3 +1,4 @@
+import { resolveErrorMessage } from '@/app/lib/error-messages'
 import type { EffectType, Stat } from './types'
 
 export type EffectLike = { type: EffectType; stat?: Stat; magnitude: number }
@@ -33,4 +34,17 @@ export function describeEffect(e: EffectLike): string {
     case 'LIFESTEAL':
       return `${EFFECT_ICON.LIFESTEAL} Vampirismo ${e.magnitude}%`
   }
+}
+
+const BATTLE_ERROR_MESSAGES: Record<string, string> = {
+  not_found: 'Batalha não encontrada.',
+  invalid_skill: 'Essa habilidade não está disponível pro seu personagem.',
+  illegal_move: 'Você não pode usar essa habilidade agora (energia insuficiente ou em cooldown).',
+  invalid_transformation: 'Essa transformação não está disponível pro seu personagem.',
+  already_transformed: 'Você já está transformado nessa batalha.',
+  conflict: 'Essa rodada já foi resolvida em outra aba — a tela foi atualizada.',
+}
+
+export function battleErrorMessage(code: string | undefined): string | null {
+  return resolveErrorMessage(BATTLE_ERROR_MESSAGES, code, 'Ocorreu um erro inesperado.')
 }

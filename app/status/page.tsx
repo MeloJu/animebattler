@@ -7,6 +7,7 @@ import { computeBaseStats } from '@/app/lib/battle/engine'
 import { getEligiblePlayerSkills, getTreeBonus } from '@/app/lib/battle/queries'
 import { describeEffect } from '@/app/lib/battle/presentation'
 import { XP_PER_LEVEL } from '@/app/lib/battle/constants'
+import { resolveErrorMessage } from '@/app/lib/error-messages'
 import type { SkillEffect } from '@/app/lib/battle/types'
 
 const STATUS_ERROR_MESSAGES: Record<string, string> = {
@@ -24,7 +25,7 @@ function parseEffects(json: unknown): SkillEffect[] {
 
 export default async function StatusPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams
-  const errorMessage = error ? STATUS_ERROR_MESSAGES[error] ?? 'Ocorreu um erro.' : null
+  const errorMessage = resolveErrorMessage(STATUS_ERROR_MESSAGES, error, 'Ocorreu um erro.')
 
   const user = await requireUser()
 

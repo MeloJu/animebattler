@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { startRaidBattle } from '@/app/lib/battle/actions'
-import { battleErrorMessage } from '@/app/lib/battle/queries'
+import { battleErrorMessage } from '@/app/lib/battle/presentation'
 
 export default async function BattleRaidPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams

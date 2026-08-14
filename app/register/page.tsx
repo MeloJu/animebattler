@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { createSession, hashPassword } from '@/app/lib/auth'
 import { getCurrentUser } from '@/app/lib/session'
+import { resolveErrorMessage } from '@/app/lib/error-messages'
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -19,7 +20,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   if (existingUser) redirect('/dashboard')
 
   const { error } = await searchParams
-  const errorMessage = error ? REGISTER_ERROR_MESSAGES[error] ?? 'Ocorreu um erro.' : null
+  const errorMessage = resolveErrorMessage(REGISTER_ERROR_MESSAGES, error, 'Ocorreu um erro.')
 
   async function registerAction(formData: FormData) {
     "use server"

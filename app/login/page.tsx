@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { createSession, verifyPassword } from '@/app/lib/auth'
 import { getCurrentUser } from '@/app/lib/session'
+import { resolveErrorMessage } from '@/app/lib/error-messages'
 
 const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   missing_fields: 'Preencha usuário/email e senha.',
@@ -21,7 +22,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (existingUser) redirect('/dashboard')
 
   const { error, redirect: redirectParam } = await searchParams
-  const errorMessage = error ? LOGIN_ERROR_MESSAGES[error] ?? 'Ocorreu um erro.' : null
+  const errorMessage = resolveErrorMessage(LOGIN_ERROR_MESSAGES, error, 'Ocorreu um erro.')
   const redirectTo = sanitizeRedirectTarget(redirectParam ?? '/select')
 
   async function loginAction(formData: FormData) {

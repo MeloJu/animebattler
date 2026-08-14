@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { getStoryChapters } from '@/app/lib/story/queries'
+import { resolveErrorMessage } from '@/app/lib/error-messages'
 
 const STORY_ERRORS: Record<string, string> = {
   not_found: 'Estágio não encontrado.',
@@ -12,7 +13,7 @@ export default async function StoryPage({ searchParams }: { searchParams: Promis
   const user = await requireUser()
 
   const { error } = await searchParams
-  const errorMessage = error ? STORY_ERRORS[error] ?? 'Ocorreu um erro.' : null
+  const errorMessage = resolveErrorMessage(STORY_ERRORS, error, 'Ocorreu um erro.')
   const [chapters, wallet] = await Promise.all([
     getStoryChapters(user.id),
     prisma.user.findUnique({ where: { id: user.id }, select: { coins: true } }),

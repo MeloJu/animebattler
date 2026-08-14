@@ -4,9 +4,9 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { activateTransformation, takeTurn } from '@/app/lib/battle/actions'
-import { battleErrorMessage, getEquippedSkills, getPlayerTransformations, loadEnemyProfile } from '@/app/lib/battle/queries'
+import { getEquippedSkills, getPlayerTransformations, loadEnemyProfile } from '@/app/lib/battle/queries'
 import { isLegalMove } from '@/app/lib/battle/engine'
-import { describeEffect } from '@/app/lib/battle/presentation'
+import { battleErrorMessage, describeEffect } from '@/app/lib/battle/presentation'
 import type { BattleState, CombatantState, StatusEffectInstance, TurnResult } from '@/app/lib/battle/types'
 
 function StatBar({ label, current, max, colorClass }: { label: string; current: number; max: number; colorClass: string }) {
