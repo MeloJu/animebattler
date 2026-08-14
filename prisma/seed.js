@@ -4,7 +4,7 @@ const characterImages = require('./character-images');
 const kido = require('./kido');
 const prisma = new PrismaClient();
 
-// Mirrors app/lib/auth.ts's hashPassword format (scrypt:salt:hash) so seeded
+// Mirrors app/lib/password.ts's hashPassword format (scrypt:salt:hash) so seeded
 // accounts can log in through the normal verifyPassword() path.
 async function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');

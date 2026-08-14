@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
-import { createSession, hashPassword } from '@/app/lib/auth'
-import { getCurrentUser } from '@/app/lib/session'
+import { hashPassword } from '@/app/lib/password'
+import { createSession, getCurrentUser } from '@/app/lib/session'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
 
 const MIN_PASSWORD_LENGTH = 8

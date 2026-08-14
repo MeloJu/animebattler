@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
-import { createSession, verifyPassword } from '@/app/lib/auth'
-import { getCurrentUser } from '@/app/lib/session'
+import { verifyPassword } from '@/app/lib/password'
+import { createSession, getCurrentUser } from '@/app/lib/session'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
 
 const LOGIN_ERROR_MESSAGES: Record<string, string> = {
