@@ -1,23 +1,12 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
+import { getDashboardUser } from '@/app/lib/progression/queries'
 
 export default async function DashboardPage() {
   const user = await requireUser()
 
-  const data = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      name: true,
-      selectedCharacter: {
-        include: {
-          character: true,
-        }
-      }
-    }
-  })
+  const data = await getDashboardUser(user.id)
 
   if (!data?.selectedCharacter) {
     return (

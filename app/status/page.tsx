@@ -5,6 +5,7 @@ import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
 import { computeBaseStats } from '@/app/lib/battle/engine'
 import { getEligiblePlayerSkills, getTreeBonus } from '@/app/lib/battle/queries'
+import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { describeEffect } from '@/app/lib/battle/presentation'
 import { XP_PER_LEVEL } from '@/app/lib/battle/constants'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
@@ -29,11 +30,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
 
   const user = await requireUser()
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { selectedCharacter: { include: { character: true } } },
-  })
-  const selected = dbUser?.selectedCharacter
+  const selected = await getSelectedCharacter(user.id)
 
   if (!selected) {
     return (

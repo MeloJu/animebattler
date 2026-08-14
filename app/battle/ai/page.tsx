@@ -3,6 +3,7 @@ import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { startAiBattle } from '@/app/lib/battle/actions'
 import { battleErrorMessage } from '@/app/lib/battle/presentation'
+import { getSelectedCharacter } from '@/app/lib/progression/queries'
 
 export default async function BattleAiPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams
@@ -10,11 +11,7 @@ export default async function BattleAiPage({ searchParams }: { searchParams: Pro
 
   const user = await requireUser()
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { selectedCharacter: { include: { character: true } } },
-  })
-  const selected = dbUser?.selectedCharacter
+  const selected = await getSelectedCharacter(user.id)
 
   if (!selected) {
     return (

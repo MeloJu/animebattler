@@ -2,6 +2,26 @@ import { prisma } from '@/app/lib/prisma'
 import { getEligiblePlayerSkills } from '@/app/lib/battle/queries'
 import { getLoadoutSlotCount } from './constants'
 
+// Duplicated identically across battle/ai, battle/raid, story/actions and
+// status before this: the user's selected character with its catalog
+// character joined in.
+export async function getSelectedCharacter(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { selectedCharacter: { include: { character: true } } },
+  })
+  return user?.selectedCharacter ?? null
+}
+
+// dashboard's own variant: same join, plus the user's id/name for the
+// page header.
+export async function getDashboardUser(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, selectedCharacter: { include: { character: true } } },
+  })
+}
+
 /**
  * Fills empty loadout slots with newly-eligible-but-unequipped skills, up to
  * the cap. Never touches slots that are already occupied - this only backfills

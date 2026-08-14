@@ -6,6 +6,7 @@ import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { computeBaseStats, createInitialState } from '@/app/lib/battle/engine'
 import { getTreeBonus } from '@/app/lib/battle/queries'
+import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStageForUser } from './queries'
 
 // Um estágio guarda `enemyLevel` em vez de uma linha própria de stats por
@@ -32,11 +33,7 @@ function scaleForLevel<T extends { hp: number; attack: number; defense: number; 
 export async function startStoryBattle(stageId: string): Promise<never> {
   const user = await requireUser()
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { selectedCharacter: { include: { character: true } } },
-  })
-  const userCharacter = dbUser?.selectedCharacter
+  const userCharacter = await getSelectedCharacter(user.id)
   if (!userCharacter) redirect('/select')
 
   const found = await getStageForUser(stageId, user.id)
