@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { computeBaseStats, createInitialState } from '@/app/lib/battle/engine'
 import { getTreeBonus } from '@/app/lib/battle/queries'
 import { getStageForUser } from './queries'
@@ -30,8 +30,7 @@ function scaleForLevel<T extends { hp: number; attack: number; defense: number; 
 }
 
 export async function startStoryBattle(stageId: string): Promise<never> {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },

@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { startRaidBattle } from '@/app/lib/battle/actions'
 import { battleErrorMessage } from '@/app/lib/battle/queries'
 
@@ -9,8 +8,7 @@ export default async function BattleRaidPage({ searchParams }: { searchParams: P
   const { error } = await searchParams
   const errorMessage = battleErrorMessage(error)
 
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },

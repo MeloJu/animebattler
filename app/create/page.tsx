@@ -1,11 +1,10 @@
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { autoFillLoadout } from '@/app/lib/progression/queries'
 import { redirect } from 'next/navigation'
 
 export default async function CreateCharacterPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
   const userId = user.id
 
   const characters = await prisma.character.findMany({ orderBy: { name: 'asc' } })

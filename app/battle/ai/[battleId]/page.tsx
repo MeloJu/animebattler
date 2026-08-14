@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { activateTransformation, takeTurn } from '@/app/lib/battle/actions'
 import { battleErrorMessage, getEquippedSkills, getPlayerTransformations, loadEnemyProfile } from '@/app/lib/battle/queries'
 import { isLegalMove } from '@/app/lib/battle/engine'
@@ -130,8 +130,7 @@ export default async function BattleArenaPage({
   const { error } = await searchParams
   const errorMessage = battleErrorMessage(error)
 
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const battle = await prisma.battle.findFirst({ where: { id: battleId, userId: user.id } })
   if (!battle) notFound()

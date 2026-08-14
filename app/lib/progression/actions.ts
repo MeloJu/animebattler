@@ -3,14 +3,13 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { getEligiblePlayerSkills } from '@/app/lib/battle/queries'
 import { autoFillLoadout } from './queries'
 import { getLoadoutSlotCount } from './constants'
 
 export async function unlockSkillNode(userCharacterId: string, nodeId: string): Promise<void> {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const userCharacter = await prisma.userCharacter.findFirst({ where: { id: userCharacterId, userId: user.id } })
   if (!userCharacter) redirect('/status?error=not_found')
@@ -50,8 +49,7 @@ export async function unlockSkillNode(userCharacterId: string, nodeId: string): 
 // <select name="skillId"> supplies the one remaining piece of data - Next
 // server actions fold any params past the bound ones into a single FormData.
 export async function equipSkill(userCharacterId: string, slot: number, formData: FormData): Promise<void> {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const skillId = String(formData.get('skillId') || '')
   if (!skillId) redirect('/status?error=invalid_skill')
@@ -75,8 +73,7 @@ export async function equipSkill(userCharacterId: string, slot: number, formData
 }
 
 export async function unequipSkill(userCharacterId: string, slot: number): Promise<void> {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const userCharacter = await prisma.userCharacter.findFirst({ where: { id: userCharacterId, userId: user.id } })
   if (!userCharacter) redirect('/status?error=not_found')

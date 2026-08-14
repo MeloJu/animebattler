@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { computeBaseStats, createInitialState, isLegalMove, resolveRound } from './engine'
 import { pickAiSkill } from './ai'
 import { applyExperience } from './leveling'
@@ -17,8 +17,7 @@ import type { BattleState, Outcome, PlayerAction, TurnResult } from './types'
 type BattleRow = Awaited<ReturnType<typeof prisma.battle.findFirst>>
 
 async function loadActiveBattleContext(battleId: string) {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const battle = await prisma.battle.findFirst({ where: { id: battleId, userId: user.id } })
   if (!battle) redirect('/battle/ai?error=not_found')
@@ -149,8 +148,7 @@ async function persistRound(
 }
 
 export async function startAiBattle(userCharacterId: string): Promise<never> {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
   const userId = user.id
 
   const userCharacter = await prisma.userCharacter.findFirst({ where: { id: userCharacterId, userId }, include: { character: true } })
@@ -185,8 +183,7 @@ export async function startAiBattle(userCharacterId: string): Promise<never> {
 }
 
 export async function startRaidBattle(userCharacterId: string): Promise<never> {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
   const userId = user.id
 
   const userCharacter = await prisma.userCharacter.findFirst({ where: { id: userCharacterId, userId }, include: { character: true } })

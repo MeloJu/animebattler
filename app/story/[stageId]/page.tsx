@@ -1,14 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { getStageForUser } from '@/app/lib/story/queries'
 import { startStoryBattle } from '@/app/lib/story/actions'
 
 export default async function StoryStagePage({ params }: { params: Promise<{ stageId: string }> }) {
   const { stageId } = await params
 
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const found = await getStageForUser(stageId, user.id)
   if (!found) redirect('/story?error=not_found')

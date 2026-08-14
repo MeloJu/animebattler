@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { redirect } from 'next/navigation'
 
 export default async function SelectCharacterPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
   const userId = user.id
 
   async function setSelected(formData: FormData) {

@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { getStoryChapters } from '@/app/lib/story/queries'
 
 const STORY_ERRORS: Record<string, string> = {
@@ -10,8 +9,7 @@ const STORY_ERRORS: Record<string, string> = {
 }
 
 export default async function StoryPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const { error } = await searchParams
   const errorMessage = error ? STORY_ERRORS[error] ?? 'Ocorreu um erro.' : null

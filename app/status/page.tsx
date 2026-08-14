@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
-import { getCurrentUser } from '@/app/lib/session'
+import { requireUser } from '@/app/lib/session'
 import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression/actions'
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
 import { computeBaseStats } from '@/app/lib/battle/engine'
@@ -27,8 +26,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
   const { error } = await searchParams
   const errorMessage = error ? STATUS_ERROR_MESSAGES[error] ?? 'Ocorreu um erro.' : null
 
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
