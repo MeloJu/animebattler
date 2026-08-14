@@ -1,11 +1,10 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { computeBaseStats, createInitialState } from '@/app/lib/battle/engine'
-import { getTreeBonus } from '@/app/lib/battle/queries'
+import { computeBaseStats } from '@/app/lib/battle/engine'
+import { createBattleAndRedirect } from '@/app/lib/battle/actions'
 import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStageForUser } from './queries'
 
@@ -51,23 +50,14 @@ export async function startStoryBattle(stageId: string): Promise<never> {
   const { stage } = found
   const enemy = stage.enemyCharacter ?? stage.enemyMonster
   if (!enemy) redirect('/story?error=not_found')
-
-  const treeBonus = await getTreeBonus(userCharacter.id)
-  const playerBase = computeBaseStats(userCharacter.character, treeBonus)
   const enemyBase = computeBaseStats(scaleForLevel(enemy, stage.enemyLevel), { hp: 0, attack: 0, defense: 0, speed: 0 })
-  const state = createInitialState(playerBase, enemyBase)
 
-  const battle = await prisma.battle.create({
-    data: {
-      userId: user.id,
-      playerCharacterId: userCharacter.id,
-      ...(stage.enemyCharacterId ? { enemyCharacterId: stage.enemyCharacterId } : { enemyMonsterId: stage.enemyMonsterId }),
-      storyStageId: stage.id,
-      status: 'ACTIVE',
-      turnNumber: 1,
-      state: state as unknown as Prisma.InputJsonValue,
-    },
+  return createBattleAndRedirect({
+    userId: user.id,
+    userCharacter,
+    enemy: stage.enemyCharacterId
+      ? { kind: 'character', characterId: stage.enemyCharacterId, base: enemyBase }
+      : { kind: 'monster', monsterId: stage.enemyMonsterId!, base: enemyBase },
+    storyStageId: stage.id,
   })
-
-  redirect(`/battle/ai/${battle.id}`)
 }

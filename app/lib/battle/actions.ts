@@ -12,7 +12,7 @@ import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyPro
 import { autoFillLoadout } from '@/app/lib/progression/queries'
 import { recordStoryProgress } from '@/app/lib/story/queries'
 import { MAX_ROUNDS, NPC_WINS_ON_WIN, XP_ON_LOSS, XP_ON_WIN } from './constants'
-import type { BattleState, Outcome, PlayerAction, TurnResult } from './types'
+import type { BaseStats, BattleState, Outcome, PlayerAction, TurnResult } from './types'
 
 type BattleRow = Awaited<ReturnType<typeof prisma.battle.findFirst>>
 
@@ -147,6 +147,44 @@ async function persistRound(
   }
 }
 
+type EnemyRef =
+  | { kind: 'character'; characterId: string; base: BaseStats }
+  | { kind: 'monster'; monsterId: string; base: BaseStats }
+
+// The one truly identical tail shared by startAiBattle/startRaidBattle/
+// startStoryBattle: compute the player's stats, seed the battle state,
+// insert the Battle row, redirect into it.
+//
+// Deliberately NOT shared: the "already has an active battle?" check (AI
+// filters by enemyCharacterId, raid by enemyMonsterId, story has no type
+// filter at all — it blocks on ANY active battle), fetching/validating the
+// userCharacter, and picking/scaling the enemy. Those differ enough between
+// the 3 callers that folding them in here would silently change behavior.
+export async function createBattleAndRedirect(params: {
+  userId: string
+  userCharacter: { id: string; character: { hp: number; attack: number; defense: number; speed: number; energy: number } }
+  enemy: EnemyRef
+  storyStageId?: string
+}): Promise<never> {
+  const treeBonus = await getTreeBonus(params.userCharacter.id)
+  const playerBase = computeBaseStats(params.userCharacter.character, treeBonus)
+  const state = createInitialState(playerBase, params.enemy.base)
+
+  const battle = await prisma.battle.create({
+    data: {
+      userId: params.userId,
+      playerCharacterId: params.userCharacter.id,
+      ...(params.enemy.kind === 'character' ? { enemyCharacterId: params.enemy.characterId } : { enemyMonsterId: params.enemy.monsterId }),
+      ...(params.storyStageId ? { storyStageId: params.storyStageId } : {}),
+      status: 'ACTIVE',
+      turnNumber: 1,
+      state: state as unknown as Prisma.InputJsonValue,
+    },
+  })
+
+  redirect(`/battle/ai/${battle.id}`)
+}
+
 export async function startAiBattle(userCharacterId: string): Promise<never> {
   const user = await requireUser()
   const userId = user.id
@@ -162,24 +200,13 @@ export async function startAiBattle(userCharacterId: string): Promise<never> {
 
   const enemyPool = await prisma.character.findMany({ where: { id: { not: userCharacter.characterId } } })
   const enemyCharacter = enemyPool[Math.floor(Math.random() * enemyPool.length)]
-
-  const treeBonus = await getTreeBonus(userCharacterId)
-  const playerBase = computeBaseStats(userCharacter.character, treeBonus)
   const enemyBase = computeBaseStats(enemyCharacter, { hp: 0, attack: 0, defense: 0, speed: 0 })
-  const state = createInitialState(playerBase, enemyBase)
 
-  const battle = await prisma.battle.create({
-    data: {
-      userId,
-      playerCharacterId: userCharacterId,
-      enemyCharacterId: enemyCharacter.id,
-      status: 'ACTIVE',
-      turnNumber: 1,
-      state: state as unknown as Prisma.InputJsonValue,
-    },
+  return createBattleAndRedirect({
+    userId,
+    userCharacter,
+    enemy: { kind: 'character', characterId: enemyCharacter.id, base: enemyBase },
   })
-
-  redirect(`/battle/ai/${battle.id}`)
 }
 
 export async function startRaidBattle(userCharacterId: string): Promise<never> {
@@ -198,24 +225,13 @@ export async function startRaidBattle(userCharacterId: string): Promise<never> {
   // Only the tier-1 Hollow exists for now - no selection screen yet.
   const monster = await prisma.monster.findFirst({ where: { name: 'Hollow' } })
   if (!monster) redirect('/battle/raid?error=not_found')
-
-  const treeBonus = await getTreeBonus(userCharacterId)
-  const playerBase = computeBaseStats(userCharacter.character, treeBonus)
   const enemyBase = computeBaseStats(monster, { hp: 0, attack: 0, defense: 0, speed: 0 })
-  const state = createInitialState(playerBase, enemyBase)
 
-  const battle = await prisma.battle.create({
-    data: {
-      userId,
-      playerCharacterId: userCharacterId,
-      enemyMonsterId: monster.id,
-      status: 'ACTIVE',
-      turnNumber: 1,
-      state: state as unknown as Prisma.InputJsonValue,
-    },
+  return createBattleAndRedirect({
+    userId,
+    userCharacter,
+    enemy: { kind: 'monster', monsterId: monster.id, base: enemyBase },
   })
-
-  redirect(`/battle/ai/${battle.id}`)
 }
 
 export async function takeTurn(battleId: string, skillId: string | null): Promise<void> {
