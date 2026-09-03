@@ -34,10 +34,18 @@ O que **ainda não existe** (só placeholders "em construção"):
 ## ☁️ Deploy
 
 A aplicação é containerizada e o deploy é automatizado: GitHub Actions builda
-a imagem arm64, publica no GHCR e sobe numa VM Ampere (Oracle Always Free)
-provisionada por Terraform, com Caddy na frente fazendo TLS.
+a imagem, publica no GHCR e sobe numa VM Always Free provisionada por
+Terraform, com Caddy na frente fazendo TLS.
 
-O passo a passo completo está em [docs/deploy.md](docs/deploy.md).
+O Terraform é modular por provedor, um root independente por nuvem em
+[infra/](infra):
+- [infra/oracle](infra/oracle) — Ampere A1.Flex (arm64), Oracle Always Free.
+  Passo a passo: [docs/deploy-oracle.md](docs/deploy-oracle.md).
+- [infra/gcp](infra/gcp) — e2-micro (amd64), Google Cloud Always Free.
+  Passo a passo: [docs/deploy-gcp.md](docs/deploy-gcp.md).
+
+O bootstrap de cada VM (Docker, firewall local) é compartilhado entre os
+dois em [infra/shared/cloud-init.yaml](infra/shared/cloud-init.yaml).
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -55,7 +63,7 @@ O passo a passo completo está em [docs/deploy.md](docs/deploy.md).
 
 ### Infraestrutura
 - **Docker / Docker Compose** - Ambientes de dev e produção containerizados
-- **Terraform** - Provisionamento da VM (Oracle Cloud Always Free)
+- **Terraform** - Provisionamento da VM, um root modular por provedor Always Free (Oracle, GCP)
 - **Caddy** - Reverse proxy com HTTPS automático (Let's Encrypt)
 - **GitHub Actions** - CI (lint, typecheck, build, imagem) e CD (build arm64 + deploy)
 

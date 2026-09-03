@@ -20,14 +20,17 @@ runcmd:
   - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
   - usermod -aG docker ubuntu
 
-  # Pasta onde o docker-compose.prod.yml/Caddyfile/.env vão morar (ver docs/deploy.md)
+  # Pasta onde o docker-compose.prod.yml/Caddyfile/.env vão morar (ver
+  # docs/deploy-oracle.md ou docs/deploy-gcp.md)
   - mkdir -p /home/ubuntu/animebattler
   - chown ubuntu:ubuntu /home/ubuntu/animebattler
 
-  # A imagem Ubuntu da Oracle vem com iptables bloqueando por padrão além
-  # da security list do Terraform — libera 80/443 direto no SO e persiste
-  # entre reboots. Inserido no topo da chain (posição 1) pra sempre vencer
-  # qualquer regra de DROP que já exista mais abaixo.
+  # Algumas imagens Ubuntu de cloud vêm com iptables bloqueando por padrão
+  # além do firewall do provedor (security list na Oracle, firewall rules
+  # no GCP) — libera 80/443 direto no SO e persiste entre reboots.
+  # Inserido no topo da chain (posição 1) pra sempre vencer qualquer regra
+  # de DROP que já exista mais abaixo. Idempotente/inofensivo nos provedores
+  # onde isso já vem liberado.
   - iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
   - iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
   - netfilter-persistent save

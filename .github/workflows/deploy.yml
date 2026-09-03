@@ -7,7 +7,7 @@ name: Deploy
 #     push:
 #       branches: [master]
 # Secrets necessários: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY
-# (ver docs/deploy.md).
+# (ver docs/deploy-oracle.md — este workflow builda arm64, pensado pra VM Ampere).
 on:
   workflow_dispatch:
 

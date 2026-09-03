@@ -1,0 +1,17 @@
+# Copie para terraform.tfvars (gitignored) e preencha com seus valores.
+# Credenciais (projeto, service account) NÃO vão aqui — vão no .env, ver
+# .env.example.
+
+# Chave SSH que vai acessar a VM — pode reaproveitar a mesma da Oracle, ou
+# gerar uma nova só pra essa:
+#   ssh-keygen -t ed25519 -f ~/.ssh/animebattler-gcp -C "animebattler-deploy-gcp"
+#
+# No Windows, terraform.exe não expande "~" — use caminho absoluto, ex:
+#   ssh_public_key_path = "C:/Users/seu-usuario/.ssh/animebattler.pub"
+ssh_public_key_path = "~/.ssh/animebattler.pub"
+
+# Só precisa descomentar se quiser fugir dos defaults (region/zone já vêm
+# setados pra us-central1, elegível ao Always Free do e2-micro):
+# region        = "us-central1"
+# zone          = "us-central1-a"
+# instance_name = "animebattler-vm"

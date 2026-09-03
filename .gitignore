@@ -46,9 +46,10 @@ next-env.d.ts
 *.db
 *.db-journal
 
-# terraform (.terraform.lock.hcl IS committed — pins provider versions)
-infra/.terraform/
-infra/*.tfstate
-infra/*.tfstate.*
-infra/terraform.tfvars
-infra/*.auto.tfvars
+# terraform — infra/<provider>/ (one root per cloud: oracle, gcp, ...).
+# .terraform.lock.hcl IS committed in each provider dir — pins provider versions.
+infra/**/.terraform/
+infra/**/*.tfstate
+infra/**/*.tfstate.*
+infra/**/terraform.tfvars
+infra/**/*.auto.tfvars

@@ -1,6 +1,6 @@
 # Provisiona a VM Always Free (Ampere/ARM), rede e firewall pro Anime
-# Battler no Oracle Cloud. Ver ../docs/deploy.md pra credenciais e passo a
-# passo de uso.
+# Battler no Oracle Cloud. Ver ../../docs/deploy-oracle.md pra credenciais e
+# passo a passo de uso.
 
 terraform {
   required_version = ">= 1.5.0"
@@ -129,6 +129,6 @@ resource "oci_core_instance" "app" {
 
   metadata = {
     ssh_authorized_keys = file(var.ssh_public_key_path)
-    user_data           = base64encode(file("${path.module}/cloud-init.yaml"))
+    user_data           = base64encode(file("${path.module}/../shared/cloud-init.yaml"))
   }
 }

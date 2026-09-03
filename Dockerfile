@@ -68,5 +68,5 @@ EXPOSE 3000
 # `migrate deploy` é idempotente (aplica só migrations pendentes) e roda antes
 # do servidor aceitar tráfego. O SEED NÃO roda aqui: ele é destrutivo, apaga
 # contas de usuário, e só deve ser executado manualmente uma vez — ver
-# docs/deploy.md.
+# docs/deploy-oracle.md.
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start -- -H 0.0.0.0 -p 3000"]

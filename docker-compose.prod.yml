@@ -2,7 +2,7 @@
 # docker-compose.yml de dev: sem bind mount (usa a imagem já publicada no
 # GHCR pelo CD), Caddy na frente fazendo TLS, nenhuma porta de app/db
 # exposta direto pro host. Segredos vêm de um .env que só existe na VM
-# (nunca commitado — ver .env.prod.example / docs/deploy.md).
+# (nunca commitado — ver .env.prod.example / docs/deploy-oracle.md / docs/deploy-gcp.md).
 services:
   caddy:
     image: caddy:2-alpine

@@ -1,8 +1,10 @@
-# Deploy — checklist manual
+# Deploy na Oracle Cloud — checklist manual
 
 Tudo que dá pra automatizar já está no repo (schema Postgres, CI, CD,
 Terraform). O que resta aqui exige a sua conta Oracle/GitHub e não tem como
 ser feito por fora.
+
+> Provider GCP? Ver [docs/deploy-gcp.md](deploy-gcp.md) em vez deste.
 
 ## 1. Gerar a API key da Oracle Cloud
 
@@ -16,7 +18,7 @@ em `~/.oci/oci_api_key.pem`. A tela final mostra um bloco de config com
 ## 2. Provisionar a VM
 
 ```bash
-cd infra
+cd infra/oracle
 cp terraform.tfvars.example terraform.tfvars
 # preencha com os valores do passo 1
 
@@ -142,6 +144,6 @@ Free, mas é bom saber que dá pra desmontar e remontar à vontade — é a
 graça do Terraform):
 
 ```bash
-cd infra
+cd infra/oracle
 terraform destroy
 ```

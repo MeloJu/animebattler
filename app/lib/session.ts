@@ -11,7 +11,7 @@ const SESSION_DAYS = 30
 // de verdade o Caddy emite TLS sozinho e isso fica true — que é o certo. Mas
 // acessando a VM pelo IP puro (HTTP), o navegador descarta o cookie em silêncio
 // e o login falha sem nenhuma mensagem de erro. COOKIE_SECURE=false é a saída
-// pra esse caso; ver docs/deploy.md.
+// pra esse caso; ver docs/deploy-oracle.md.
 const SECURE_COOKIE = process.env.COOKIE_SECURE
   ? process.env.COOKIE_SECURE === 'true'
   : process.env.NODE_ENV === 'production'
