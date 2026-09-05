@@ -31,7 +31,16 @@ const emitter =
     return e
   })()
 
-if (process.env.NODE_ENV !== 'production') globalForPvp.pvpEmitter = emitter
+// Guardado no globalThis SEMPRE, inclusive em produção — e é aí que está a
+// diferença pro padrão do client do Prisma, que só faz isso em dev.
+//
+// O Prisma guarda por causa do Hot Reload. Aqui o motivo é outro e vale em
+// produção: o build do Next separa as rotas em bundles, e o módulo pode ser
+// instanciado mais de uma vez — a Server Action que publica e o Route Handler
+// que escuta acabam com emitters DIFERENTES. O sintoma é traiçoeiro: a
+// conexão SSE abre normalmente (o cliente vê "ao vivo"), mas nenhum evento
+// chega, porque quem emite não é o mesmo objeto que quem escuta.
+globalForPvp.pvpEmitter = emitter
 
 /** O que a arena precisa saber que mudou. O payload é mínimo de propósito:
  *  quem recebe vai buscar o estado no banco, que é a fonte da verdade. */
