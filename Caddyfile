@@ -1,7 +1,14 @@
-# SITE_ADDRESS pode ser o IP público da VM (ex: 123.45.67.89) ou um domínio
-# de verdade (ex: animebattler.exemplo.com). Com IP/localhost, Caddy serve
-# HTTP puro; com um domínio real, ele detecta sozinho e emite TLS via
-# Let's Encrypt automaticamente — nenhuma outra config precisa mudar.
+# SITE_ADDRESS pode ser um domínio de verdade (ex: animebattler.exemplo.com)
+# ou o IP público da VM — mas o IP PRECISA do prefixo `http://`
+# (ex: http://123.45.67.89).
+#
+# Sem o prefixo, o Caddy liga TLS automático também pra IP: como a Let's
+# Encrypt não emite certificado pra endereço IP, ele cai num self-signed
+# ("issuer":"local") e passa a redirecionar 80 → 443. O resultado é todo
+# request virando 308 e o navegador exibindo aviso de certificado inválido.
+#
+# Com domínio real, sem prefixo, o Caddy emite TLS válido via Let's Encrypt
+# sozinho — nenhuma outra config precisa mudar.
 {$SITE_ADDRESS:localhost} {
 	reverse_proxy app:3000
 }
