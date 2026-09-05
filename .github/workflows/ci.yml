@@ -52,6 +52,12 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      # Testes de lógica pura (motor de batalha, IA, progressão, helpers).
+      # Rodam antes do build porque falham em segundos — não faz sentido
+      # esperar o build inteiro pra descobrir que a regra de dano quebrou.
+      - name: Unit tests
+        run: npm test
+
       - name: Build
         run: npm run build
 

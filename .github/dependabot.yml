@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # Dependências do app. Agrupadas por tipo pra não virar enxurrada de PR
+  # num projeto solo — o que interessa é ver atualização de segurança, não
+  # abrir 15 PRs por semana de bump de patch.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      producao:
+        dependency-type: production
+        update-types: [minor, patch]
+      desenvolvimento:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  # As actions são código de terceiro rodando com acesso aos secrets de
+  # deploy — manter atualizadas importa mais aqui do que numa dependência
+  # qualquer do app.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # A imagem base do runtime (node:20-alpine) recebe correção de CVE.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

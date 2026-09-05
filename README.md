@@ -68,9 +68,31 @@ dois em [infra/shared/cloud-init.yaml](infra/shared/cloud-init.yaml).
 - **GitHub Actions** - CI (lint, typecheck, build, imagem) e CD (build + push no GHCR + deploy)
 
 ### Ferramentas de Desenvolvimento
+- **Vitest** - Testes unitários da lógica de jogo (`npm test`)
 - **ESLint** - Linting de código
 - **PostCSS** - Processamento de CSS
 - **Docker / Docker Compose** - Ambiente de desenvolvimento containerizado
+
+## 🧪 Testes
+
+```bash
+npm test            # roda a suíte uma vez
+npm run test:watch  # modo watch durante o desenvolvimento
+```
+
+A estratégia é dividida por camada, em vez de perseguir uma % de cobertura:
+
+- **Testes unitários** (`tests/`) cobrem a lógica **pura**: o motor de batalha
+  (dano, crítico, escudo, contra-ataque, DOT, stun, transformação, ordem de
+  turno), a IA, a curva de XP e os helpers. `resolveRound` recebe a função
+  aleatória por parâmetro, então o combate é testado de forma determinística.
+- **Smoke test** (`scripts/smoke-test.sh`) sobe a **imagem de produção** de
+  verdade, aplica migrations, roda o seed e exercita rotas reais — é o que
+  cobre páginas e server actions, que dependem de Prisma e sessão.
+
+Rotas e componentes não têm teste unitário de propósito: mockar Prisma e
+`cookies()` testaria o mock, não o comportamento. Quem cobre essa camada é o
+smoke test, contra a imagem real.
 
 ### Inteligência Artificial
 - **Claude Sonnet 4.5** - Assistência no desenvolvimento via GitHub Copilot
