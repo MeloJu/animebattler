@@ -1,5 +1,6 @@
 import { prisma } from '@/app/lib/prisma'
 import { computeBaseStats, hasBattleValue } from './engine'
+import { getEquipmentGrantedSkills } from '@/app/lib/equipment/queries'
 import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
 import type { BaseStats, SkillDef, SkillEffect, TransformationDef } from './types'
 
@@ -107,10 +108,18 @@ export async function getMonsterSkills(monsterId: string): Promise<Record<string
 
 /** Only the subset of the eligible pool the player has equipped for battle (see app/lib/progression). */
 export async function getEquippedSkills(userCharacterId: string): Promise<Record<string, SkillDef>> {
-  const rows = await prisma.userCharacterEquippedSkill.findMany({ where: { userCharacterId }, include: { skill: true } })
+  const [rows, equipmentSkills] = await Promise.all([
+    prisma.userCharacterEquippedSkill.findMany({ where: { userCharacterId }, include: { skill: true } }),
+    getEquipmentGrantedSkills(userCharacterId),
+  ])
   const skills: Record<string, SkillDef> = {}
   for (const row of rows) {
     if (hasBattleValue(row.skill)) skills[row.skill.id] = toSkillDef(row.skill)
+  }
+  // Vêm depois de propósito: a skill do equipamento se soma ao loadout em vez
+  // de disputar um dos 4 slots com ele.
+  for (const skill of equipmentSkills) {
+    if (hasBattleValue(skill)) skills[skill.id] = toSkillDef(skill)
   }
   return skills
 }

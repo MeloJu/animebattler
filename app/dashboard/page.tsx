@@ -34,7 +34,7 @@ export default async function DashboardPage() {
           <CharacterImage
             src={base.imageUrl}
             alt={uc.nickname}
-            containerClassName="h-28 w-28 rounded-lg overflow-hidden bg-gray-200 relative flex-shrink-0"
+            containerClassName="h-28 w-28 rounded-lg overflow-hidden bg-background-alt relative flex-shrink-0"
             sizes="112px"
           />
           <div>
@@ -62,10 +62,10 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link href="/battle/ai" className="btn-primary rounded-md px-4 py-2 text-sm">Battle VS AI</Link>
-            <Link href="/battle/pvp" className="rounded-md px-4 py-2 text-sm border border-black/10 bg-white hover:bg-black/5">Battle VS Player</Link>
-            <Link href="/equipment" className="rounded-md px-4 py-2 text-sm border border-black/10 bg-white hover:bg-black/5">Equipment</Link>
-            <Link href="/status" className="rounded-md px-4 py-2 text-sm border border-black/10 bg-white hover:bg-black/5">Status</Link>
-            <Link href="/characters" className="rounded-md px-4 py-2 text-sm border border-black/10 bg-white hover:bg-black/5">Browse Characters</Link>
+            <Link href="/battle/pvp" className="rounded-md px-4 py-2 text-sm border border-border bg-surface hover:bg-surface-raised">Battle VS Player</Link>
+            <Link href="/equipment" className="rounded-md px-4 py-2 text-sm border border-border bg-surface hover:bg-surface-raised">Equipment</Link>
+            <Link href="/status" className="rounded-md px-4 py-2 text-sm border border-border bg-surface hover:bg-surface-raised">Status</Link>
+            <Link href="/characters" className="rounded-md px-4 py-2 text-sm border border-border bg-surface hover:bg-surface-raised">Browse Characters</Link>
           </div>
         </div>
       </div>

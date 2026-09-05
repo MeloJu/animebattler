@@ -72,7 +72,7 @@ export default async function BattleArenaPage({
           </div>
           <div className="flex gap-2">
             <Link href="/dashboard" className="btn-primary rounded-md px-4 py-2 text-sm">Dashboard</Link>
-            <Link href={backHref} className="rounded-md px-4 py-2 text-sm border border-black/10">
+            <Link href={backHref} className="rounded-md px-4 py-2 text-sm border border-border">
               {backLabel}
             </Link>
           </div>
@@ -106,7 +106,7 @@ export default async function BattleArenaPage({
               <h2 className="font-semibold">Ações</h2>
               <div className="flex flex-wrap gap-2">
                 <form action={takeTurn.bind(null, battleId, null)}>
-                  <button type="submit" className="rounded-md px-3 py-2 text-sm border border-black/10 hover:bg-black/5">
+                  <button type="submit" className="rounded-md px-3 py-2 text-sm border border-border hover:bg-surface-raised">
                     Ataque Básico
                   </button>
                 </form>
@@ -117,7 +117,7 @@ export default async function BattleArenaPage({
                       <button
                         type="submit"
                         disabled={!legal}
-                        className={`rounded-md px-3 py-2 text-sm border text-left ${legal ? 'border-black/10 hover:bg-black/5' : 'border-black/5 opacity-40 cursor-not-allowed'}`}
+                        className={`rounded-md px-3 py-2 text-sm border text-left ${legal ? 'border-border hover:bg-surface-raised' : 'border-border opacity-40 cursor-not-allowed'}`}
                       >
                         <div>{skill.name} <span className="opacity-60">({skill.energyCost} EN)</span></div>
                         {skill.effects.length > 0 && (
@@ -129,7 +129,7 @@ export default async function BattleArenaPage({
                 })}
               </div>
               {availableTransformations.length > 0 && (
-                <div className="pt-2 border-t border-black/10 flex flex-wrap gap-2">
+                <div className="pt-2 border-t border-border flex flex-wrap gap-2">
                   {availableTransformations.map((t) => (
                     <form key={t.id} action={activateTransformation.bind(null, battleId, t.id)}>
                       <button type="submit" className="rounded-md px-3 py-2 text-sm border border-accent/40 text-accent hover:bg-accent/10">

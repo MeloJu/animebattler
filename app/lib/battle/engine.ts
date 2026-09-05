@@ -66,6 +66,25 @@ export function computeBaseStats(
   }
 }
 
+/**
+ * Soma fontes de bônus plano (árvore de skills, equipamento, ...) num único
+ * bloco antes dele virar stat de batalha. Existe pra que adicionar uma nova
+ * fonte não signifique tocar em cada chamador de computeBaseStats.
+ */
+export function sumStatBonuses(
+  ...bonuses: { hp: number; attack: number; defense: number; speed: number }[]
+): { hp: number; attack: number; defense: number; speed: number } {
+  return bonuses.reduce(
+    (acc, b) => ({
+      hp: acc.hp + b.hp,
+      attack: acc.attack + b.attack,
+      defense: acc.defense + b.defense,
+      speed: acc.speed + b.speed,
+    }),
+    { hp: 0, attack: 0, defense: 0, speed: 0 }
+  )
+}
+
 export function createInitialState(player: BaseStats, enemy: BaseStats): BattleState {
   return { version: 1, player: makeCombatant(player), enemy: makeCombatant(enemy), outcome: null }
 }

@@ -9,6 +9,7 @@ import {
   isStunned,
   applyTransformation,
   resolveRound,
+  sumStatBonuses,
 } from '@/app/lib/battle/engine'
 import type {
   BaseStats,
@@ -476,5 +477,31 @@ describe('resolveRound — ordem, transformação e desfecho', () => {
     const copia = structuredClone(s)
     resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
     expect(s).toEqual(copia)
+  })
+})
+
+describe('sumStatBonuses', () => {
+  it('sem fontes, devolve tudo zerado', () => {
+    expect(sumStatBonuses()).toEqual({ hp: 0, attack: 0, defense: 0, speed: 0 })
+  })
+
+  it('soma árvore de skills e equipamento campo a campo', () => {
+    const arvore = { hp: 10, attack: 2, defense: 1, speed: 0 }
+    const equipamento = { hp: 8, attack: 0, defense: 3, speed: 5 }
+    expect(sumStatBonuses(arvore, equipamento)).toEqual({ hp: 18, attack: 2, defense: 4, speed: 5 })
+  })
+
+  it('bônus negativo (ex: Fragmento de Máscara Hollow) subtrai', () => {
+    expect(sumStatBonuses({ hp: 20, attack: 0, defense: 0, speed: 0 }, { hp: -10, attack: 12, defense: 0, speed: 0 })).toEqual({
+      hp: 10,
+      attack: 12,
+      defense: 0,
+      speed: 0,
+    })
+  })
+
+  it('aceita mais de duas fontes', () => {
+    const um = { hp: 1, attack: 1, defense: 1, speed: 1 }
+    expect(sumStatBonuses(um, um, um)).toEqual({ hp: 3, attack: 3, defense: 3, speed: 3 })
   })
 })

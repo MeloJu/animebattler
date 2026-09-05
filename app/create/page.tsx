@@ -13,11 +13,11 @@ export default async function CreateCharacterPage() {
       <form action={createCharacter} className="card p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Nickname</label>
-          <input name="nickname" className="w-full rounded-md border border-black/10 px-3 py-2 bg-white" placeholder="Your character nickname" />
+          <input name="nickname" className="w-full rounded-md border border-border px-3 py-2 bg-surface" placeholder="Your character nickname" />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Base Character</label>
-          <select name="characterId" className="w-full rounded-md border border-black/10 px-3 py-2 bg-white">
+          <select name="characterId" className="w-full rounded-md border border-border px-3 py-2 bg-surface">
             {characters.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}

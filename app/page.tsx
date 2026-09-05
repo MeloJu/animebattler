@@ -7,7 +7,7 @@ export default async function Home() {
   const user = await getCurrentUser()
   const authed = !!user
   return (
-    <main className="bg-white text-blue-900">
+    <main className="bg-surface text-foreground">
       <Hero authed={authed} />
       <QuickFeatures />
       <LandingFooter />

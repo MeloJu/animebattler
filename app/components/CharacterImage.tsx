@@ -10,7 +10,7 @@ export function CharacterImage({
   alt,
   containerClassName,
   sizes,
-  placeholderClassName = 'h-full w-full flex items-center justify-center text-sm text-gray-500',
+  placeholderClassName = 'h-full w-full flex items-center justify-center text-sm text-muted',
 }: {
   src: string | null
   alt: string

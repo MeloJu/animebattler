@@ -6,7 +6,7 @@ export function StatBar({ label, current, max, colorClass }: { label: string; cu
         <span>{label}</span>
         <span>{Math.max(0, current)} / {max}</span>
       </div>
-      <div className="h-2 w-full rounded-full bg-black/10 overflow-hidden">
+      <div className="h-2 w-full rounded-full bg-background-alt overflow-hidden">
         <div className={`h-full ${colorClass}`} style={{ width: `${pct}%` }} />
       </div>
     </div>

@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { requireUser } from '@/app/lib/session'
 import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression/actions'
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
-import { computeBaseStats } from '@/app/lib/battle/engine'
+import { computeBaseStats, sumStatBonuses } from '@/app/lib/battle/engine'
+import { getEquipmentBonus } from '@/app/lib/equipment/queries'
 import { getEligiblePlayerSkills, getTreeBonus } from '@/app/lib/battle/queries'
 import { getEquippedSkillRows, getSelectedCharacter, getSkillTree, getUnlockedNodeIds } from '@/app/lib/progression/queries'
 import { describeEffect } from '@/app/lib/battle/presentation'
@@ -44,14 +45,15 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
     )
   }
 
-  const [nodes, unlockedIds, treeBonus, eligibleSkills, equippedRows] = await Promise.all([
+  const [nodes, unlockedIds, treeBonus, equipmentBonus, eligibleSkills, equippedRows] = await Promise.all([
     getSkillTree(selected.characterId),
     getUnlockedNodeIds(selected.id),
     getTreeBonus(selected.id),
+    getEquipmentBonus(selected.id),
     getEligiblePlayerSkills(selected.id, selected.characterId, selected.level),
     getEquippedSkillRows(selected.id),
   ])
-  const effectiveStats = computeBaseStats(selected.character, treeBonus)
+  const effectiveStats = computeBaseStats(selected.character, sumStatBonuses(treeBonus, equipmentBonus))
   const xpForNextLevel = selected.level * XP_PER_LEVEL
   const slotCount = getLoadoutSlotCount(selected.level)
 
@@ -106,22 +108,22 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
                   <div className="font-medium">{row.skill.name}</div>
                   {effects.length > 0 && <div className="text-xs opacity-70 mt-0.5">{effects.map(describeEffect).join(' · ')}</div>}
                   <form action={unequipSkill.bind(null, selected.id, slot)} className="mt-2">
-                    <button type="submit" className="rounded-md px-3 py-1.5 text-xs border border-black/10 hover:bg-black/5">Desequipar</button>
+                    <button type="submit" className="rounded-md px-3 py-1.5 text-xs border border-border hover:bg-surface-raised">Desequipar</button>
                   </form>
                 </div>
               )
             }
             return (
-              <div key={slot} className="rounded-md border border-dashed border-black/20 p-3">
+              <div key={slot} className="rounded-md border border-dashed border-border p-3">
                 <div className="text-sm opacity-60 mb-2">Slot vazio</div>
                 {unequippedEligible.length > 0 ? (
                   <form action={equipSkill.bind(null, selected.id, slot)} className="flex gap-2">
-                    <select name="skillId" className="flex-1 rounded-md border border-black/10 px-2 py-1 text-sm bg-white">
+                    <select name="skillId" className="flex-1 rounded-md border border-border px-2 py-1 text-sm bg-surface">
                       {unequippedEligible.map((s) => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
                     </select>
-                    <button type="submit" className="rounded-md px-3 py-1.5 text-xs border border-black/10 hover:bg-black/5">Equipar</button>
+                    <button type="submit" className="rounded-md px-3 py-1.5 text-xs border border-border hover:bg-surface-raised">Equipar</button>
                   </form>
                 ) : (
                   <div className="text-xs opacity-50">Nenhuma skill disponível pra equipar</div>
@@ -143,7 +145,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
               const prereqsMet = node.prerequisites.every((p) => unlockedIds.has(p.id))
               const canUnlock = !isUnlocked && prereqsMet && selected.pointsAvailable >= node.pointCost
               return (
-                <div key={node.id} className={`rounded-md border p-3 ${isUnlocked ? 'border-accent/40 bg-accent/5' : 'border-black/10'}`}>
+                <div key={node.id} className={`rounded-md border p-3 ${isUnlocked ? 'border-accent/40 bg-accent/5' : 'border-border'}`}>
                   <div className="font-medium">{node.name}</div>
                   {node.description && <div className="text-xs opacity-70 mt-0.5">{node.description}</div>}
                   {node.skill && <div className="text-xs opacity-70 mt-0.5">Desbloqueia: {node.skill.name}</div>}
@@ -155,7 +157,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
                       <button
                         type="submit"
                         disabled={!canUnlock}
-                        className={`rounded-md px-3 py-1.5 text-xs border ${canUnlock ? 'border-black/10 hover:bg-black/5' : 'border-black/5 opacity-40 cursor-not-allowed'}`}
+                        className={`rounded-md px-3 py-1.5 text-xs border ${canUnlock ? 'border-border hover:bg-surface-raised' : 'border-border opacity-40 cursor-not-allowed'}`}
                       >
                         {prereqsMet ? 'Desbloquear' : 'Pré-requisito bloqueado'}
                       </button>

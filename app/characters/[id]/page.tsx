@@ -30,8 +30,8 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
           <CharacterImage
             src={c.imageUrl}
             alt={c.name}
-            containerClassName="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-gray-100"
-            placeholderClassName="h-full w-full flex items-center justify-center text-gray-500"
+            containerClassName="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-background-alt"
+            placeholderClassName="h-full w-full flex items-center justify-center text-muted"
           />
           {c.imageUrl && (
             <div className="text-xs opacity-60 mt-2">Image source: {c.imageUrl}</div>
@@ -43,7 +43,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
           <h2 className="text-lg font-semibold mb-3">Stats</h2>
           <StatGrid
             gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm"
-            itemClassName="rounded-md border border-white/10 p-3 bg-white/10"
+            itemClassName="rounded-md border border-border p-3 bg-surface-raised"
             stats={[
               { label: 'HP', value: c.hp },
               { label: 'ATK', value: c.attack },
@@ -65,7 +65,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
         ) : (
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {c.characterSkills.map(cs => (
-              <li key={cs.skillId} className="rounded-md border border-white/10 p-3 bg-white/10">
+              <li key={cs.skillId} className="rounded-md border border-border p-3 bg-surface-raised">
                 <div className="font-medium">{cs.skill.name}</div>
                 <div className="text-xs opacity-70 mt-0.5">Power {cs.skill.power} • Cost {cs.skill.energyCost} • CD {cs.skill.cooldown}</div>
               </li>

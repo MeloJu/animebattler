@@ -61,11 +61,11 @@ export default async function StoryPage({ searchParams }: { searchParams: Promis
               return (
                 <li key={stage.id}>
                   {stage.locked ? (
-                    <div className="rounded-md border border-black/10 p-3 opacity-50">{content}</div>
+                    <div className="rounded-md border border-border p-3 opacity-50">{content}</div>
                   ) : (
                     <Link
                       href={`/story/${stage.id}`}
-                      className="block rounded-md border border-black/10 p-3 hover:border-black/30 transition-colors"
+                      className="block rounded-md border border-border p-3 hover:border-border transition-colors"
                     >
                       {content}
                     </Link>

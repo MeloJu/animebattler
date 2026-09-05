@@ -5,10 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { computeBaseStats, createInitialState, isLegalMove, resolveRound } from './engine'
+import { computeBaseStats, createInitialState, isLegalMove, resolveRound, sumStatBonuses } from './engine'
 import { pickAiSkill } from './ai'
 import { applyExperience, battleXpGained } from './leveling'
 import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
+import { getEquipmentBonus } from '@/app/lib/equipment/queries'
 import { autoFillLoadout } from '@/app/lib/progression/actions'
 import { recordStoryProgress } from '@/app/lib/story/actions'
 import { MAX_ROUNDS, NPC_WINS_ON_WIN } from './constants'
@@ -233,8 +234,11 @@ export async function createBattleAndRedirect(params: {
   enemy: EnemyRef
   storyStageId?: string
 }): Promise<never> {
-  const treeBonus = await getTreeBonus(params.userCharacter.id)
-  const playerBase = computeBaseStats(params.userCharacter.character, treeBonus)
+  const [treeBonus, equipmentBonus] = await Promise.all([
+    getTreeBonus(params.userCharacter.id),
+    getEquipmentBonus(params.userCharacter.id),
+  ])
+  const playerBase = computeBaseStats(params.userCharacter.character, sumStatBonuses(treeBonus, equipmentBonus))
   const state = createInitialState(playerBase, params.enemy.base)
 
   const battle = await prisma.battle.create({

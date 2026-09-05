@@ -74,6 +74,7 @@ model Anime {
   characters    Character[]
   affiliations  Affiliation[]
   storyChapters StoryChapter[]
+  equipment     Equipment[]
 }
 
 model Affiliation {
@@ -149,6 +150,7 @@ model Skill {
   monsterLinks             MonsterSkill[]
   equippedBy               UserCharacterEquippedSkill[]
   grantedTo                UserCharacterSkill[]
+  grantedByEquipment       Equipment[]                  @relation("EquipmentGrantedSkill")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -242,6 +244,7 @@ model User {
   selectedCharacterId String?
   sessions            Session[]
   storyProgress       UserStoryProgress[]
+  equipment           UserEquipment[]
   // Carteira da conta, compartilhada entre todos os personagens do usuário.
   // Ganha no modo história; gasta na loja (ainda não implementada).
   coins               Int                 @default(0)
@@ -270,6 +273,7 @@ model UserCharacter {
   transformationUnlocks UserCharacterTransformation[]
   equippedSkills        UserCharacterEquippedSkill[]
   grantedSkills         UserCharacterSkill[]
+  equipment             UserEquipment[]
 
   @@unique([userId, characterId])
 }
@@ -443,4 +447,87 @@ model UserCharacterSkill {
 
   @@unique([userCharacterId, skillId])
   @@index([userCharacterId])
+}
+
+enum EquipmentSlot {
+  ZANPAKUTO
+  TRAJE
+  ACESSORIO
+}
+
+/// Raridade é regra de jogo (limita o que a loja vende cedo) e também o
+/// vocabulário visual da UI — cada nível tem sua cor e brilho.
+enum EquipmentRarity {
+  COMUM
+  RARO
+  EPICO
+  LENDARIO
+}
+
+/// Item comprável na loja. É o primeiro sumidouro das moedas ganhas no modo
+/// história — até aqui elas só acumulavam.
+///
+/// Os bônus de stat usam os mesmos nomes de campo do SkillTreeNode de
+/// propósito: os dois são somados no mesmo ponto antes de virar os stats de
+/// batalha (ver getEquipmentBonus/computeBaseStats), então manter o formato
+/// idêntico evita conversão no meio.
+model Equipment {
+  id            String          @id @default(cuid())
+  name          String          @unique
+  description   String
+  slot          EquipmentSlot
+  rarity        EquipmentRarity @default(COMUM)
+  price         Int
+  /// Nível mínimo do personagem pra equipar (comprar é liberado antes).
+  requiredLevel Int             @default(1)
+
+  flatHpBonus      Int @default(0)
+  flatAttackBonus  Int @default(0)
+  flatDefenseBonus Int @default(0)
+  flatSpeedBonus   Int @default(0)
+
+  /// Skill que o item concede enquanto equipado. Ela NÃO ocupa um dos 4
+  /// slots do loadout: entra na batalha por cima deles (ver
+  /// getEquippedSkills), que é o que dá peso a equipar um Zanpakutō.
+  grantedSkill   Skill?  @relation("EquipmentGrantedSkill", fields: [grantedSkillId], references: [id])
+  grantedSkillId String?
+
+  /// Item é temático de um anime; null = genérico, serve pra qualquer um.
+  anime   Anime?  @relation(fields: [animeId], references: [id])
+  animeId String?
+
+  imageUrl String?
+
+  ownedBy UserEquipment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slot])
+}
+
+/// Um item comprado. A compra é da CONTA (assim como as moedas), e o item é
+/// equipado em um personagem por vez — comprar a Zangetsu uma vez e poder
+/// trocá-la entre personagens é o comportamento esperado de inventário.
+///
+/// `slot` é copiado do Equipment pra que a unicidade "um item por slot por
+/// personagem" possa ser garantida pelo banco. No Postgres, NULL não colide
+/// em índice único, então vários itens desequipados (equippedOnId = null)
+/// convivem sem problema.
+model UserEquipment {
+  id          String        @id @default(cuid())
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  equipment   Equipment     @relation(fields: [equipmentId], references: [id])
+  equipmentId String
+  slot        EquipmentSlot
+
+  equippedOn   UserCharacter? @relation(fields: [equippedOnId], references: [id])
+  equippedOnId String?
+
+  purchasedAt DateTime @default(now())
+
+  @@unique([userId, equipmentId])
+  @@unique([equippedOnId, slot])
+  @@index([userId])
 }

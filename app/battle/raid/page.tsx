@@ -45,7 +45,7 @@ export default async function BattleRaidPage({ searchParams }: { searchParams: P
           <div className="text-sm opacity-70">{selected.character.name} · Lv {selected.level}</div>
         </div>
         {hollow && (
-          <div className="rounded-md border border-black/10 p-3">
+          <div className="rounded-md border border-border p-3">
             <div className="font-semibold">{hollow.name} <span className="text-xs opacity-60">(Tier {hollow.tier})</span></div>
             {hollow.description && <div className="text-sm opacity-70 mt-1">{hollow.description}</div>}
           </div>

@@ -33,7 +33,7 @@ export default async function StoryStagePage({ params }: { params: Promise<{ sta
             texto que dá contexto à luta, não um aviso de uma vez só. */}
         <p className="whitespace-pre-line leading-relaxed">{stage.introText}</p>
 
-        <div className="rounded-md border border-black/10 p-3">
+        <div className="rounded-md border border-border p-3">
           <div className="text-xs uppercase tracking-wide opacity-50">Adversário</div>
           <div className="font-semibold mt-0.5">
             {enemyName} <span className="text-xs opacity-60">· Lv {stage.enemyLevel}</span>
@@ -59,7 +59,7 @@ export default async function StoryStagePage({ params }: { params: Promise<{ sta
               <p className="whitespace-pre-line leading-relaxed mt-1 text-green-900">{stage.outroText}</p>
             </div>
             <form action={startStoryBattle.bind(null, stage.id)}>
-              <button type="submit" className="rounded-md border border-black/15 px-4 py-2 text-sm hover:border-black/40">
+              <button type="submit" className="rounded-md border border-border px-4 py-2 text-sm hover:border-border">
                 Rejogar
               </button>
               <p className="text-xs opacity-50 mt-2">Rejogar rende o XP normal da batalha, mas as moedas só na primeira vez.</p>

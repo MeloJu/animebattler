@@ -6,7 +6,7 @@ export function StatusBadges({ effects }: { effects: StatusEffectInstance[] }) {
   return (
     <div className="flex flex-wrap gap-1">
       {effects.map((e) => (
-        <span key={e.id} title={e.sourceSkillName} className="text-xs rounded-full bg-black/5 px-2 py-0.5">
+        <span key={e.id} title={e.sourceSkillName} className="text-xs rounded-full bg-background-alt px-2 py-0.5">
           {describeEffect(e)} ({e.remainingRounds})
         </span>
       ))}

@@ -1,71 +1,257 @@
 @import "tailwindcss";
 
+/*
+  Tema visual: shinigami.
+  A paleta sai do preto do shihakushō com o laranja do reiatsu do Ichigo por
+  cima — o contraste alto é o que dá a leitura de anime, em vez do azul suave
+  de dashboard que estava aqui antes. Fundo escuro é o padrão do tema; o modo
+  claro existe, mas é o secundário.
+*/
 :root {
-  --background: #f7fbff; /* soft blue-tinted white */
-  --foreground: #0b2545; /* deep navy for text */
-  --surface: #ffffff;    /* card background */
-  --accent: #2b6cb0;     /* blue primary */
-  --accent-600: #2c5282; /* darker hover */
-  --ring: #93c5fd;       /* light ring */
+  --background: #0a0a0f;
+  --background-alt: #12121a;
+  --foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --surface: #16161f;
+  --surface-raised: #1d1d28;
+  --border: #2a2a38;
+
+  --accent: #ff6b1a;      /* reiatsu laranja */
+  --accent-600: #e55510;
+  --accent-glow: rgba(255, 107, 26, 0.35);
+  --spirit: #4dd0e1;      /* energia espiritual, ciano */
+  --danger: #ef4444;
+  --ring: rgba(255, 107, 26, 0.5);
+
+  /* Raridade — vocabulário compartilhado por loja, inventário e cards */
+  --rarity-comum: #9ca3af;
+  --rarity-raro: #38bdf8;
+  --rarity-epico: #a855f7;
+  --rarity-lendario: #fbbf24;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #f4f4f5;
+    --background-alt: #ffffff;
+    --foreground: #18181b;
+    --muted: #52525b;
+    --surface: #ffffff;
+    --surface-raised: #fafafa;
+    --border: #e4e4e7;
+    --accent: #e55510;
+    --accent-600: #c2410c;
+    --accent-glow: rgba(229, 85, 16, 0.2);
+    --spirit: #0891b2;
+    --ring: rgba(229, 85, 16, 0.4);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-alt: var(--background-alt);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-600: var(--accent-600);
+  --color-spirit: var(--spirit);
+  --color-danger: var(--danger);
   --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b1220;
-    --foreground: #e6edf6;
-    --surface: #0f172a;
-    --accent: #60a5fa;
-    --accent-600: #3b82f6;
-    --ring: #1d4ed8;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  /* Textura sutil de reiatsu no fundo, pra não ficar um preto chapado */
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-glow), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(77, 208, 225, 0.06), transparent);
+  background-attachment: fixed;
 }
 
-/* Simple bordered card and nav styles */
+/* ---------- Superfícies ---------- */
+
+/*
+  Cantos assimétricos: reto embaixo à esquerda, cortado no topo à direita.
+  É a forma que mais carrega o tema — lembra corte de lâmina e afasta do
+  cartão arredondado genérico.
+*/
 .card {
   background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
-  border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(2, 18, 46, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 2px 12px 2px 12px;
+  position: relative;
 }
 
-.nav-link {
-  color: var(--foreground);
-  opacity: 0.9;
+.card-raised {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 2px 12px 2px 12px;
 }
-.nav-link:hover { opacity: 1; }
+
+/* Faixa de reiatsu na borda esquerda — usada em destaques */
+.card-accent {
+  position: relative;
+  overflow: hidden;
+}
+.card-accent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+}
+
+/* ---------- Tipografia ---------- */
+
+.heading {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Kicker vertical em caixa alta, tipo subtítulo de mangá */
+.kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- Botões ---------- */
 
 .btn-primary {
   background: var(--accent);
-  color: white;
+  color: #0a0a0f;
+  font-weight: 700;
+  border-radius: 2px 8px 2px 8px;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
-.btn-primary:hover { background: var(--accent-600); }
+.btn-primary:hover {
+  background: var(--accent-600);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.btn-primary:active { transform: translateY(1px); }
+.btn-primary:disabled {
+  background: var(--border);
+  color: var(--muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 2px 8px 2px 8px;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-ghost:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-ghost:disabled:hover {
+  border-color: var(--border);
+  background: transparent;
+}
+
+/* ---------- Navegação ---------- */
+
+.nav-link {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  position: relative;
+  transition: color 0.15s;
+}
+.nav-link:hover { color: var(--foreground); }
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -6px;
+  height: 2px;
+  background: var(--accent);
+  transition: right 0.2s;
+}
+.nav-link:hover::after { right: 0; }
+
+/* ---------- Raridade ---------- */
+
+.rarity-COMUM    { --rarity: var(--rarity-comum); }
+.rarity-RARO     { --rarity: var(--rarity-raro); }
+.rarity-EPICO    { --rarity: var(--rarity-epico); }
+.rarity-LENDARIO { --rarity: var(--rarity-lendario); }
+
+.rarity-border {
+  border-color: color-mix(in srgb, var(--rarity) 45%, var(--border));
+}
+.rarity-text { color: var(--rarity); }
+.rarity-glow {
+  box-shadow: 0 0 24px color-mix(in srgb, var(--rarity) 18%, transparent);
+}
+.rarity-chip {
+  background: color-mix(in srgb, var(--rarity) 15%, transparent);
+  color: var(--rarity);
+  border: 1px solid color-mix(in srgb, var(--rarity) 35%, transparent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+}
+
+/* ---------- Barras de status ---------- */
+
+.bar-track {
+  background: var(--background-alt);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  height: 0.5rem;
+}
+.bar-hp { background: linear-gradient(90deg, var(--danger), #f97316); height: 100%; }
+.bar-energy { background: linear-gradient(90deg, var(--spirit), #22d3ee); height: 100%; }
+.bar-xp { background: linear-gradient(90deg, var(--accent), #fbbf24); height: 100%; }
+
+/* ---------- Moedas ---------- */
+
+.coin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: color-mix(in srgb, var(--rarity-lendario) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rarity-lendario) 35%, transparent);
+  color: var(--rarity-lendario);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 2px 8px 2px 8px;
+}
+
+/* ---------- Animações da landing ---------- */
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
+.animate-float { animation: float 6s ease-in-out infinite; }
 .animate-float-delayed {
   animation: float 7s ease-in-out infinite;
   animation-delay: 1.5s;
@@ -76,19 +262,18 @@ body {
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(96,165,250,0.8), rgba(59,130,246,0.75));
-  box-shadow: 0 10px 30px rgba(59,130,246,0.35);
+  background: linear-gradient(135deg, var(--accent), #fbbf24);
+  box-shadow: 0 10px 40px var(--accent-glow);
 }
 
 .floating-card {
   position: absolute;
   width: 3rem;
   height: 3rem;
-  border-radius: 0.75rem;
-  background: rgba(255,255,255,0.18);
+  border-radius: 2px 10px 2px 10px;
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(191,219,254,0.4);
-  box-shadow: 0 12px 32px rgba(15,23,42,0.35);
+  border: 1px solid var(--border);
 }
 
 .floating-ring {
@@ -96,6 +281,13 @@ body {
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 9999px;
-  border: 2px solid rgba(250,204,21,0.6);
-  box-shadow: 0 8px 24px rgba(250,204,21,0.25);
+  border: 2px solid color-mix(in srgb, var(--spirit) 60%, transparent);
+  box-shadow: 0 8px 24px rgba(77, 208, 225, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-delayed { animation: none; }
+  .btn-primary,
+  .nav-link::after { transition: none; }
 }

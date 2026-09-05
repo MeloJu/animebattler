@@ -30,11 +30,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <input type="hidden" name="redirectTo" value={redirectTo} />
         <div>
           <label className="block text-sm font-medium mb-1">Username or Email</label>
-          <input name="id" className="w-full rounded-md border border-black/10 px-3 py-2 bg-white" placeholder="username or you@example.com" />
+          <input name="id" className="w-full rounded-md border border-border px-3 py-2 bg-surface" placeholder="username or you@example.com" />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Password</label>
-          <input type="password" name="password" className="w-full rounded-md border border-black/10 px-3 py-2 bg-white" />
+          <input type="password" name="password" className="w-full rounded-md border border-border px-3 py-2 bg-surface" />
         </div>
         <div className="pt-2 flex items-center gap-2">
           <button type="submit" className="btn-primary rounded-md px-4 py-2 text-sm">Login</button>

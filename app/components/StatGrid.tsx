@@ -7,7 +7,7 @@
 export function StatGrid({
   stats,
   gridClassName = 'grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm',
-  itemClassName = 'rounded-md border border-black/10 p-3',
+  itemClassName = 'rounded-md border border-border p-3',
 }: {
   stats: { label: string; value: number | string }[]
   gridClassName?: string
