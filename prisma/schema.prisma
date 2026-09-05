@@ -229,25 +229,27 @@ model SkillTreeNode {
 }
 
 model User {
-  id                  String              @id @default(cuid())
-  username            String              @unique @default("devuser")
-  email               String              @unique
-  name                String?
-  passwordHash        String // Simple auth placeholder; swap to Auth.js later
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  characters          UserCharacter[]
-  battles             Battle[]
-  role                UserRole            @default(USER)
+  id                   String              @id @default(cuid())
+  username             String              @unique @default("devuser")
+  email                String              @unique
+  name                 String?
+  passwordHash         String // Simple auth placeholder; swap to Auth.js later
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  characters           UserCharacter[]
+  battles              Battle[]
+  role                 UserRole            @default(USER)
   // Currently selected character for dashboard
-  selectedCharacter   UserCharacter?      @relation("SelectedCharacter", fields: [selectedCharacterId], references: [id])
-  selectedCharacterId String?
-  sessions            Session[]
-  storyProgress       UserStoryProgress[]
-  equipment           UserEquipment[]
+  selectedCharacter    UserCharacter?      @relation("SelectedCharacter", fields: [selectedCharacterId], references: [id])
+  selectedCharacterId  String?
+  sessions             Session[]
+  storyProgress        UserStoryProgress[]
+  equipment            UserEquipment[]
+  pvpQueue             PvpQueue?
+  pvpBattlesAsOpponent Battle[]            @relation("OpponentUser")
   // Carteira da conta, compartilhada entre todos os personagens do usuário.
   // Ganha no modo história; gasta na loja (ainda não implementada).
-  coins               Int                 @default(0)
+  coins                Int                 @default(0)
 }
 
 model UserCharacter {
@@ -274,6 +276,8 @@ model UserCharacter {
   equippedSkills        UserCharacterEquippedSkill[]
   grantedSkills         UserCharacterSkill[]
   equipment             UserEquipment[]
+  pvpQueue              PvpQueue[]
+  pvpBattlesAsOpponent  Battle[]                      @relation("OpponentCharacter")
 
   @@unique([userId, characterId])
 }
@@ -315,27 +319,39 @@ enum ActorSide {
 }
 
 model Battle {
-  id                String        @id @default(cuid())
-  user              User          @relation(fields: [userId], references: [id])
-  userId            String
-  playerCharacter   UserCharacter @relation("PlayerCharacter", fields: [playerCharacterId], references: [id])
-  playerCharacterId String
+  id                    String         @id @default(cuid())
+  user                  User           @relation(fields: [userId], references: [id])
+  userId                String
+  playerCharacter       UserCharacter  @relation("PlayerCharacter", fields: [playerCharacterId], references: [id])
+  playerCharacterId     String
   // Exactly one of enemyCharacter/enemyMonster is set - enforced in app code,
   // not the DB (SQLite has no simple declarative CHECK constraint here).
-  enemyCharacter    Character?    @relation("EnemyCharacter", fields: [enemyCharacterId], references: [id])
-  enemyCharacterId  String?
-  enemyMonster      Monster?      @relation(fields: [enemyMonsterId], references: [id])
-  enemyMonsterId    String?
+  enemyCharacter        Character?     @relation("EnemyCharacter", fields: [enemyCharacterId], references: [id])
+  enemyCharacterId      String?
+  enemyMonster          Monster?       @relation(fields: [enemyMonsterId], references: [id])
+  enemyMonsterId        String?
   // Set when the battle was started from a story stage, so finishing it can
   // record progress. Null for AI/raid battles.
-  storyStage        StoryStage?   @relation(fields: [storyStageId], references: [id])
-  storyStageId      String?
-  status            BattleStatus  @default(PENDING)
-  turnNumber        Int           @default(1)
+  storyStage            StoryStage?    @relation(fields: [storyStageId], references: [id])
+  storyStageId          String?
+  // PvP: o adversário é o UserCharacter de OUTRO jogador, não um Character do
+  // catálogo nem um Monster. Quando estes estão preenchidos, a batalha é PvP.
+  opponentUser          User?          @relation("OpponentUser", fields: [opponentUserId], references: [id])
+  opponentUserId        String?
+  opponentCharacter     UserCharacter? @relation("OpponentCharacter", fields: [opponentCharacterId], references: [id])
+  opponentCharacterId   String?
+  /// Ações submetidas na rodada corrente. A rodada só resolve quando as DUAS
+  /// chegam: o motor (resolveRound) já resolve os dois lados de uma vez, em
+  /// ordem de velocidade, então PvP é turno SIMULTÂNEO — ninguém joga vendo
+  /// a escolha do outro.
+  pendingHostAction     Json?
+  pendingOpponentAction Json?
+  status                BattleStatus   @default(PENDING)
+  turnNumber            Int            @default(1)
   // JSON state snapshot for current combat (HP, energy, effects)
-  state             Json
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  state                 Json
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   turns Turn[]
 }
@@ -530,4 +546,20 @@ model UserEquipment {
   @@unique([userId, equipmentId])
   @@unique([equippedOnId, slot])
   @@index([userId])
+}
+
+/// Fila de matchmaking do PvP. Uma linha por jogador esperando.
+///
+/// userId é único: entrar na fila duas vezes (duas abas) não pode gerar dois
+/// pareamentos com o mesmo jogador. O pareamento em si é uma transação que
+/// remove os dois da fila e cria a batalha — ver lib/pvp/actions.ts.
+model PvpQueue {
+  id              String        @id @default(cuid())
+  user            User          @relation(fields: [userId], references: [id])
+  userId          String        @unique
+  userCharacter   UserCharacter @relation(fields: [userCharacterId], references: [id])
+  userCharacterId String
+  joinedAt        DateTime      @default(now())
+
+  @@index([joinedAt])
 }
