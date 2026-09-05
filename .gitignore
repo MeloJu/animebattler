@@ -53,3 +53,5 @@ infra/**/*.tfstate
 infra/**/*.tfstate.*
 infra/**/terraform.tfvars
 infra/**/*.auto.tfvars
+# backend.hcl carrega bucket/namespace da tenancy (backend.hcl.example é commitado)
+infra/**/backend.hcl

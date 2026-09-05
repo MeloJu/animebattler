@@ -1,0 +1,17 @@
+# Copie para backend.hcl (gitignored) e preencha com os outputs do
+# infra/oracle-bootstrap (`terraform output`). Depois:
+#   terraform init -backend-config=backend.hcl
+#
+# Fica fora do main.tf porque bloco backend não aceita variável/interpolação,
+# e namespace/bucket identificam a tenancy — não é segredo, mas não precisa
+# estar num repositório público.
+
+bucket    = "animebattler-tfstate"
+namespace = "xxxxxxxxxxxx"
+key       = "oracle/terraform.tfstate"
+region    = "sa-saopaulo-1"
+
+# Mesma API key do provider — sem Customer Secret Key, sem chave de longa
+# duração no repo.
+auth                = "APIKey"
+config_file_profile = "DEFAULT"

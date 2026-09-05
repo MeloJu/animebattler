@@ -1,0 +1,9 @@
+# Copie para terraform.tfvars (gitignored) e preencha.
+# Credenciais NÃO vão aqui — vêm do ~/.oci/config (perfil DEFAULT).
+
+# Pode ser o OCID da própria tenancy (compartment raiz).
+compartment_ocid = "ocid1.tenancy.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Só se quiser fugir dos defaults:
+# region      = "sa-saopaulo-1"
+# bucket_name = "animebattler-tfstate"

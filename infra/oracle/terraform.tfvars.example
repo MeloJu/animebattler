@@ -19,3 +19,9 @@ compartment_ocid = "ocid1.tenancy.oc1..aaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Chave SSH que vai acessar a VM — gere uma nova só pra isso:
 #   ssh-keygen -t ed25519 -f ~/.ssh/animebattler -C "animebattler-deploy"
 ssh_public_key_path = "~/.ssh/animebattler.pub"
+
+# Shape da instância. Default é a Ampere (VM.Standard.A1.Flex, 2 OCPU/12GB
+# via instance_ocpus/instance_memory_gb) — mas a cota Always Free dela é
+# disputada e pode dar "out of host capacity" por horas/dias. Se acontecer,
+# testar o shape fixo AMD, sem contenção conhecida:
+# instance_shape = "VM.Standard.E2.1.Micro"

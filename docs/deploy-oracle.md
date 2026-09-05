@@ -12,34 +12,77 @@ O Terraform precisa de uma credencial pra falar com a sua conta. No console
 OCI: **Profile (canto superior direito) → User Settings → API Keys → Add
 API Key → Generate API Key Pair**. Baixe a chave privada (`.pem`) e guarde
 em `~/.oci/oci_api_key.pem`. A tela final mostra um bloco de config com
-`tenancy`, `user`, `fingerprint`, `region` — é exatamente o que vai no
-`terraform.tfvars`.
+`tenancy`, `user`, `fingerprint`, `region`.
 
-## 2. Provisionar a VM
+Coloque esses valores em `~/.oci/config` (formato padrão do OCI CLI/SDK) —
+é de lá que tanto o provider quanto o backend de state leem a credencial,
+então ela fica num lugar só, fora do repositório:
+
+```ini
+[DEFAULT]
+user=ocid1.user.oc1..xxxxx
+fingerprint=xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
+tenancy=ocid1.tenancy.oc1..xxxxx
+region=sa-saopaulo-1
+key_file=C:/Users/seu-usuario/.oci/oci_api_key.pem
+```
+
+## 2. Criar o bucket do state remoto (uma vez só)
+
+O `tfstate` não deve viver só no seu disco: se ele sumir ou corromper, o
+Terraform perde o rastro da infra que existe de verdade. O bucket que
+guarda ele nasce num root separado — ele não pode morar no mesmo root cujo
+state ele guarda (um `destroy` derrubaria o backend embaixo dos próprios
+pés):
+
+```bash
+cd infra/oracle-bootstrap
+cp terraform.tfvars.example terraform.tfvars   # preencha o compartment_ocid
+terraform init
+terraform apply
+terraform output        # anote bucket_name e namespace
+```
+
+O bucket sai com versionamento ligado, o que permite recuperar uma versão
+anterior do state se um apply for interrompido no meio.
+
+## 3. Provisionar a VM
 
 ```bash
 cd infra/oracle
-cp terraform.tfvars.example terraform.tfvars
-# preencha com os valores do passo 1
+cp terraform.tfvars.example terraform.tfvars   # identificadores, sem credencial
+cp backend.hcl.example backend.hcl             # bucket/namespace do passo 2
 
 # chave SSH só pra essa VM, se ainda não tiver uma
 ssh-keygen -t ed25519 -f ~/.ssh/animebattler -C "animebattler-deploy"
 
-terraform init
+terraform init -backend-config=backend.hcl
 terraform validate
 terraform apply
 ```
 
-O `apply` cria a VCN, security list (22/80/443), a instância Ampere
-(Always Free) e já instala Docker via cloud-init. No fim, ele imprime o
-`public_ip` — anota esse IP, é o `SITE_ADDRESS` e o `DEPLOY_HOST`.
+O `apply` cria a VCN, security list (22/80/443), a instância Always Free e
+já instala Docker via cloud-init. No fim, ele imprime o `public_ip` — anota
+esse IP, é o `SITE_ADDRESS` e o `DEPLOY_HOST`.
 
-> Nota: a shape `VM.Standard.A1.Flex` (Ampere) às vezes dá erro de
-> "Out of host capacity" em algumas regiões — é a Oracle sem capacidade
-> Always Free disponível ali naquele momento, não é erro seu. Tentar de
-> novo mais tarde ou trocar a `region` no `tfvars` costuma resolver.
+### Qual shape usar
 
-## 3. Criar o `.env` na VM
+A `var.instance_shape` decide, e a escolha importa:
+
+| Shape | Recursos | Arquitetura | Disponibilidade |
+|---|---|---|---|
+| `VM.Standard.E2.1.Micro` | 1/8 OCPU, 1GB RAM (até 2 instâncias) | **amd64** | Cota própria, sem contenção conhecida |
+| `VM.Standard.A1.Flex` | até 2 OCPU / 12GB (`instance_ocpus`/`instance_memory_gb`) | **arm64** | Muito disputada — dá "Out of host capacity" por horas ou dias |
+
+A Ampere é bem mais potente, mas a cota Always Free dela é concorrida: em
+`sa-saopaulo-1` chegamos a 200+ tentativas ao longo de 21h sem conseguir.
+A `E2.1.Micro` subiu de primeira, em 51 segundos, porque a cota é separada.
+
+> ⚠️ **A arquitetura muda conforme o shape.** A `E2.1.Micro` é amd64 e a
+> Ampere é arm64 — a imagem Docker publicada pelo CD precisa bater com a
+> escolha aqui, senão o container nem sobe.
+
+## 4. Criar o `.env` na VM
 
 Só o `.env` precisa ser criado à mão — o `docker-compose.prod.yml` e o
 `Caddyfile` são enviados pela própria pipeline a cada deploy, então não
@@ -68,7 +111,7 @@ sudo iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
 sudo netfilter-persistent save
 ```
 
-## 4. Cadastrar os secrets no GitHub
+## 5. Cadastrar os secrets no GitHub
 
 ```bash
 gh secret set DEPLOY_HOST --body "<public_ip>"
@@ -82,12 +125,13 @@ Não precisa de token pro GHCR: o workflow autentica a VM no registry com o
 `GITHUB_TOKEN` do próprio run, que expira quando o job acaba — melhor que
 deixar um PAT permanente guardado na VM.
 
-## 5. Primeiro deploy
+## 6. Primeiro deploy
 
 Aba **Actions** do repo → workflow **Deploy** → **Run workflow**. Ele:
 
-1. builda a imagem **arm64** num runner ARM nativo (a VM Ampere é aarch64 —
-   imagem amd64 não roda lá);
+1. builda a imagem na arquitetura da VM (ver a tabela de shapes no passo 3 —
+   `E2.1.Micro` é amd64, Ampere é arm64; imagem da arquitetura errada não
+   roda);
 2. publica no GHCR com duas tags: `latest` e o SHA do commit;
 3. envia `docker-compose.prod.yml` e `Caddyfile` pra VM;
 4. autentica no GHCR, dá `pull` e sobe tudo, fixando a imagem no SHA;
@@ -95,7 +139,7 @@ Aba **Actions** do repo → workflow **Deploy** → **Run workflow**. Ele:
    concluído — se o container entrar em loop de restart, o deploy falha e
    imprime os logs em vez de ficar verde mentindo.
 
-## 6. Popular o catálogo (uma vez só)
+## 7. Popular o catálogo (uma vez só)
 
 O `migrate deploy` cria as tabelas vazias, mas não insere os 49 personagens.
 Sem isso o cadastro funciona e não há o que selecionar. Rode **uma vez**,
@@ -113,7 +157,7 @@ docker compose -f docker-compose.prod.yml exec -e SEED_FORCE=true app npm run pr
 > explicitamente. Só faça isso com o banco vazio. Depois que houver
 > jogadores cadastrados, rodar esse comando apaga a conta de todos eles.
 
-## 7. Deploy automático
+## 8. Deploy automático
 
 Depois de confirmar que funcionou, edite `.github/workflows/deploy.yml` e
 adicione o gatilho automático (a branch principal aqui é `master`, não
@@ -126,7 +170,7 @@ on:
     branches: [master]
 ```
 
-## 8. (Opcional, mas recomendado) Domínio próprio
+## 9. (Opcional, mas recomendado) Domínio próprio
 
 Sem domínio, `SITE_ADDRESS` fica só o IP, o Caddy serve HTTP puro e você
 fica preso a `COOKIE_SECURE=false`. Com um domínio apontando pro IP
@@ -145,5 +189,14 @@ graça do Terraform):
 
 ```bash
 cd infra/oracle
+terraform destroy
+```
+
+O bucket de state é um root à parte e sobrevive de propósito — destrua ele
+só se for abandonar o projeto na Oracle de vez (e depois de conferir que
+não sobrou nada rastreado no state):
+
+```bash
+cd infra/oracle-bootstrap
 terraform destroy
 ```
