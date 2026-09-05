@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyExperience } from '@/app/lib/battle/leveling'
+import { applyExperience, battleXpGained } from '@/app/lib/battle/leveling'
 
 // Regra: pra sair do nível N pro N+1 é preciso N * 100 de XP.
 describe('applyExperience', () => {
@@ -37,5 +37,39 @@ describe('applyExperience', () => {
   it('pontos ganhos batem com a quantidade de níveis subidos', () => {
     const r = applyExperience(1, 0, 1000)
     expect(r.pointsGained).toBe(r.level - 1)
+  })
+})
+
+// Regressão: a tela do estágio mostra `xpReward` (60 no primeiro estágio),
+// mas o jogador recebia o XP genérico de batalha (25) porque o valor do
+// estágio nunca era consultado. Detectado jogando o modo história local.
+describe('battleXpGained', () => {
+  it('vitória em estágio de história paga o xpReward do estágio', () => {
+    expect(battleXpGained('PLAYER_WIN', 1, 60)).toBe(60)
+  })
+
+  it('o xpReward do estágio ignora o multiplicador do inimigo', () => {
+    expect(battleXpGained('PLAYER_WIN', 3, 60)).toBe(60)
+  })
+
+  it('derrota num estágio não paga a recompensa de conclusão', () => {
+    expect(battleXpGained('ENEMY_WIN', 1, 500)).toBe(5)
+  })
+
+  it('empate num estágio também não paga a recompensa', () => {
+    expect(battleXpGained('DRAW', 1, 500)).toBe(15)
+  })
+
+  it('batalha normal (fora da história) mantém a tabela padrão', () => {
+    expect(battleXpGained('PLAYER_WIN', 1, null)).toBe(25)
+    expect(battleXpGained('ENEMY_WIN', 1, null)).toBe(5)
+  })
+
+  it('raid multiplica pelo tier do monstro', () => {
+    expect(battleXpGained('PLAYER_WIN', 3, null)).toBe(75)
+  })
+
+  it('empate fora da história paga a média entre vitória e derrota', () => {
+    expect(battleXpGained('DRAW', 1, null)).toBe(15)
   })
 })

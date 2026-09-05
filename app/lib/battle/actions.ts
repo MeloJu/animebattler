@@ -7,11 +7,11 @@ import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { computeBaseStats, createInitialState, isLegalMove, resolveRound } from './engine'
 import { pickAiSkill } from './ai'
-import { applyExperience } from './leveling'
+import { applyExperience, battleXpGained } from './leveling'
 import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
 import { autoFillLoadout } from '@/app/lib/progression/actions'
 import { recordStoryProgress } from '@/app/lib/story/actions'
-import { MAX_ROUNDS, NPC_WINS_ON_WIN, XP_ON_LOSS, XP_ON_WIN } from './constants'
+import { MAX_ROUNDS, NPC_WINS_ON_WIN } from './constants'
 import type { BaseStats, BattleState, Outcome, PlayerAction, TurnResult } from './types'
 
 type BattleRow = Awaited<ReturnType<typeof prisma.battle.findFirst>>
@@ -32,11 +32,19 @@ async function loadActiveBattleContext(battleId: string) {
     getPlayerTransformations(userCharacter.characterId, userCharacter.level),
   ])
 
+  // Estágio de história dita o próprio XP (xpReward), que é o número exibido
+  // ao jogador na tela do estágio. Sem isso ele receberia o XP genérico de
+  // batalha e a tela estaria prometendo uma recompensa que não é paga.
+  const storyXpReward = battle.storyStageId
+    ? (await prisma.storyStage.findUnique({ where: { id: battle.storyStageId }, select: { xpReward: true } }))?.xpReward ?? null
+    : null
+
   return {
     battle: battle as NonNullable<BattleRow>,
     userCharacter,
     enemySkills: enemy.skills,
     xpMultiplier: enemy.xpMultiplier,
+    storyXpReward,
     playerSkills,
     playerTransformations,
     state: battle.state as unknown as BattleState,
@@ -68,7 +76,8 @@ async function persistRound(
   userCharacterId: string,
   userCharacterLevel: number,
   userCharacterExperience: number,
-  xpMultiplier: number
+  xpMultiplier: number,
+  storyXpReward: number | null
 ): Promise<{ finalState: BattleState; isFinished: boolean; reward: Reward | null }> {
   const nextTurnNumber = expectedTurnNumber + 1
   const forcedEnd = newState.outcome === null && nextTurnNumber > MAX_ROUNDS
@@ -81,7 +90,7 @@ async function persistRound(
     ? applyExperience(
         userCharacterLevel,
         userCharacterExperience,
-        Math.round((finalState.outcome === 'PLAYER_WIN' ? XP_ON_WIN : finalState.outcome === 'ENEMY_WIN' ? XP_ON_LOSS : (XP_ON_WIN + XP_ON_LOSS) / 2) * xpMultiplier)
+        battleXpGained(finalState.outcome, xpMultiplier, storyXpReward)
       )
     : null
 
@@ -195,7 +204,8 @@ async function finalizeRound(
       ctx.userCharacter.id,
       ctx.userCharacter.level,
       ctx.userCharacter.experience,
-      ctx.xpMultiplier
+      ctx.xpMultiplier,
+      ctx.storyXpReward
     )
     await applyPostBattleEffects(battleId, ctx.userCharacter.id, ctx.userCharacter.characterId, ctx.userCharacter.level, result)
   } catch (e) {

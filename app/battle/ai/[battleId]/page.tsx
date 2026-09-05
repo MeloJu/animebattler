@@ -28,7 +28,14 @@ export default async function BattleArenaPage({
 
   const state = battle.state as unknown as BattleState
   const isActive = battle.status === 'ACTIVE'
-  const isRaid = battle.enemyMonsterId !== null
+  // A origem manda no rótulo e no "voltar". Uma batalha de história contra um
+  // Hollow é um Monster como a raid, mas mandar o jogador pra /battle/raid o
+  // tiraria do arco no meio — por isso storyStageId é checado primeiro.
+  const isStory = battle.storyStageId !== null
+  const isRaid = !isStory && battle.enemyMonsterId !== null
+  const modeLabel = isStory ? 'Modo: História' : isRaid ? 'Modo: Raid' : 'Modo: IA'
+  const backHref = isStory ? '/story' : isRaid ? '/battle/raid' : '/battle/ai'
+  const backLabel = isStory ? 'Voltar à História' : isRaid ? 'Nova Raid' : 'Nova Batalha'
 
   const [playerSkills, playerTransformations] = await Promise.all([
     getEquippedSkills(userCharacter.id),
@@ -45,11 +52,11 @@ export default async function BattleArenaPage({
         <div>
           <h1 className="text-2xl font-semibold">{userCharacter.nickname} vs {enemy.name}</h1>
           <div className="text-sm opacity-60">
-            {isRaid ? 'Modo: Raid' : 'Modo: IA'}
+            {modeLabel}
             {isActive && ` · Rodada ${battle.turnNumber}`}
           </div>
         </div>
-        <Link href={isRaid ? '/battle/raid' : '/battle/ai'} className="text-sm underline">Sair</Link>
+        <Link href={backHref} className="text-sm underline">Sair</Link>
       </div>
 
       {errorMessage && (
@@ -65,8 +72,8 @@ export default async function BattleArenaPage({
           </div>
           <div className="flex gap-2">
             <Link href="/dashboard" className="btn-primary rounded-md px-4 py-2 text-sm">Dashboard</Link>
-            <Link href={isRaid ? '/battle/raid' : '/battle/ai'} className="rounded-md px-4 py-2 text-sm border border-black/10">
-              {isRaid ? 'Nova Raid' : 'Nova Batalha'}
+            <Link href={backHref} className="rounded-md px-4 py-2 text-sm border border-black/10">
+              {backLabel}
             </Link>
           </div>
         </div>
