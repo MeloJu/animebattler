@@ -2,14 +2,16 @@ import Hero from "./components/landing/Hero";
 import QuickFeatures from "./components/landing/QuickFeatures";
 import LandingFooter from "./components/landing/LandingFooter";
 import { getCurrentUser } from "@/app/lib/session";
+import { getLandingStats } from "@/app/lib/landing/queries";
 
 export default async function Home() {
-  const user = await getCurrentUser()
-  const authed = !!user
+  const [user, stats] = await Promise.all([getCurrentUser(), getLandingStats()]);
+  const authed = !!user;
+
   return (
-    <main className="bg-surface text-foreground">
-      <Hero authed={authed} />
-      <QuickFeatures />
+    <main>
+      <Hero authed={authed} stats={stats} />
+      <QuickFeatures authed={authed} />
       <LandingFooter />
     </main>
   );

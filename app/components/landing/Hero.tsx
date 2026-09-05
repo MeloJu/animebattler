@@ -1,112 +1,126 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+type Anime = { name: string; slug: string; _count: { characters: number } }
+
 type HeroProps = {
   authed: boolean
+  stats: {
+    characters: number
+    skills: number
+    transformations: number
+    stages: number
+    animes: Anime[]
+  }
 }
 
-const stats = [
-  { label: 'Active Players', value: '50K+', icon: '👥' },
-  { label: 'Characters', value: '500+', icon: '🏆' },
-]
+const ANIME_ICON: Record<string, string> = {
+  bleach: '🗡️',
+  naruto: '🍃',
+  'dragon-ball-z': '⭐',
+  'dc-universe': '🦇',
+  'marvel-universe': '🕷️',
+}
 
-export default function Hero({ authed }: HeroProps) {
+export default function Hero({ authed, stats }: HeroProps) {
   return (
-    <section className="relative overflow-hidden bg-[#0b1640] text-white pt-20 pb-24">
+    <section className="relative overflow-hidden pt-20 pb-24">
       <div className="absolute inset-0 -z-20">
         <Image
           src="/landing/wallpaper/wallpaper.png"
-          alt="Anime battle background"
+          alt=""
           fill
           priority
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b1640]/45 via-[#1b2d6b]/35 to-[#321d6e]/40" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_60%)]" />
+        {/* Escurece o wallpaper o suficiente pro texto ter contraste, e puxa a
+            cor pro laranja de reiatsu do resto do app. */}
+        <div className="absolute inset-0 bg-[#0a0a0f]/85" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_20%_0%,rgba(255,107,26,0.22),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_100%_100%,rgba(77,208,225,0.12),transparent)]" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="floating-orb top-20 left-[8%] animate-float" />
-        <div className="floating-orb top-36 right-[14%] animate-float-delayed bg-red-500/80" />
-        <div className="floating-card bottom-24 left-[16%] animate-float" />
-        <div className="floating-orb bottom-28 right-[6%] animate-float bg-orange-400/90" />
-        <div className="floating-orb top-[60%] left-[6%] animate-float-delayed bg-yellow-400/90" />
-        <div className="floating-ring top-[32%] right-[24%] animate-float" />
+      {/* Decoração só na metade direita e nas bordas: a coluna de texto ocupa
+          a esquerda até ~max-w-xl, e orbe por cima de título não é ambientação,
+          é ruído. */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-70">
+        <div className="floating-orb bottom-28 right-[6%] animate-float-delayed" />
+        <div className="floating-ring top-[18%] right-[2%] animate-float" />
+        <div className="floating-card bottom-[45%] right-[38%] animate-float hidden xl:block" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-16 px-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center">
         <div className="max-w-xl space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 shadow-lg backdrop-blur-md">
-            <span className="text-lg">✨</span>
-            <span className="text-sm font-medium tracking-wide">Epic Anime Battle Arena</span>
-          </div>
+          <div className="kicker">Arena de batalha por turnos</div>
 
           <div className="space-y-4">
-            <h1 className="text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
-              Battle with Your Favourite Anime Legends
+            <h1 className="heading text-4xl leading-[1.1] sm:text-5xl lg:text-6xl">
+              Empunhe a lâmina dos seus{' '}
+              <span className="text-accent">personagens favoritos</span>
             </h1>
-            <p className="max-w-xl text-base text-blue-100 sm:text-lg">
-              Enter the crossover arena, assemble iconic heroes, and unleash signature abilities. Build your team, climb the ranks, and rule every universe.
+            <p className="max-w-lg text-base text-muted sm:text-lg leading-relaxed">
+              Combate por turnos com energia, cooldown, efeitos de status e transformações.
+              Atravesse o Arco Soul Society, evolua sua árvore de habilidades e equipe
+              Zanpakutō de verdade.
             </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             {authed ? (
               <>
-                <Link href="/dashboard" className="btn-primary inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-medium shadow-xl shadow-blue-900/40">
-                  Continue Adventure
+                <Link href="/dashboard" className="btn-primary inline-flex items-center justify-center px-6 py-3 text-sm">
+                  Continuar aventura
                 </Link>
-                <Link href="/battle" className="inline-flex items-center justify-center rounded-lg border border-white/40 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/15">
-                  Enter Battle Hub
+                <Link href="/story" className="btn-ghost inline-flex items-center justify-center px-6 py-3 text-sm">
+                  Modo História
                 </Link>
               </>
             ) : (
               <>
-                <Link href="/register" className="btn-primary inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-medium shadow-xl shadow-blue-900/40">
-                  Start Playing Free
+                <Link href="/register" className="btn-primary inline-flex items-center justify-center px-6 py-3 text-sm">
+                  Criar conta grátis
                 </Link>
-                <Link href="/login" className="inline-flex items-center justify-center rounded-lg border border-white/40 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/15">
-                  Login to Account
+                <Link href="/characters" className="btn-ghost inline-flex items-center justify-center px-6 py-3 text-sm">
+                  Ver o catálogo
                 </Link>
               </>
             )}
           </div>
 
-          <div className="flex gap-8 pt-6">
-            {stats.map((stat) => (
-              <div key={stat.label} className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/90 text-2xl shadow-lg shadow-blue-900/30">
-                  {stat.icon}
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-white">{stat.value}</div>
-                  <div className="text-sm text-blue-100">{stat.label}</div>
-                </div>
+          {/* Números reais, consultados do banco — ver lib/landing/queries.ts */}
+          <div className="flex flex-wrap gap-x-10 gap-y-4 pt-4">
+            {[
+              { value: stats.characters, label: 'personagens' },
+              { value: stats.skills, label: 'habilidades' },
+              { value: stats.transformations, label: 'transformações' },
+              { value: stats.stages, label: 'estágios de história' },
+            ].map((s) => (
+              <div key={s.label}>
+                <div className="heading text-2xl text-accent">{s.value}</div>
+                <div className="kicker mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative hidden w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-6 text-blue-100 shadow-2xl shadow-blue-900/40 backdrop-blur-md lg:block">
-          <div className="space-y-6">
-            {['Dragon Ball', 'Pokémon', 'Bleach', 'Naruto'].map((franchise, idx) => (
+        <div className="relative hidden w-full max-w-sm lg:block">
+          <div className="card p-5 space-y-3">
+            <div className="kicker">Universos no catálogo</div>
+            {stats.animes.map((a, idx) => (
               <div
-                key={franchise}
-                className={`transform rounded-xl border border-white/15 bg-white/80 p-4 text-blue-900 shadow-lg transition will-change-transform hover:scale-[1.02] ${idx % 2 === 1 ? 'ml-8' : ''}`}
+                key={a.slug}
+                className={`card-raised card-accent flex items-center gap-4 p-3 pl-4 ${idx % 2 === 1 ? 'ml-5' : ''}`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-2xl text-white shadow-inner">
-                    {franchise === 'Pokémon' ? '⚡' : franchise === 'Bleach' ? '🗡️' : franchise === 'Naruto' ? '🍃' : '⭐'}
-                  </div>
-                  <div>
-                    <div className="text-base font-semibold">{franchise}</div>
-                    <div className="text-sm text-blue-600/80">{idx === 1 ? '100+ Characters' : idx === 0 ? '50+ Characters' : idx === 2 ? '40+ Characters' : '80+ Characters'}</div>
+                <span className="text-2xl" aria-hidden>{ANIME_ICON[a.slug] ?? '✦'}</span>
+                <div className="min-w-0">
+                  <div className="font-bold text-sm truncate">{a.name}</div>
+                  <div className="text-xs text-muted">
+                    {a._count.characters} {a._count.characters === 1 ? 'personagem' : 'personagens'}
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="absolute -top-5 -right-5 h-20 w-20 rounded-full bg-gradient-to-br from-white/40 to-transparent" />
         </div>
       </div>
     </section>

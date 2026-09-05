@@ -1,76 +1,78 @@
 import Link from 'next/link'
-import { Gamepad2, Users, BarChart3, Sparkles } from 'lucide-react'
+import { Swords, GitBranch, BookOpen, Shield } from 'lucide-react'
 
+/**
+ * Só entra aqui o que já existe e é jogável hoje.
+ *
+ * A versão anterior anunciava "Global Rankings" e "leaderboards competitivos"
+ * — PvP nem começou. Prometer o que não existe é o jeito mais rápido de
+ * frustrar quem clica.
+ */
 const features = [
   {
-    icon: Gamepad2,
-    title: 'Strategic Battles',
-    description: 'Turn-based combat with unique character abilities',
-    gradient: 'from-blue-600 to-blue-700',
+    icon: Swords,
+    title: 'Combate por turnos',
+    description:
+      'Energia, cooldown, crítico por velocidade, escudo, contra-ataque, dano ao longo do tempo e atordoamento.',
   },
   {
-    icon: Users,
-    title: 'Diverse Roster',
-    description: '500+ characters from your favorite anime series',
-    gradient: 'from-purple-600 to-pink-500',
+    icon: GitBranch,
+    title: 'Árvore de habilidades',
+    description:
+      'Cada personagem tem sua própria árvore. Suba de nível, ganhe pontos e escolha o que desbloquear.',
   },
   {
-    icon: BarChart3,
-    title: 'Global Rankings',
-    description: 'Compete and climb the competitive leaderboards',
-    gradient: 'from-blue-600 to-cyan-500',
+    icon: BookOpen,
+    title: 'Modo História',
+    description:
+      'O Arco Soul Society, tenente por tenente até Aizen. Progressão travada: cada estágio libera o próximo.',
   },
   {
-    icon: Sparkles,
-    title: 'Level Up',
-    description: 'Unlock new abilities and power up your warriors',
-    gradient: 'from-indigo-600 to-purple-600',
+    icon: Shield,
+    title: 'Equipamentos',
+    description:
+      'Compre Zanpakutō, trajes e acessórios com as moedas da história. Os melhores concedem habilidades próprias.',
   },
 ]
 
-export default function QuickFeatures() {
+export default function QuickFeatures({ authed }: { authed: boolean }) {
   return (
-    <section className="relative bg-white py-20 text-blue-900">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.1),_transparent_65%)]" />
+    <section className="relative py-20">
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-blue-700">
-            Why Choose Anime Battler?
-          </div>
-          <h2 className="mt-6 text-3xl font-semibold sm:text-4xl">Build your dream team and conquer every universe</h2>
-          <p className="mt-4 text-base text-blue-600 sm:text-lg">
-            Experience the ultimate crossover arena with features designed for both casual fighters and competitive champions.
-          </p>
+        <div className="max-w-2xl">
+          <div className="kicker">O que já dá pra jogar</div>
+          <h2 className="heading mt-3 text-3xl sm:text-4xl">
+            Um RPG de turnos completo, não uma tela de login bonita
+          </h2>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {features.map(({ icon: Icon, title, description, gradient }) => (
-            <div
-              key={title}
-              className="rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/40 p-6 shadow-lg shadow-blue-500/10 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-            >
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
-                <Icon className="h-6 w-6" />
+        <div className="mt-12 grid gap-4 md:grid-cols-2">
+          {features.map(({ icon: Icon, title, description }) => (
+            <div key={title} className="card card-accent p-5 pl-6">
+              <div
+                className="flex h-10 w-10 items-center justify-center bg-accent text-background"
+                style={{ borderRadius: '2px 8px 2px 8px' }}
+              >
+                <Icon className="h-5 w-5" />
               </div>
-              <h3 className="mt-6 text-xl font-semibold">{title}</h3>
-              <p className="mt-2 text-sm text-blue-700/80">{description}</p>
+              <h3 className="heading mt-4 text-lg">{title}</h3>
+              <p className="mt-1.5 text-sm text-muted leading-relaxed">{description}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-16 flex flex-col items-center gap-6">
-          <div className="text-center text-blue-700">
-            <h3 className="text-2xl font-semibold">Ready to enter the arena?</h3>
-            <p className="mt-2 max-w-2xl text-sm text-blue-600 sm:text-base">
-              Join thousands of players battling right now. Create your free account, unlock iconic skills, and start climbing the leaderboards today.
+        <div className="mt-8 card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="heading text-lg">Em construção</div>
+            <p className="text-sm text-muted mt-1">
+              PvP entre jogadores e novos arcos de história ainda não existem — o resto acima já funciona.
             </p>
           </div>
-          <Link
-            href="/register"
-            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-7 py-3 text-sm font-semibold text-white shadow-xl shadow-blue-500/30 transition hover:bg-blue-700"
-          >
-            Get Started — It’s Free
-          </Link>
+          {!authed && (
+            <Link href="/register" className="btn-primary px-6 py-3 text-sm whitespace-nowrap">
+              Começar agora
+            </Link>
+          )}
         </div>
       </div>
     </section>

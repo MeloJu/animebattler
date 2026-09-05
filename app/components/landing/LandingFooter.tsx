@@ -1,83 +1,51 @@
 import Link from 'next/link'
 import { Swords } from 'lucide-react'
 
+/**
+ * Sem colunas de Discord/Fórum/Central de Ajuda: eram seis links "(soon)"
+ * que não levavam a lugar nenhum. Um rodapé com só o que existe é mais
+ * honesto — e, num portfólio, o link pro código vale mais que um Discord
+ * inventado.
+ */
 export default function LandingFooter() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-gradient-to-br from-[#0b1640] via-[#142867] to-[#1f2d74] py-12 text-white">
+    <footer className="border-t border-border py-10">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-4">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
-                <Swords className="h-5 w-5" />
-              </div>
-              <span className="text-lg font-semibold">Anime Battler</span>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="flex h-9 w-9 items-center justify-center bg-accent text-background"
+              style={{ borderRadius: '2px 10px 2px 10px' }}
+            >
+              <Swords className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="heading text-sm">Anime Battler</div>
+              <div className="text-xs text-muted">Projeto pessoal · Next.js, Prisma, Postgres</div>
             </div>
-            <p className="text-sm text-blue-200/80">
-              The ultimate anime crossover battle arena. Assemble legendary heroes and rule the leaderboards.
-            </p>
           </div>
 
-          <FooterColumn
-            title="Game"
-            links={[
-              { href: '/characters', label: 'Characters' },
-              { href: '/battle', label: 'Battle System' },
-              { href: '/leaderboards', label: 'Rankings', disabled: true },
-            ]}
-          />
-
-          <FooterColumn
-            title="Community"
-            links={[
-              { href: '/community/discord', label: 'Discord', disabled: true },
-              { href: '/community/forums', label: 'Forums', disabled: true },
-              { href: '/guides', label: 'Guides', disabled: true },
-            ]}
-          />
-
-          <FooterColumn
-            title="Support"
-            links={[
-              { href: '/support', label: 'Help Center', disabled: true },
-              { href: '/contact', label: 'Contact', disabled: true },
-              { href: '/terms', label: 'Terms', disabled: true },
-            ]}
-          />
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <Link href="/characters" className="nav-link">Catálogo</Link>
+            <Link href="/battle" className="nav-link">Batalha</Link>
+            <a
+              href="https://github.com/MeloJu/animebattler"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nav-link"
+            >
+              Código no GitHub
+            </a>
+          </nav>
         </div>
 
-        <div className="mt-12 border-t border-white/10 pt-6 text-center text-sm text-blue-200/80">
-          © {year} Anime Battler. All rights reserved.
+        <div className="mt-8 border-t border-border pt-5 text-xs text-muted">
+          © {year} Anime Battler. Personagens e universos pertencem aos seus respectivos autores;
+          este é um projeto de estudo sem fins comerciais.
         </div>
       </div>
     </footer>
-  )
-}
-
-type FooterColumnProps = {
-  title: string
-  links: { href: string; label: string; disabled?: boolean }[]
-}
-
-function FooterColumn({ title, links }: FooterColumnProps) {
-  return (
-    <div className="space-y-3 text-sm">
-      <div className="text-white/90 font-semibold uppercase tracking-wide text-xs">{title}</div>
-      <ul className="space-y-2">
-        {links.map(({ href, label, disabled }) => (
-          <li key={label}>
-            {disabled ? (
-              <span className="text-blue-200/60">{label} (soon)</span>
-            ) : (
-              <Link href={href} className="text-blue-200 transition hover:text-white">
-                {label}
-              </Link>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
   )
 }
