@@ -39,7 +39,7 @@ Terraform, com Caddy na frente fazendo TLS.
 
 O Terraform é modular por provedor, um root independente por nuvem em
 [infra/](infra):
-- [infra/oracle](infra/oracle) — Ampere A1.Flex (arm64), Oracle Always Free.
+- [infra/oracle](infra/oracle) — E2.1.Micro (amd64) ou Ampere A1.Flex (arm64), Oracle Always Free.
   Passo a passo: [docs/deploy-oracle.md](docs/deploy-oracle.md).
 - [infra/gcp](infra/gcp) — e2-micro (amd64), Google Cloud Always Free.
   Passo a passo: [docs/deploy-gcp.md](docs/deploy-gcp.md).
@@ -65,7 +65,7 @@ dois em [infra/shared/cloud-init.yaml](infra/shared/cloud-init.yaml).
 - **Docker / Docker Compose** - Ambientes de dev e produção containerizados
 - **Terraform** - Provisionamento da VM, um root modular por provedor Always Free (Oracle, GCP)
 - **Caddy** - Reverse proxy com HTTPS automático (Let's Encrypt)
-- **GitHub Actions** - CI (lint, typecheck, build, imagem) e CD (build arm64 + deploy)
+- **GitHub Actions** - CI (lint, typecheck, build, imagem) e CD (build + push no GHCR + deploy)
 
 ### Ferramentas de Desenvolvimento
 - **ESLint** - Linting de código

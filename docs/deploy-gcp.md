@@ -7,12 +7,10 @@ GCP/GitHub e não tem como ser feito por fora.
 
 > Provider Oracle? Ver [docs/deploy-oracle.md](deploy-oracle.md) em vez deste.
 
-> ⚠️ **O pipeline de CD atual (`.github/workflows/deploy.yml`) builda só
-> imagem `arm64`**, porque foi feito pensando na VM Ampere da Oracle. A
-> `e2-micro` do GCP é `amd64`/`x86_64` — a imagem arm64 não roda nela. Os
-> passos 1-2 abaixo (provisionar a VM) funcionam de qualquer forma; deploy
-> automático via GitHub Actions só depois de ajustar o workflow pra buildar
-> (ou multi-arch) amd64 — isso ainda não foi feito.
+> ℹ️ O pipeline de CD (`.github/workflows/deploy.yml`) builda `amd64`, que
+> é a arquitetura da `e2-micro` — então ele serve pra esta VM sem alteração.
+> O que ele não faz é apontar pra dois hosts ao mesmo tempo: os secrets
+> `DEPLOY_HOST`/`DEPLOY_SSH_KEY` apontam pra uma VM só.
 
 > ⚠️ **Ainda pede cartão de crédito.** O Always Free do GCP não cobra
 > nada dentro da cota, mas criar o projeto exige uma conta de faturamento
@@ -101,9 +99,11 @@ navegador — use `COOKIE_SECURE=false` nesse caso.
 
 ## 6. Cadastrar os secrets no GitHub
 
-Só necessário depois de adaptar `deploy.yml` pra amd64 (ver aviso no topo).
-Os nomes dos secrets seguem o mesmo padrão da Oracle — seria preciso um
-segundo ambiente/host se os dois deploys forem coexistir.
+Mesmos secrets da Oracle (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`),
+apontando pro IP desta VM — ver o passo equivalente em
+[docs/deploy-oracle.md](deploy-oracle.md). Como os secrets apontam pra um
+host só, os dois deploys não coexistem sem criar um segundo ambiente no
+GitHub.
 
 ## Destruir tudo
 
@@ -115,8 +115,9 @@ terraform destroy
 ## Limites do Always Free a ter em mente
 
 - **1 vCPU / 1GB RAM** (`e2-micro`) — bem mais apertado que os 2 OCPU/12GB
-  Ampere da Oracle; `docker-compose.prod.yml` (app + Postgres + Caddy) deve
-  rodar, mas sem folga pra picos.
+  Ampere da Oracle — mesma faixa da E2.1.Micro da Oracle.
+  `docker-compose.prod.yml` (app + Postgres + Caddy) roda, e o cloud-init
+  compartilhado já cria 2GB de swap pra absorver picos.
 - **30GB de disco padrão** (`pd-standard`) — já configurado como default em
   `infra/gcp/main.tf`, não subir pra `pd-ssd`/`pd-balanced` ou sai da cota.
 - **1GB de saída de rede/mês** (fora tráfego pra dentro do Google e exceto

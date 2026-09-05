@@ -69,8 +69,8 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build nativo amd64, só pra validar o Dockerfile rápido. O artefato
-      # arm64 de verdade é buildado e testado no deploy.yml, num runner ARM.
+      # Build nativo amd64, só pra validar o Dockerfile rápido. O artefato que
+      # vai pra produção é buildado e publicado no deploy.yml.
       - name: Build image
         uses: docker/build-push-action@v6
         with:
