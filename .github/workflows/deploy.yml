@@ -11,9 +11,6 @@ name: Deploy
 on:
   workflow_dispatch:
 
-env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/animebattler
-
 jobs:
   build-and-push:
     # A arquitetura aqui TEM que bater com a da VM, senão o container morre na
@@ -29,6 +26,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # O GHCR só aceita nome de repositório em minúsculas, mas o login do
+      # GitHub pode ter maiúsculas (MeloJu). Usar github.repository_owner cru
+      # faz o buildx falhar com "repository name must be lowercase".
+      - name: Compute image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/animebattler" >> "$GITHUB_ENV"
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
