@@ -1,5 +1,15 @@
 #cloud-config
 package_update: true
+
+# As VMs Always Free têm 1GB de RAM (E2.1.Micro na Oracle, e2-micro no GCP) —
+# app + Postgres + Caddy cabem, mas sem folga: um pico durante migration ou
+# build de página derrubaria o container por OOM. 2GB de swap absorvem o pico
+# ao custo de disco, que sobra (cota de 200GB na Oracle, 30GB no GCP).
+swap:
+  filename: /swapfile
+  size: 2147483648
+  maxsize: 2147483648
+
 packages:
   - ca-certificates
   - curl

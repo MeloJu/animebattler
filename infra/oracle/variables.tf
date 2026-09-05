@@ -36,13 +36,24 @@ variable "instance_shape" {
 }
 
 variable "instance_ocpus" {
-  description = "OCPUs da instância Ampere (ignorado fora de shapes *.Flex). Always Free cobre até 4 no total."
+  description = "OCPUs da instância Ampere (ignorado fora de shapes *.Flex). Always Free cobre 2 no total desde 15/06/2026 (era 4)."
   type        = number
   default     = 2
 }
 
 variable "instance_memory_gb" {
-  description = "Memória (GB) da instância Ampere (ignorado fora de shapes *.Flex). Always Free cobre até 24GB no total."
+  description = "Memória (GB) da instância Ampere (ignorado fora de shapes *.Flex). Always Free cobre 12GB no total desde 15/06/2026 (era 24)."
   type        = number
   default     = 12
+}
+
+variable "enable_ampere" {
+  description = <<-EOT
+    Sobe uma instância Ampere (2 OCPU/12GB) ao LADO da E2.1.Micro — as cotas
+    são separadas, então testar não derruba a micro que já funciona. Se a
+    região estiver sem capacidade, o apply falha com "Out of host capacity"
+    e nada mais é tocado; é só voltar pra false.
+  EOT
+  type        = bool
+  default     = false
 }
