@@ -4,6 +4,21 @@
 // Os inimigos sao referenciados por NOME, nao por id: id so existe depois de
 // gravar, e nome e o que permite o mesmo dado valer em qualquer banco.
 
+// A RECOMPENSA DE XP FOI RECURVADA. Os valores antigos (60 a 500, 1880 no
+// total) somavam menos que um nível 7, enquanto os inimigos dos estágios vão
+// até o nível 14. Medindo o nível em que o jogador CHEGA em cada estágio
+// contra o nível do inimigo dali, a folga era 0,1,1,3,4,5,6,9 — ou seja, a
+// história exigia um jogador que subia três vezes mais rápido do que ela
+// mesma pagava, e ficava matematicamente invencível na metade.
+//
+// Os valores novos (100 a 2500, 9100 no total) põem a folga em
+// 0,0,0,1,1,1,1,2: o jogador está sempre um pouco abaixo do inimigo, que é o
+// "exigir preparo real" pedido — treinar ou comprar equipamento antes de um
+// chefe é parte esperada do jogo, não uma otimização opcional.
+//
+// A folga só é pequena porque a curva de nível é 50·L·(L−1): esses números
+// saem dela, não de gosto. Mexer nos dois lados junto ou os dois desalinham.
+
 const chapter = {
   animeSlug: 'bleach',
   slug: 'soul-society',
@@ -22,7 +37,7 @@ const stages = [
       'O Hollow se desfaz em partículas de reiatsu. Foi fácil demais. Se todo o Seireitei fosse assim, Rukia já estaria livre.',
     enemyMonsterName: 'Hollow',
     enemyLevel: 1,
-    xpReward: 60,
+    xpReward: 100,
     coinReward: 40,
   },
   {
@@ -33,7 +48,7 @@ const stages = [
       'Kira cai de joelhos, ainda tentando erguer a Wabisuke. Ele não pediu para estar ali — mas obedecer era a única coisa que lhe restava.',
     enemyCharacterName: 'Izuru Kira',
     enemyLevel: 2,
-    xpReward: 90,
+    xpReward: 200,
     coinReward: 60,
   },
   {
@@ -44,7 +59,7 @@ const stages = [
       'Renji desaba contra a parede, rindo de raiva e alívio ao mesmo tempo. "Salva ela. Salva ela por mim."',
     enemyCharacterName: 'Renji Abarai',
     enemyLevel: 3,
-    xpReward: 130,
+    xpReward: 300,
     coinReward: 90,
   },
   {
@@ -55,7 +70,7 @@ const stages = [
       'Kenpachi cai de costas, gargalhando para o céu. "Ótimo. Da próxima vez eu uso as duas mãos."',
     enemyCharacterName: 'Kenpachi Zaraki',
     enemyLevel: 5,
-    xpReward: 180,
+    xpReward: 900,
     coinReward: 130,
   },
   {
@@ -66,7 +81,7 @@ const stages = [
       'Mayuri se liquefaz para escapar, prometendo continuar a dissecação em outra ocasião. Você não duvida.',
     enemyCharacterName: 'Mayuri Kurotsuchi',
     enemyLevel: 7,
-    xpReward: 240,
+    xpReward: 1300,
     coinReward: 180,
   },
   {
@@ -77,7 +92,7 @@ const stages = [
       'O turbilhão de pétalas se assenta. Byakuya permanece de pé, mas a lâmina baixa. Pela primeira vez, ele fala de Rukia como irmã.',
     enemyCharacterName: 'Byakuya Kuchiki',
     enemyLevel: 9,
-    xpReward: 300,
+    xpReward: 1700,
     coinReward: 240,
   },
   {
@@ -88,7 +103,7 @@ const stages = [
       'Gin recua com o mesmo sorriso, como se nada tivesse acontecido. Ele nunca esteve lutando a sério — estava medindo.',
     enemyCharacterName: 'Gin Ichimaru',
     enemyLevel: 11,
-    xpReward: 380,
+    xpReward: 2100,
     coinReward: 320,
   },
   {
@@ -99,7 +114,7 @@ const stages = [
       'Aizen sobe ao Negación, escoltado pelos Menos, e o céu se fecha. Rukia está viva. Mas a Soul Society acabou de perder muito mais do que uma execução.',
     enemyCharacterName: 'Sosuke Aizen',
     enemyLevel: 14,
-    xpReward: 500,
+    xpReward: 2500,
     coinReward: 500,
   },
 ];

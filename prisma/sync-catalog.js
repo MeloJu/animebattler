@@ -28,6 +28,7 @@ const storyCatalog = require('./catalog/story');
 const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
 const characterCatalog = require('./catalog/characters');
+const kitCatalog = require('./catalog/kits');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -361,6 +362,57 @@ async function syncCharacters() {
   }
 }
 
+/**
+ * Kit próprio de cada personagem, escalonado por nível.
+ *
+ * DIFERENÇA CRÍTICA PARA syncSkillLadders: aqui o sync PODE aumentar o
+ * requiredLevel de um vínculo existente. É o objetivo do arquivo — todo kit
+ * de assinatura estava inteiramente no nível 1, então a identidade do
+ * personagem era entregue de uma vez na primeira batalha e nunca mais
+ * crescia. A trava de nunca-piorar da escada existe para proteger o kit;
+ * aplicá-la aqui impediria justamente a mudança que se quer.
+ *
+ * Não é destrutivo para quem já joga: getEligiblePlayerSkills recalcula a
+ * elegibilidade a partir do nível a cada batalha, então quem já passou do
+ * portão continua com a habilidade.
+ */
+async function syncKits() {
+  for (const kit of kitCatalog.kits) {
+    const c = await prisma.character.findFirst({
+      where: { name: kit.character },
+      select: { id: true, name: true },
+    });
+    if (!c) throw new Error(`Kit referencia personagem inexistente: ${kit.character}`);
+
+    for (const def of kit.skills) {
+      const skill = await prisma.skill.findUnique({
+        where: { name_category: { name: def.skill, category: def.category } },
+        select: { id: true },
+      });
+      if (!skill) throw new Error(`Kit referencia habilidade inexistente: ${def.skill} (${def.category})`);
+
+      const atual = await prisma.characterSkill.findUnique({
+        where: { characterId_skillId: { characterId: c.id, skillId: skill.id } },
+      });
+      const desejado = {
+        characterId: c.id,
+        skillId: skill.id,
+        requiredLevel: def.level,
+        learnedByDefault: def.level === 1,
+      };
+
+      registra('kit', `${c.name} · ${def.skill} (nv ${def.level})`, diff(atual, desejado));
+      if (!DRY_RUN) {
+        await prisma.characterSkill.upsert({
+          where: { characterId_skillId: { characterId: c.id, skillId: skill.id } },
+          create: desejado,
+          update: { requiredLevel: def.level, learnedByDefault: def.level === 1 },
+        });
+      }
+    }
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -376,6 +428,7 @@ async function main() {
   await syncEquipment(bleach.id, skillIds);
   await syncStory(bleach.id);
   await syncCharacters();
+  await syncKits();
   await syncSkillLadders();
 
   console.log(`sem alteração: ${relatorio.iguais}`);
