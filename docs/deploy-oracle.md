@@ -181,6 +181,27 @@ Não precisa comprar: um subdomínio grátis do [DuckDNS](https://www.duckdns.or
 (`animebattler.duckdns.org`) apontando pro IP público já resolve e o Caddy
 emite certificado normalmente.
 
+## Cuidado ao rodar `docker compose` na mão na VM
+
+O `docker-compose.prod.yml` resolve a imagem como `${IMAGE_TAG:-latest}`, e o
+deploy grava o `IMAGE_TAG` no `.env` da VM justamente para esse fallback nunca
+ser usado.
+
+Se por algum motivo o `.env` ficar sem `IMAGE_TAG`, um `docker compose up`
+manual sobe a tag `latest` — que na VM aponta para a **primeira** imagem já
+baixada, porque o deploy só dá `pull` da tag do SHA. Produção volta em
+silêncio para uma versão antiga: sem erro, sem log, com o healthcheck passando
+normalmente. O sintoma aparece como rota nova retornando 404.
+
+Se suspeitar disso, compare as imagens:
+
+```bash
+docker images ghcr.io/<owner>/animebattler --format '{{.Tag}}	{{.CreatedSince}}	{{.ID}}'
+```
+
+Se o `latest` tiver o mesmo ID de uma tag antiga, é isso. A correção é apontar
+o `IMAGE_TAG` do `.env` para o SHA desejado e recriar o container.
+
 ## Destruir tudo
 
 Pra não deixar nada rodando (a VM em si é grátis pra sempre no Always

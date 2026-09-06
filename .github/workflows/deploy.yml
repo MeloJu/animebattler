@@ -109,6 +109,20 @@ jobs:
             # exatamente o que está no ar, e rollback vira só rodar o workflow
             # de novo a partir de outro commit.
             export IMAGE_TAG
+
+            # Grava a versão implantada no .env da VM.
+            #
+            # Sem isto, o `${IMAGE_TAG:-latest}` do compose faz qualquer
+            # `docker compose up` rodado à mão na VM cair no `latest` — e o
+            # `latest` local nunca é atualizado, porque o pull acima só baixa a
+            # tag do SHA. O resultado é produção voltar em silêncio para a
+            # primeira imagem já baixada, sem erro nenhum no caminho.
+            if grep -q '^IMAGE_TAG=' .env 2>/dev/null; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$IMAGE_TAG|" .env
+            else
+              echo "IMAGE_TAG=$IMAGE_TAG" >> .env
+            fi
+
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
