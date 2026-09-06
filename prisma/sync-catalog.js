@@ -31,6 +31,7 @@ const characterCatalog = require('./catalog/characters');
 const kitCatalog = require('./catalog/kits');
 const scalingCatalog = require('./catalog/skill-scaling');
 const summonerCatalog = require('./catalog/summoners');
+const signatureCatalog = require('./catalog/signatures');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -471,7 +472,10 @@ async function syncSkillScaling() {
  * Skill anterior para reaproveitar.
  */
 async function syncSummoners() {
-  for (const inv of summonerCatalog.summoners) {
+  // Invocadores e ampliações de assinatura passam pelo mesmo caminho: os dois
+  // CRIAM habilidades além de ligá-las, ao contrário de syncKits, que só
+  // re-escalona vínculos que já existem.
+  for (const inv of [...summonerCatalog.summoners, ...signatureCatalog.signatures]) {
     const c = await prisma.character.findFirst({
       where: { name: inv.character },
       select: { id: true, name: true },
