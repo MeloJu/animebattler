@@ -4,6 +4,17 @@
 // Os inimigos sao referenciados por NOME, nao por id: id so existe depois de
 // gravar, e nome e o que permite o mesmo dado valer em qualquer banco.
 
+// ATRIBUTOS PRÓPRIOS DE CHEFE (bossHp, bossSpeed, bossEnergy...) entram por
+// cima da escala por nível. Existem porque os mesmos números serviam a dois
+// donos: Byakuya é personagem jogável E chefe do estágio 6, então qualquer
+// ajuste global mexia nos dois lados ao mesmo tempo. Subir a referência de
+// velocidade consertava os chefes VELOZ e derrubava a Yoruichi jogável de 44%
+// para 2% — um botão, dois efeitos opostos.
+//
+// Campo ausente significa "usa o valor escalado do personagem". Os valores
+// abaixo saíram de busca no simulador, não de gosto, e cada um tem a razão
+// escrita ao lado.
+
 // A RECOMPENSA DE XP FOI RECURVADA. Os valores antigos (60 a 500, 1880 no
 // total) somavam menos que um nível 7, enquanto os inimigos dos estágios vão
 // até o nível 14. Medindo o nível em que o jogador CHEGA em cada estágio
@@ -69,6 +80,9 @@ const stages = [
     outroText:
       'Kenpachi cai de costas, gargalhando para o céu. "Ótimo. Da próxima vez eu uso as duas mãos."',
     enemyCharacterName: 'Kenpachi Zaraki',
+        // Kenpachi não usa kidō; a reserva grande era herança do bloco jogável.
+    bossHp: 188,
+    bossEnergy: 125,
     enemyLevel: 5,
     xpReward: 900,
     coinReward: 130,
@@ -80,6 +94,9 @@ const stages = [
     outroText:
       'Mayuri se liquefaz para escapar, prometendo continuar a dissecação em outra ocasião. Você não duvida.',
     enemyCharacterName: 'Mayuri Kurotsuchi',
+        // A reserva de 282 fazia a cura dele escalar a ~35 por uso e o deixava
+    // praticamente imortal. Cortar energia corta cura E dano de kidō juntos.
+    bossEnergy: 225,
     enemyLevel: 7,
     xpReward: 1300,
     coinReward: 180,
@@ -91,6 +108,9 @@ const stages = [
     outroText:
       'O turbilhão de pétalas se assenta. Byakuya permanece de pé, mas a lâmina baixa. Pela primeira vez, ele fala de Rukia como irmã.',
     enemyCharacterName: 'Byakuya Kuchiki',
+        // Velocidade 35 dava iniciativa e crítico de graça toda rodada.
+    bossHp: 195,
+    bossSpeed: 27,
     enemyLevel: 9,
     xpReward: 1700,
     coinReward: 240,
@@ -102,6 +122,8 @@ const stages = [
     outroText:
       'Gin recua com o mesmo sorriso, como se nada tivesse acontecido. Ele nunca esteve lutando a sério — estava medindo.',
     enemyCharacterName: 'Gin Ichimaru',
+        // Gin era o caso mais extremo: só igualar a velocidade já virava a luta.
+    bossSpeed: 30,
     enemyLevel: 11,
     xpReward: 2100,
     coinReward: 320,
@@ -113,6 +135,9 @@ const stages = [
     outroText:
       'Aizen sobe ao Negación, escoltado pelos Menos, e o céu se fecha. Rukia está viva. Mas a Soul Society acabou de perder muito mais do que uma execução.',
     enemyCharacterName: 'Sosuke Aizen',
+        // Aizen tem que ser o mais duro do arco, mas derrotável com preparo.
+    bossSpeed: 28,
+    bossEnergy: 300,
     enemyLevel: 14,
     xpReward: 2500,
     coinReward: 500,

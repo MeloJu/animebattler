@@ -111,6 +111,34 @@ export function computeFighterStats(
   return computeBaseStats(scaleForLevel(character, level), bonus)
 }
 
+/**
+ * Substitui, campo a campo, os atributos de um combatente pelos do chefe.
+ *
+ * Um estágio de história pode dar atributos próprios ao inimigo em vez de
+ * herdar os do personagem jogável correspondente. Campo nulo ou ausente
+ * mantém o valor que veio da escala por nível, então dá para ajustar uma
+ * dimensão só — normalmente velocidade, que é a que mais desequilibra por
+ * decidir iniciativa e crítico ao mesmo tempo.
+ */
+export function applyBossOverrides(
+  stats: BaseStats,
+  overrides: {
+    bossHp?: number | null
+    bossAttack?: number | null
+    bossDefense?: number | null
+    bossSpeed?: number | null
+    bossEnergy?: number | null
+  }
+): BaseStats {
+  return {
+    hp: overrides.bossHp ?? stats.hp,
+    attack: overrides.bossAttack ?? stats.attack,
+    defense: overrides.bossDefense ?? stats.defense,
+    speed: overrides.bossSpeed ?? stats.speed,
+    energy: overrides.bossEnergy ?? stats.energy,
+  }
+}
+
 export function createInitialState(player: BaseStats, enemy: BaseStats): BattleState {
   return { version: 1, player: makeCombatant(player), enemy: makeCombatant(enemy), outcome: null }
 }

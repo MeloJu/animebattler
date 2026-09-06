@@ -450,6 +450,24 @@ model StoryStage {
   // Escala o inimigo sem precisar de uma linha própria por dificuldade.
   enemyLevel       Int        @default(1)
 
+  // ATRIBUTOS PRÓPRIOS DO CHEFE, aplicados por cima da escala por nível.
+  //
+  // Existem porque os mesmos números serviam a dois donos. Byakuya é
+  // personagem jogável E chefe do estágio 6: deixá-lo derrotável como chefe o
+  // deixava fraco como escolha, e vice-versa. Toda tentativa de equilibrar via
+  // constante global mexia nos dois lados ao mesmo tempo — subir a referência
+  // de velocidade consertava os chefes VELOZ e derrubava a Yoruichi jogável de
+  // 44% para 2%.
+  //
+  // Cada campo é OPCIONAL e independente: dá para corrigir só a velocidade de
+  // um chefe sem reescrever o resto do bloco. Nulo significa "usa o valor
+  // escalado do personagem", que é o comportamento anterior.
+  bossHp      Int?
+  bossAttack  Int?
+  bossDefense Int?
+  bossSpeed   Int?
+  bossEnergy  Int?
+
   xpReward   Int @default(50)
   // Skill não é recompensa direta de estágio: elas vêm por nível (via
   // CharacterSkill.requiredLevel) ou são compradas. O estágio paga em moeda,

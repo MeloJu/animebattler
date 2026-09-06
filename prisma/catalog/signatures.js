@@ -338,6 +338,73 @@ const aizen = {
   ],
 };
 
-const signatures = [goku, vegeta, broly, rukia, momo, aizen];
+/**
+ * Ichigo — ATACANTE, e protagonista do arco que o jogo tem.
+ *
+ * Era o personagem mais fraco medido: 0% de vitória nos estágios 4 a 8,
+ * enquanto todos os outros jogáveis testados ganhavam pelo menos um deles. A
+ * causa é teto de dano — o golpe mais forte dele era poder 22 até o nível 9 e
+ * 30 até o 14, contra inimigos de 26 a 50.
+ */
+const ichigo = {
+  character: 'Ichigo Kurosaki',
+  skills: [
+    {
+      name: 'Zangetsu: Corte Ascendente',
+      category: 'OTHER',
+      power: 16,
+      energyCost: 12,
+      cooldown: 1,
+      tags: ['espada'],
+      effects: [],
+      level: 1,
+    },
+    {
+      name: 'Zangetsu: Investida Feroz',
+      category: 'OTHER',
+      power: 24,
+      energyCost: 19,
+      cooldown: 2,
+      tags: ['espada'],
+      effects: [],
+      level: 2,
+    },
+    {
+      name: 'Máscara Hollow',
+      category: 'OTHER',
+      power: 22,
+      energyCost: 24,
+      cooldown: 4,
+      tags: ['hollow', 'buff'],
+      effects: [
+        { type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 24, duration: 3 },
+        { type: 'BUFF', target: 'SELF', stat: 'speed', magnitude: 20, duration: 3 },
+      ],
+      level: 5,
+    },
+    {
+      name: 'Getsuga Tenshō Negro',
+      category: 'OTHER',
+      power: 41,
+      energyCost: 33,
+      cooldown: 4,
+      tags: ['espada', 'hollow'],
+      effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 2 }],
+      level: 9,
+    },
+    {
+      name: 'Mugetsu',
+      category: 'OTHER',
+      power: 52,
+      energyCost: 40,
+      cooldown: 6,
+      tags: ['espada', 'ultimate'],
+      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 2 }],
+      level: 14,
+    },
+  ],
+};
+
+const signatures = [goku, vegeta, broly, rukia, momo, aizen, ichigo];
 
 module.exports = { signatures };

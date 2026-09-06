@@ -11,6 +11,7 @@ import {
   resolveRound,
   sumStatBonuses,
   computeFighterStats,
+  applyBossOverrides,
 } from '@/app/lib/battle/engine'
 import type {
   AppliedEffect,
@@ -713,5 +714,35 @@ describe('reaplicar efeito renova, não empilha', () => {
     const tick2 = s.enemy.currentHp
     s = usa(s, veneno).state
     expect(tick2 - s.enemy.currentHp).toBe(tick1)
+  })
+})
+
+describe('applyBossOverrides', () => {
+  const base = stats({ hp: 200, attack: 40, defense: 20, speed: 30, energy: 300 })
+
+  it('sem override nenhum, devolve os stats intactos', () => {
+    expect(applyBossOverrides(base, {})).toEqual(base)
+  })
+
+  it('nulo também significa "usa o valor do personagem"', () => {
+    expect(applyBossOverrides(base, { bossSpeed: null, bossHp: null })).toEqual(base)
+  })
+
+  it('substitui só o campo dado, o que permite corrigir uma dimensão só', () => {
+    const r = applyBossOverrides(base, { bossSpeed: 22 })
+    expect(r.speed).toBe(22)
+    expect(r.hp).toBe(200)
+    expect(r.attack).toBe(40)
+    expect(r.energy).toBe(300)
+  })
+
+  it('aceita zero como valor legítimo, não como ausência', () => {
+    expect(applyBossOverrides(base, { bossAttack: 0 }).attack).toBe(0)
+  })
+
+  it('substitui todos quando todos são dados', () => {
+    expect(
+      applyBossOverrides(base, { bossHp: 1, bossAttack: 2, bossDefense: 3, bossSpeed: 4, bossEnergy: 5 })
+    ).toEqual({ hp: 1, attack: 2, defense: 3, speed: 4, energy: 5 })
   })
 })
