@@ -30,6 +30,7 @@ const ladderCatalog = require('./catalog/skill-ladders');
 const characterCatalog = require('./catalog/characters');
 const kitCatalog = require('./catalog/kits');
 const scalingCatalog = require('./catalog/skill-scaling');
+const summonerCatalog = require('./catalog/summoners');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -462,6 +463,50 @@ async function syncSkillScaling() {
   }
 }
 
+/**
+ * Kits dos invocadores. Ver prisma/catalog/summoners.js para o desenho.
+ *
+ * Diferente de syncKits, este arquivo CRIA as habilidades além de ligá-las:
+ * os três invocadores entraram no elenco sem nenhuma, então não há linha de
+ * Skill anterior para reaproveitar.
+ */
+async function syncSummoners() {
+  for (const inv of summonerCatalog.summoners) {
+    const c = await prisma.character.findFirst({
+      where: { name: inv.character },
+      select: { id: true, name: true },
+    });
+    if (!c) throw new Error(`Invocador inexistente no banco: ${inv.character}`);
+
+    for (const def of inv.skills) {
+      const { level, ...skill } = def;
+      const atual = await prisma.skill.findUnique({
+        where: { name_category: { name: skill.name, category: skill.category } },
+      });
+      registra('invocacao', skill.name, diff(atual, skill));
+
+      if (DRY_RUN) continue;
+
+      const row = await prisma.skill.upsert({
+        where: { name_category: { name: skill.name, category: skill.category } },
+        create: skill,
+        update: skill,
+      });
+
+      const link = { characterId: c.id, skillId: row.id, requiredLevel: level, learnedByDefault: level === 1 };
+      const linkAtual = await prisma.characterSkill.findUnique({
+        where: { characterId_skillId: { characterId: c.id, skillId: row.id } },
+      });
+      registra('invocacao', `${c.name} · ${skill.name} (nv ${level})`, diff(linkAtual, link));
+      await prisma.characterSkill.upsert({
+        where: { characterId_skillId: { characterId: c.id, skillId: row.id } },
+        create: link,
+        update: { requiredLevel: level, learnedByDefault: level === 1 },
+      });
+    }
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -478,6 +523,7 @@ async function main() {
   await syncStory(bleach.id);
   await syncCharacters();
   await syncKits();
+  await syncSummoners();
   await syncSkillLadders();
   await syncSkillScaling();
 
