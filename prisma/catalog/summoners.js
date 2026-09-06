@@ -26,9 +26,26 @@
 // prisma/catalog/skill-scaling.js os faz escalar da classe — INVOCADOR escala
 // de ENERGIA. Não é preciso declarar nada aqui.
 //
-// Os números seguem a mesma curva das escadas de afiliação para que o
-// balanceamento continue comparável: poder de 8 a 37, energia de 9 a 35,
-// cooldown de 1 a 5.
+// PICO E VALE: o invocador NÃO segue a curva das outras classes. Os golpes
+// grandes custam mais e ficam mais tempo em cooldown, e os baratos do nível 1
+// são o turno em que não há invocação em campo.
+//
+// Isso existe porque a fantasia do invocador é o poder estar FORA dele, e
+// poder ser tirado. A versão fiel disso — a sombra morre e é preciso gastar
+// um turno chamando de novo — precisa de estado que o motor não tem:
+// BattleState guarda dois combatentes e uma lista de efeitos, e não há onde
+// escrever "Igris está fora". Cooldown longo já é essa ausência, escrita com
+// o que existe: Igris com cooldown 4 É Igris fora por quatro rodadas.
+//
+// Há um segundo motivo para não fazer a versão fiel agora, e ele é de jogo:
+// perder um turno re-invocando é uma troca de TEMPO, e só vale contra quem
+// sabe explorar a janela. pickAiSkill escolhe sempre a de maior poder e não
+// faz ideia de que o jogador ficou sem invocação — então contra a IA a
+// mecânica seria imposto puro. Ela brilha em PvP, ou depois que a IA souber
+// jogar tempo.
+//
+// O resto segue a curva das escadas de afiliação para que o balanceamento
+// continue comparável: energia de 9 a 40, cooldown de 1 a 6.
 
 /** Red — cada Pokémon do time traz dois golpes, liberados juntos. */
 const red = {
@@ -60,113 +77,113 @@ const red = {
     {
       name: 'Charizard: Lança-Chamas',
       category: 'OTHER',
-      power: 18,
-      energyCost: 17,
-      cooldown: 2,
+      power: 22,
+      energyCost: 20,
+      cooldown: 3,
       tags: ['pokemon', 'fogo'],
       effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 6, duration: 2 }],
-      level: 4,
+      level: 2,
     },
     {
       name: 'Charizard: Asa de Aço',
       category: 'OTHER',
-      power: 21,
-      energyCost: 18,
-      cooldown: 2,
+      power: 24,
+      energyCost: 21,
+      cooldown: 3,
       tags: ['pokemon', 'voador'],
       effects: [],
-      level: 4,
+      level: 2,
     },
 
     // Blastoise — o Pokémon que sustenta a linha: um golpe pesado e uma casca.
     {
       name: 'Blastoise: Hidrobomba',
       category: 'OTHER',
-      power: 26,
-      energyCost: 24,
-      cooldown: 3,
+      power: 32,
+      energyCost: 27,
+      cooldown: 4,
       tags: ['pokemon', 'agua'],
       effects: [],
-      level: 7,
+      level: 4,
     },
     {
       name: 'Blastoise: Retrair Casco',
       category: 'OTHER',
       power: 0,
-      energyCost: 18,
-      cooldown: 3,
+      energyCost: 21,
+      cooldown: 4,
       tags: ['pokemon', 'shield'],
-      effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 28, duration: 2 }],
-      level: 7,
+      effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 34, duration: 2 }],
+      level: 4,
     },
 
     // Venusaur — controle: enfraquece e drena em vez de explodir.
     {
       name: 'Venusaur: Bomba de Sementes',
       category: 'OTHER',
-      power: 24,
-      energyCost: 21,
-      cooldown: 2,
+      power: 28,
+      energyCost: 24,
+      cooldown: 3,
       tags: ['pokemon', 'planta'],
       effects: [],
-      level: 10,
+      level: 7,
     },
     {
       name: 'Venusaur: Semente Sanguessuga',
       category: 'OTHER',
       power: 8,
-      energyCost: 22,
-      cooldown: 3,
+      energyCost: 25,
+      cooldown: 4,
       tags: ['pokemon', 'planta', 'dreno'],
       effects: [
         { type: 'DOT', target: 'ENEMY', magnitude: 9, duration: 3 },
         { type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 14, duration: 2 },
       ],
-      level: 10,
+      level: 7,
     },
 
     // Snorlax — massa e recuperação, o companheiro que aguenta o round ruim.
     {
       name: 'Snorlax: Corpo Pesado',
       category: 'OTHER',
-      power: 30,
-      energyCost: 26,
-      cooldown: 3,
+      power: 38,
+      energyCost: 30,
+      cooldown: 5,
       tags: ['pokemon', 'normal'],
       effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'speed', magnitude: 16, duration: 2 }],
-      level: 13,
+      level: 10,
     },
     {
       name: 'Snorlax: Descanso',
       category: 'OTHER',
       power: 0,
-      energyCost: 24,
-      cooldown: 4,
+      energyCost: 27,
+      cooldown: 5,
       tags: ['pokemon', 'cura'],
-      effects: [{ type: 'HEAL', target: 'SELF', magnitude: 30 }],
-      level: 13,
+      effects: [{ type: 'HEAL', target: 'SELF', magnitude: 36 }],
+      level: 10,
     },
 
     // Mega Rayquaza shiny — o fecho do time, e o golpe mais caro do jogo dele.
     {
       name: 'Mega Rayquaza: Ascensão do Dragão',
       category: 'OTHER',
-      power: 35,
-      energyCost: 32,
-      cooldown: 4,
+      power: 44,
+      energyCost: 35,
+      cooldown: 5,
       tags: ['pokemon', 'dragao', 'lendario'],
       effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 22, duration: 2 }],
-      level: 16,
+      level: 14,
     },
     {
       name: 'Mega Rayquaza: Fúria do Céu Partido',
       category: 'OTHER',
-      power: 37,
-      energyCost: 35,
-      cooldown: 5,
+      power: 52,
+      energyCost: 40,
+      cooldown: 6,
       tags: ['pokemon', 'dragao', 'lendario', 'ultimate'],
       effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 24, duration: 2 }],
-      level: 16,
+      level: 14,
     },
   ],
 };
@@ -204,45 +221,45 @@ const geto = {
     {
       name: 'Invocação em Massa',
       category: 'OTHER',
-      power: 22,
-      energyCost: 20,
-      cooldown: 2,
+      power: 28,
+      energyCost: 24,
+      cooldown: 3,
       tags: ['maldicao'],
       effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 6, duration: 2 }],
-      level: 4,
+      level: 2,
     },
     {
       name: 'Deterioração Progressiva',
       category: 'OTHER',
       power: 4,
-      energyCost: 22,
-      cooldown: 3,
+      energyCost: 25,
+      cooldown: 4,
       tags: ['maldicao', 'debuff'],
       effects: [
         { type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 3 },
         { type: 'DOT', target: 'ENEMY', magnitude: 7, duration: 3 },
       ],
-      level: 8,
+      level: 6,
     },
     {
       name: 'Uzumaki: Redemoinho de Maldições',
       category: 'OTHER',
-      power: 31,
-      energyCost: 29,
-      cooldown: 4,
+      power: 40,
+      energyCost: 33,
+      cooldown: 5,
       tags: ['maldicao'],
       effects: [],
-      level: 12,
+      level: 10,
     },
     {
       name: 'Dragão Arco-Íris',
       category: 'OTHER',
-      power: 36,
-      energyCost: 34,
-      cooldown: 5,
+      power: 46,
+      energyCost: 38,
+      cooldown: 6,
       tags: ['maldicao', 'ultimate'],
       effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 11, duration: 3 }],
-      level: 16,
+      level: 14,
     },
   ],
 };
@@ -273,49 +290,49 @@ const sungJinWoo = {
       power: 15,
       energyCost: 13,
       cooldown: 1,
-      tags: ['sombra'],
-      effects: [],
+      tags: ['sombra', 'sangramento'],
+      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 5, duration: 2 }],
       level: 1,
     },
     {
       name: 'Igris, Cavaleiro de Sangue',
       category: 'OTHER',
-      power: 25,
-      energyCost: 22,
-      cooldown: 3,
+      power: 32,
+      energyCost: 26,
+      cooldown: 4,
       tags: ['sombra'],
-      effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 16, duration: 2 }],
-      level: 4,
+      effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 2 }],
+      level: 2,
     },
     {
       name: 'Tank, Muralha de Ossos',
       category: 'OTHER',
       power: 5,
-      energyCost: 19,
-      cooldown: 3,
+      energyCost: 22,
+      cooldown: 4,
       tags: ['sombra', 'shield'],
-      effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 26, duration: 2 }],
-      level: 8,
+      effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 32, duration: 2 }],
+      level: 6,
     },
     {
       name: 'Beru, Formiga-Rei',
       category: 'OTHER',
-      power: 32,
-      energyCost: 30,
-      cooldown: 4,
+      power: 42,
+      energyCost: 34,
+      cooldown: 5,
       tags: ['sombra'],
       effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 8, duration: 2 }],
-      level: 12,
+      level: 10,
     },
     {
       name: 'Exército das Sombras',
       category: 'OTHER',
-      power: 37,
-      energyCost: 35,
-      cooldown: 5,
+      power: 50,
+      energyCost: 40,
+      cooldown: 6,
       tags: ['sombra', 'ultimate'],
       effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 22, duration: 2 }],
-      level: 16,
+      level: 14,
     },
   ],
 };
