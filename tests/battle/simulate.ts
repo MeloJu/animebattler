@@ -1,0 +1,95 @@
+import { createInitialState, resolveRound } from '@/app/lib/battle/engine'
+import { pickAiSkill } from '@/app/lib/battle/ai'
+import { MAX_ROUNDS } from '@/app/lib/battle/constants'
+import type { BaseStats, Outcome, SkillDef } from '@/app/lib/battle/types'
+
+/**
+ * Simulador de batalha para testar BALANCEAMENTO, não o motor.
+ *
+ * Existe porque escolher o nível de um estágio era chute: a única forma de
+ * saber se estava justo era abrir o navegador e jogar, uma partida por vez,
+ * com o resultado dependendo de sorte de crítico. Isso torna qualquer ajuste
+ * de número caro e não-reproduzível.
+ *
+ * Roda sem banco: `resolveRound` já recebe a função aleatória por parâmetro e
+ * `pickAiSkill` é pura, então a batalha inteira é computável em memória.
+ *
+ * O JOGADOR É PILOTADO PELA PRÓPRIA IA. Isso é proposital e tem um
+ * significado preciso: a IA nunca desperdiça energia nem tenta skill em
+ * cooldown, mas também não guarda o contra-ataque para o momento certo nem
+ * segura o buff. Ou seja, a taxa de vitória medida aqui é um PISO — um humano
+ * atento joga melhor. Uma luta que a simulação perde de lavada é
+ * inquestionavelmente injusta; uma que ela ganha raspando é jogável.
+ */
+
+/** PRNG determinístico (mulberry32) — mesma semente, mesma batalha, sempre. */
+export function seededRandom(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+export type Combatente = {
+  stats: BaseStats
+  skills: SkillDef[]
+}
+
+export type ResultadoSimulacao = {
+  outcome: Outcome
+  rodadas: number
+  hpJogador: number
+  hpInimigo: number
+}
+
+export function simulateBattle(jogador: Combatente, inimigo: Combatente, seed: number): ResultadoSimulacao {
+  const rand = seededRandom(seed)
+  let state = createInitialState(jogador.stats, inimigo.stats)
+
+  const jogadorPorId = Object.fromEntries(jogador.skills.map((s) => [s.id, s]))
+  const inimigoPorId = Object.fromEntries(inimigo.skills.map((s) => [s.id, s]))
+
+  let rodadas = 0
+  while (state.outcome === null && rodadas < MAX_ROUNDS) {
+    const escolhaJogador = pickAiSkill(state.player, jogador.skills)
+    const escolhaInimigo = pickAiSkill(state.enemy, inimigo.skills)
+
+    const r = resolveRound(
+      state,
+      { playerAction: { kind: 'ATTACK', skillId: escolhaJogador }, enemyAction: { skillId: escolhaInimigo } },
+      { playerSkills: jogadorPorId, enemySkills: inimigoPorId, playerTransformations: {} },
+      rand
+    )
+    state = r.state
+    rodadas += 1
+  }
+
+  // Mesmo desempate por HP que persistRound aplica ao estourar MAX_ROUNDS.
+  let outcome = state.outcome
+  if (outcome === null) {
+    const pj = state.player.currentHp / state.player.maxHp
+    const pi = state.enemy.currentHp / state.enemy.maxHp
+    outcome = Math.abs(pj - pi) < 0.001 ? 'DRAW' : pj > pi ? 'PLAYER_WIN' : 'ENEMY_WIN'
+  }
+
+  return { outcome, rodadas, hpJogador: state.player.currentHp, hpInimigo: state.enemy.currentHp }
+}
+
+/** Fração de vitórias do jogador em `amostras` batalhas de sementes distintas. */
+export function winRate(jogador: Combatente, inimigo: Combatente, amostras = 200): number {
+  let vitorias = 0
+  for (let s = 0; s < amostras; s++) {
+    if (simulateBattle(jogador, inimigo, s + 1).outcome === 'PLAYER_WIN') vitorias += 1
+  }
+  return vitorias / amostras
+}
+
+/** Média de rodadas até o fim — mede se a luta é longa demais ou rápida demais. */
+export function mediaRodadas(jogador: Combatente, inimigo: Combatente, amostras = 200): number {
+  let total = 0
+  for (let s = 0; s < amostras; s++) total += simulateBattle(jogador, inimigo, s + 1).rodadas
+  return total / amostras
+}
