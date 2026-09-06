@@ -157,6 +157,31 @@ docker compose -f docker-compose.prod.yml exec -e SEED_FORCE=true app npm run pr
 > explicitamente. Só faça isso com o banco vazio. Depois que houver
 > jogadores cadastrados, rodar esse comando apaga a conta de todos eles.
 
+### Depois disso, use o sync — nunca o seed
+
+O seed serve **uma vez**, com o banco vazio. Para adicionar conteúdo novo
+(um equipamento, um estágio de história) num banco que já tem jogadores,
+existe um script que só faz upsert e nunca toca em dado de jogador:
+
+```bash
+ssh ubuntu@<public_ip>
+cd ~/animebattler
+docker compose -f docker-compose.prod.yml exec app npm run catalog:check   # simula
+docker compose -f docker-compose.prod.yml exec app npm run catalog:sync    # aplica
+```
+
+O `catalog:check` mostra exatamente o que criaria ou atualizaria, campo a
+campo, sem gravar nada. Rodar o `catalog:sync` duas vezes seguidas não faz
+nada na segunda — a saída vira "catálogo já está em dia".
+
+Os dados vêm de `prisma/catalog/`, que é a **mesma fonte** consumida pelo
+seed. Editar o catálogo lá atualiza os dois caminhos, sem risco de eles
+divergirem.
+
+> O sync **não remove**. Tirar um item de `prisma/catalog/` não o apaga do
+> banco, porque quem já comprou tem um `UserEquipment` apontando pra ele.
+> Aposentar um item é parar de vendê-lo, não deletar a linha.
+
 ## 8. Deploy automático
 
 Depois de confirmar que funcionou, edite `.github/workflows/deploy.yml` e
