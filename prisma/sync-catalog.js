@@ -25,6 +25,7 @@
  */
 const { PrismaClient } = require('@prisma/client');
 const storyCatalog = require('./catalog/story');
+const storyJujutsu = require('./catalog/story-jujutsu');
 const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
 const characterCatalog = require('./catalog/characters');
@@ -32,6 +33,7 @@ const kitCatalog = require('./catalog/kits');
 const scalingCatalog = require('./catalog/skill-scaling');
 const summonerCatalog = require('./catalog/summoners');
 const signatureCatalog = require('./catalog/signatures');
+const jujutsuCatalog = require('./catalog/jujutsu');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -145,8 +147,14 @@ async function syncEquipment(animeId, skillIdPorNome) {
   }
 }
 
-async function syncStory(animeId) {
-  const cap = storyCatalog.chapter;
+/**
+ * Sincroniza UM arco de história. Recebe o arco como parâmetro em vez de ler
+ * um capítulo fixo, porque o jogo passou a ter mais de um: Soul Society
+ * (Bleach) e Incidente de Shibuya (Jujutsu Kaisen). A tela de história já
+ * iterava capítulos desde sempre; era só o catálogo que era de arco único.
+ */
+async function syncStory(animeId, arco) {
+  const cap = arco.chapter;
   const desejadoCap = {
     animeId,
     slug: cap.slug,
@@ -171,7 +179,7 @@ async function syncStory(animeId) {
     return;
   }
 
-  for (const [i, { enemyCharacterName, enemyMonsterName, ...stage }] of storyCatalog.stages.entries()) {
+  for (const [i, { enemyCharacterName, enemyMonsterName, ...stage }] of arco.stages.entries()) {
     const order = i + 1;
 
     // Inimigo vem por nome no catálogo; aqui vira id. Se o personagem não
@@ -475,7 +483,7 @@ async function syncSummoners() {
   // Invocadores e ampliações de assinatura passam pelo mesmo caminho: os dois
   // CRIAM habilidades além de ligá-las, ao contrário de syncKits, que só
   // re-escalona vínculos que já existem.
-  for (const inv of [...summonerCatalog.summoners, ...signatureCatalog.signatures]) {
+  for (const inv of [...summonerCatalog.summoners, ...signatureCatalog.signatures, ...jujutsuCatalog.jujutsuKits]) {
     const c = await prisma.character.findFirst({
       where: { name: inv.character },
       select: { id: true, name: true },
@@ -524,7 +532,17 @@ async function main() {
 
   const skillIds = await syncEquipmentSkills(bleach.id);
   await syncEquipment(bleach.id, skillIds);
-  await syncStory(bleach.id);
+  await syncStory(bleach.id, storyCatalog);
+
+  // Segundo arco. Se o anime não existir ainda (banco antigo), syncCharacters
+  // o cria mais abaixo — então numa primeira passada o arco é pulado e entra
+  // na seguinte, em vez de derrubar o sync inteiro.
+  const jjk = await prisma.anime.findUnique({ where: { slug: storyJujutsu.chapter.animeSlug } });
+  if (jjk) {
+    await syncStory(jjk.id, storyJujutsu);
+  } else {
+    console.log('  (Jujutsu Kaisen ainda não existe neste banco — o arco entra na próxima passada)');
+  }
   await syncCharacters();
   await syncKits();
   await syncSummoners();

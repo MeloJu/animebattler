@@ -25,7 +25,7 @@
 /** Animes e afiliações que só existem por causa dos personagens abaixo. */
 const novosAnimes = [
   { name: 'Pokémon', slug: 'pokemon', affiliations: ['Treinadores'] },
-  { name: 'Jujutsu Kaisen', slug: 'jujutsu-kaisen', affiliations: ['Feiticeiros'] },
+  { name: 'Jujutsu Kaisen', slug: 'jujutsu-kaisen', affiliations: ['Feiticeiros', 'Maldições'] },
   { name: 'Solo Leveling', slug: 'solo-leveling', affiliations: ['Caçadores'] },
 ];
 
@@ -86,6 +86,22 @@ const novosPersonagens = [
   { name: 'Red', slug: 'red', anime: 'pokemon', affiliation: 'Treinadores', class: 'INVOCADOR', hp: 135, attack: 17, defense: 13, speed: 12, energy: 152 },
   { name: 'Suguru Geto', slug: 'suguru-geto', anime: 'jujutsu-kaisen', affiliation: 'Feiticeiros', class: 'INVOCADOR', hp: 130, attack: 18, defense: 13, speed: 11, energy: 158 },
   { name: 'Sung Jin Woo', slug: 'sung-jin-woo', anime: 'solo-leveling', affiliation: 'Caçadores', class: 'INVOCADOR', hp: 135, attack: 18, defense: 13, speed: 13, energy: 145 },
+
+  // Jujutsu Kaisen — elenco do segundo arco de história.
+  //
+  // Os stats saem dos mesmos perfis de classe do resto do elenco, dentro do
+  // orçamento de ~380 (hp + 5*atk + 5*def + 4*spd + 0.3*energia). Gojo é
+  // canonicamente absurdo, mas aqui ele é um CONJURADOR como os outros: a
+  // superioridade dele mora no kit, não em stat privilegiado, senão a escolha
+  // de personagem deixa de existir.
+  { name: 'Satoru Gojo', slug: 'satoru-gojo', anime: 'jujutsu-kaisen', affiliation: 'Feiticeiros', class: 'CONJURADOR', hp: 112, attack: 20, defense: 11, speed: 16, energy: 166 },
+  { name: 'Yuji Itadori', slug: 'yuji-itadori', anime: 'jujutsu-kaisen', affiliation: 'Feiticeiros', class: 'ATACANTE', hp: 120, attack: 26, defense: 10, speed: 13, energy: 95 },
+  { name: 'Megumi Fushiguro', slug: 'megumi-fushiguro', anime: 'jujutsu-kaisen', affiliation: 'Feiticeiros', class: 'INVOCADOR', hp: 137, attack: 17, defense: 13, speed: 12, energy: 150 },
+  { name: 'Nobara Kugisaki', slug: 'nobara-kugisaki', anime: 'jujutsu-kaisen', affiliation: 'Feiticeiros', class: 'ATACANTE', hp: 116, attack: 25, defense: 10, speed: 14, energy: 100 },
+  { name: 'Ryomen Sukuna', slug: 'ryomen-sukuna', anime: 'jujutsu-kaisen', affiliation: 'Maldições', class: 'ATACANTE', hp: 112, attack: 27, defense: 10, speed: 14, energy: 95 },
+  { name: 'Mahito', slug: 'mahito', anime: 'jujutsu-kaisen', affiliation: 'Maldições', class: 'CONJURADOR', hp: 124, attack: 19, defense: 11, speed: 14, energy: 165 },
+  { name: 'Jogo', slug: 'jogo', anime: 'jujutsu-kaisen', affiliation: 'Maldições', class: 'CONJURADOR', hp: 125, attack: 21, defense: 10, speed: 13, energy: 160 },
+  { name: 'Hanami', slug: 'hanami', anime: 'jujutsu-kaisen', affiliation: 'Maldições', class: 'TANQUE', hp: 158, attack: 15, defense: 17, speed: 9, energy: 95 },
 ];
 
 module.exports = { characters, novosAnimes, novosPersonagens };
