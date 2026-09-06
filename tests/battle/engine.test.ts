@@ -632,3 +632,86 @@ describe('escala por atributo', () => {
     expect(dano(40)).toBeGreaterThan(dano(10))
   })
 })
+
+describe('reaplicar efeito renova, não empilha', () => {
+  const usa = (s: ReturnType<typeof createInitialState>, sk: SkillDef) =>
+    resolveRound(
+      s,
+      { playerAction: { kind: 'ATTACK' as const, skillId: sk.id }, enemyAction: { skillId: null } },
+      { ...ctxVazio(), playerSkills: { [sk.id]: sk } },
+      NUNCA_CRITA
+    )
+
+  const veneno = skill({
+    id: 'veneno',
+    name: 'Veneno',
+    power: 0,
+    energyCost: 0,
+    cooldown: 0,
+    effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 3 }],
+  })
+
+  it('a mesma habilidade lançada duas vezes deixa UMA instância', () => {
+    let s = createInitialState(stats(), stats())
+    s = usa(s, veneno).state
+    s = usa(s, veneno).state
+    expect(s.enemy.statusEffects.filter((e) => e.type === 'DOT')).toHaveLength(1)
+  })
+
+  it('renovar devolve a duração cheia', () => {
+    let s = createInitialState(stats(), stats())
+    s = usa(s, veneno).state
+    const depoisDeUma = s.enemy.statusEffects.find((e) => e.type === 'DOT')!.remainingRounds
+    s = usa(s, veneno).state
+    expect(s.enemy.statusEffects.find((e) => e.type === 'DOT')!.remainingRounds).toBeGreaterThanOrEqual(
+      depoisDeUma
+    )
+  })
+
+  it('habilidades DIFERENTES continuam empilhando', () => {
+    const outro = skill({
+      id: 'veneno2',
+      name: 'Outro Veneno',
+      power: 0,
+      energyCost: 0,
+      cooldown: 0,
+      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 3 }],
+    })
+    let s = createInitialState(stats(), stats())
+    s = usa(s, veneno).state
+    s = usa(s, outro).state
+    expect(s.enemy.statusEffects.filter((e) => e.type === 'DOT')).toHaveLength(2)
+  })
+
+  it('uma habilidade com buff de dois atributos mantém os dois', () => {
+    const duplo = skill({
+      id: 'duplo',
+      name: 'Orgulho',
+      power: 0,
+      energyCost: 0,
+      cooldown: 0,
+      effects: [
+        { type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 15, duration: 3 },
+        { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 },
+      ],
+    })
+    let s = createInitialState(stats(), stats())
+    s = usa(s, duplo).state
+    s = usa(s, duplo).state
+    const buffs = s.player.statusEffects.filter((e) => e.type === 'BUFF')
+    expect(buffs).toHaveLength(2)
+    expect(buffs.map((b) => b.stat).sort()).toEqual(['attack', 'defense'])
+  })
+
+  it('o dano por rodada do veneno não cresce ao relançar', () => {
+    let s = createInitialState(stats(), stats())
+    s = usa(s, veneno).state
+    const hp1 = s.enemy.currentHp
+    s = usa(s, veneno).state
+    const tick1 = hp1 - s.enemy.currentHp
+    s = usa(s, veneno).state
+    const tick2 = s.enemy.currentHp
+    s = usa(s, veneno).state
+    expect(tick2 - s.enemy.currentHp).toBe(tick1)
+  })
+})

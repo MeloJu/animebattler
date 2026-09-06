@@ -233,6 +233,34 @@ function applyDamageWithShield(target: CombatantState, amount: number): { target
   return { target: { ...target, currentHp, statusEffects }, actualDamage: hpBefore - currentHp }
 }
 
+/**
+ * Remove a instância anterior do MESMO efeito vinda da MESMA habilidade, para
+ * que reaplicar renove a duração em vez de empilhar.
+ *
+ * POR QUE: 132 das 524 habilidades do catálogo têm um efeito com duração maior
+ * ou igual ao cooldown, ou seja, podem ser lançadas de novo antes do efeito
+ * anterior expirar. Sem esta regra, cada relançamento somava mais uma cópia,
+ * sem teto. O Senbonzakura do Byakuya (DOT 7 por 3 rodadas, cooldown 2) virava
+ * 7, depois 14, depois 21 de dano por rodada, e a luta deixava de ser
+ * vencível por qualquer jogada. Medido: o estágio 6 dava 0% de vitória mesmo
+ * dando ao jogador a velocidade do inimigo E mais 50% de dano.
+ *
+ * A CHAVE INCLUI O ATRIBUTO de propósito: uma habilidade que aplica BUFF de
+ * ataque e BUFF de defesa (o Prince's Pride do Vegeta) precisa manter os dois.
+ * Só é duplicata o mesmo tipo, no mesmo atributo, da mesma habilidade.
+ *
+ * Habilidades DIFERENTES continuam somando — dois venenos distintos empilham,
+ * que é o comportamento desejado. O que não pode é o mesmo veneno consigo.
+ */
+function semDuplicataDaMesmaSkill(
+  efeitos: StatusEffectInstance[],
+  novo: StatusEffectInstance
+): StatusEffectInstance[] {
+  return efeitos.filter(
+    (e) => !(e.sourceSkillName === novo.sourceSkillName && e.type === novo.type && e.stat === novo.stat)
+  )
+}
+
 /** Applies BUFF/DEBUFF/DOT/STUN/SHIELD/COUNTER/HEAL. LIFESTEAL is handled by the caller (needs actual damage dealt). */
 function applySkillEffects(
   side: Side,
@@ -278,10 +306,16 @@ function applySkillEffects(
 
     if (effect.target === 'SELF') {
       // A new COUNTER replaces any existing one instead of stacking, to keep the reflect math simple.
-      const existing = effect.type === 'COUNTER' ? newUser.statusEffects.filter((e) => e.type !== 'COUNTER') : newUser.statusEffects
+      const existing =
+        effect.type === 'COUNTER'
+          ? newUser.statusEffects.filter((e) => e.type !== 'COUNTER')
+          : semDuplicataDaMesmaSkill(newUser.statusEffects, instance)
       newUser = { ...newUser, statusEffects: [...existing, instance] }
     } else {
-      newTarget = { ...newTarget, statusEffects: [...newTarget.statusEffects, instance] }
+      newTarget = {
+        ...newTarget,
+        statusEffects: [...semDuplicataDaMesmaSkill(newTarget.statusEffects, instance), instance],
+      }
     }
     applied.push({ type: effect.type, target: targetSide, stat: effect.stat, magnitude: instance.magnitude, duration: effect.duration })
   }
