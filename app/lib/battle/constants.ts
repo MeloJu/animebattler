@@ -10,6 +10,11 @@ export const BASIC_ATTACK_POWER = 12
 
 export const XP_ON_WIN = 25
 export const XP_ON_LOSS = 5
+
+// Fração do xpReward que uma REJOGADA de estágio já concluído paga. Antes era
+// 1 (valor cheio, sem limite), o que fazia repetir o mesmo estágio ser o
+// caminho mais rápido do jogo. Ver battleXpGained.
+export const STORY_REPLAY_XP_RATIO = 0.5
 export const XP_PER_LEVEL = 100 // xp needed for level N -> N+1 is N * XP_PER_LEVEL
 
 // A normal AI battle pays XP_ON_WIN/XP_ON_LOSS as-is. Raids multiply by the

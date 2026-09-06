@@ -73,3 +73,39 @@ describe('battleXpGained', () => {
     expect(battleXpGained('DRAW', 1, null)).toBe(15)
   })
 })
+
+// Rejogar pagava o xpReward CHEIO, sem limite: repetir o estágio do Gin dava
+// 380 de XP por partida, de longe o caminho mais rápido do jogo — e tornava
+// sem sentido qualquer teto diário em outro modo.
+describe('battleXpGained — rejogada de estágio', () => {
+  it('primeira conclusão continua pagando o valor cheio', () => {
+    expect(battleXpGained('PLAYER_WIN', 1, 380, true)).toBe(380)
+  })
+
+  it('rejogada paga metade', () => {
+    expect(battleXpGained('PLAYER_WIN', 1, 380, false)).toBe(190)
+  })
+
+  it('arredonda quando a metade é quebrada', () => {
+    expect(battleXpGained('PLAYER_WIN', 1, 45, false)).toBe(23)
+  })
+
+  it('perder numa rejogada continua na tabela genérica, não em metade dela', () => {
+    expect(battleXpGained('ENEMY_WIN', 1, 380, false)).toBe(5)
+  })
+
+  it('o padrão é primeira conclusão, então as chamadas antigas não mudam', () => {
+    expect(battleXpGained('PLAYER_WIN', 1, 380)).toBe(battleXpGained('PLAYER_WIN', 1, 380, true))
+  })
+
+  it('fora da história o parâmetro não tem efeito', () => {
+    expect(battleXpGained('PLAYER_WIN', 1, null, false)).toBe(25)
+    expect(battleXpGained('PLAYER_WIN', 3, null, false)).toBe(75)
+  })
+
+  it('avançar rende mais que moer o estágio anterior', () => {
+    const rejogarGin = battleXpGained('PLAYER_WIN', 1, 380, false)
+    const passarAizen = battleXpGained('PLAYER_WIN', 1, 500, true)
+    expect(passarAizen).toBeGreaterThan(rejogarGin)
+  })
+})

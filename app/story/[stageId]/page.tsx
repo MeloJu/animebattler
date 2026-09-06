@@ -62,7 +62,7 @@ export default async function StoryStagePage({ params }: { params: Promise<{ sta
               <button type="submit" className="rounded-md border border-border px-4 py-2 text-sm hover:border-border">
                 Rejogar
               </button>
-              <p className="text-xs opacity-50 mt-2">Rejogar rende o XP normal da batalha, mas as moedas só na primeira vez.</p>
+              <p className="text-xs opacity-50 mt-2">Rejogar rende metade do XP do estágio, e nenhuma moeda — as moedas saem só na primeira conclusão.</p>
             </form>
           </>
         ) : (
