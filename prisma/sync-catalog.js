@@ -26,6 +26,7 @@
 const { PrismaClient } = require('@prisma/client');
 const storyCatalog = require('./catalog/story');
 const equipmentCatalog = require('./catalog/equipment');
+const ladderCatalog = require('./catalog/skill-ladders');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -200,6 +201,96 @@ async function syncStory(animeId) {
   }
 }
 
+/**
+ * Escadas de habilidade por afiliação.
+ *
+ * Só os shinigami tinham progressão de habilidade (a escada de kidō, 15
+ * entradas até o nível 45). Os outros 28 personagens ficavam com as 4 do kit
+ * inicial para sempre — o que fazia o mesmo estágio dar 98% de vitória com um
+ * e 26% com outro. Ver prisma/catalog/skill-ladders.js.
+ *
+ * Como o resto do sync, só faz upsert. Se um personagem mudar de afiliação, as
+ * habilidades da escada antiga permanecem: apagá-las tiraria do jogador algo
+ * que ele já podia equipar.
+ */
+async function syncSkillLadders() {
+  // 1. As linhas de Skill em si, chaveadas por (name, category).
+  const idPorNome = {};
+  for (const def of ladderCatalog.allSkills()) {
+    const { _level, ...skill } = def;
+    void _level;
+    const atual = await prisma.skill.findUnique({
+      where: { name_category: { name: skill.name, category: skill.category } },
+    });
+    registra('skill', skill.name, diff(atual, skill));
+    if (!DRY_RUN) {
+      const row = await prisma.skill.upsert({
+        where: { name_category: { name: skill.name, category: skill.category } },
+        create: skill,
+        update: skill,
+      });
+      idPorNome[skill.name] = row.id;
+    } else if (atual) {
+      idPorNome[skill.name] = atual.id;
+    }
+  }
+
+  // 2. Ligar cada escada aos personagens da afiliação alvo.
+  for (const ladder of ladderCatalog.ladders) {
+    for (const alvo of ladderCatalog.targetsOf(ladder)) {
+      const anime = await prisma.anime.findUnique({ where: { slug: alvo.anime }, select: { id: true } });
+      if (!anime) throw new Error(`Escada referencia anime inexistente: ${alvo.anime}`);
+      const afiliacao = await prisma.affiliation.findUnique({
+        where: { animeId_name: { animeId: anime.id, name: alvo.affiliation } },
+        select: { id: true },
+      });
+      if (!afiliacao) throw new Error(`Escada referencia afiliação inexistente: ${alvo.affiliation}`);
+
+      const personagens = await prisma.character.findMany({
+        where: { affiliationId: afiliacao.id },
+        select: { id: true, name: true },
+      });
+
+      for (const c of personagens) {
+        for (const def of ladder.skills) {
+          const skillId = idPorNome[def.name];
+          if (!skillId) {
+            if (DRY_RUN) continue; // a skill ainda não existe numa simulação
+            throw new Error(`Skill da escada sem id: ${def.name}`);
+          }
+          const desejado = { characterId: c.id, skillId, requiredLevel: def.level, learnedByDefault: false };
+          const atual = await prisma.characterSkill.findUnique({
+            where: { characterId_skillId: { characterId: c.id, skillId } },
+          });
+
+          // TRAVA: a escada nunca PIORA um vínculo que já existe. Se o
+          // personagem já tem essa habilidade no kit inicial, ou já a libera
+          // num nível mais baixo, fica como está.
+          //
+          // Sem isso, uma escada que reuse um nome de golpe de assinatura
+          // empurraria esse golpe para um nível alto e o tiraria do
+          // personagem — silenciosamente, sem erro nenhum. Aconteceu de
+          // verdade ao escrever estas escadas, com três nomes.
+          const pioraria = atual && (atual.learnedByDefault || atual.requiredLevel <= def.level);
+          if (pioraria) {
+            relatorio.iguais += 1;
+            continue;
+          }
+
+          registra('escada', `${c.name} · ${def.name} (nv ${def.level})`, diff(atual, desejado));
+          if (!DRY_RUN) {
+            await prisma.characterSkill.upsert({
+              where: { characterId_skillId: { characterId: c.id, skillId } },
+              create: desejado,
+              update: { requiredLevel: def.level },
+            });
+          }
+        }
+      }
+    }
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -214,6 +305,7 @@ async function main() {
   const skillIds = await syncEquipmentSkills(bleach.id);
   await syncEquipment(bleach.id, skillIds);
   await syncStory(bleach.id);
+  await syncSkillLadders();
 
   console.log(`sem alteração: ${relatorio.iguais}`);
   if (relatorio.criados.length) {
