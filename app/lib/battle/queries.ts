@@ -2,13 +2,34 @@ import { prisma } from '@/app/lib/prisma'
 import { computeBaseStats, hasBattleValue } from './engine'
 import { getEquipmentGrantedSkills } from '@/app/lib/equipment/queries'
 import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
-import type { BaseStats, SkillDef, SkillEffect, TransformationDef } from './types'
+import type { BaseStats, ScalingStat, SkillDef, SkillEffect, TransformationDef } from './types'
+import type { ScalingStat as PrismaScalingStat } from '@prisma/client'
 
 function parseEffects(json: unknown): SkillEffect[] {
   return Array.isArray(json) ? (json as SkillEffect[]) : []
 }
 
-export function toSkillDef(skill: { id: string; name: string; power: number; energyCost: number; cooldown: number; effects: unknown }): SkillDef {
+/**
+ * O enum do Prisma é MAIÚSCULO e o motor fala minúsculo, igual ao tipo Stat
+ * que getCombatStat indexa. A tradução mora aqui, na borda, para que o motor
+ * continue sem saber que existe banco.
+ */
+const SCALING_STAT_DO_BANCO: Record<PrismaScalingStat, ScalingStat> = {
+  ATTACK: 'attack',
+  DEFENSE: 'defense',
+  SPEED: 'speed',
+  ENERGY: 'energy',
+}
+
+export function toSkillDef(skill: {
+  id: string
+  name: string
+  power: number
+  energyCost: number
+  cooldown: number
+  effects: unknown
+  scalingStat: PrismaScalingStat
+}): SkillDef {
   return {
     id: skill.id,
     name: skill.name,
@@ -16,6 +37,7 @@ export function toSkillDef(skill: { id: string; name: string; power: number; ene
     energyCost: skill.energyCost,
     cooldown: skill.cooldown,
     effects: parseEffects(skill.effects),
+    scalingStat: SCALING_STAT_DO_BANCO[skill.scalingStat],
   }
 }
 

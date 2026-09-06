@@ -1,3 +1,5 @@
+import type { ScalingStat } from './types'
+
 export const ENERGY_REGEN_PCT = 0.08
 export const MAX_ROUNDS = 50
 
@@ -7,6 +9,44 @@ export const CRIT_SPEED_COEFFICIENT = 0.01
 export const CRIT_MULTIPLIER = 1.5
 
 export const BASIC_ATTACK_POWER = 12
+
+/**
+ * Bônus que uma habilidade ganha do atributo de escala, quando quem lança é
+ * exatamente a média do elenco naquele atributo. Equivale ao antigo
+ * ataque * 0.5 para um personagem de ataque médio (19.8 * 0.5 = 9.9).
+ */
+export const SCALING_BASE = 10
+
+/**
+ * Média do elenco em cada atributo, usada para NORMALIZAR a escala.
+ *
+ * POR QUE NORMALIZAR: a primeira versão disto era um coeficiente fixo por
+ * atributo, calibrado por "paridade de arquétipo". Estava errado, e a
+ * simulação mostrou: o Vegeta caiu de 81% para 0% de vitória no estágio 2.
+ *
+ * A causa é que os atributos vivem em escalas numéricas diferentes — ataque
+ * vai de 15 a 26, energia de 95 a 170. Todo personagem tem uma reserva de
+ * energia grande, inclusive os que não são conjuradores, então qualquer
+ * coeficiente que fizesse energia valer a pena para um CONJURADOR fazia
+ * energia valer a pena para TODO MUNDO. Trocava "ataque é rei" por "energia
+ * é rei", que é o mesmo defeito com outro nome.
+ *
+ * Normalizando, o bônus deixa de perguntar "quantos pontos você tem" e passa
+ * a perguntar "quão acima da média você está NESTE atributo". Aí 26 de ataque
+ * (1.31x a média) e 170 de energia (1.38x) valem quase o mesmo, e a escolha
+ * de build volta a ser sobre o personagem em vez de sobre qual número é
+ * naturalmente maior.
+ *
+ * Os valores saem do elenco real. Se a média mudar muito com personagens
+ * novos, estes números precisam ser revisados junto — por isso estão aqui,
+ * num lugar só, e não espalhados.
+ */
+export const SCALING_REFERENCE: Record<ScalingStat, number> = {
+  attack: 19.8,
+  defense: 12.4,
+  speed: 13.9,
+  energy: 165,
+}
 
 export const XP_ON_WIN = 25
 export const XP_ON_LOSS = 5

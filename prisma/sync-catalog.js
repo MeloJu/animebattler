@@ -29,6 +29,7 @@ const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
 const characterCatalog = require('./catalog/characters');
 const kitCatalog = require('./catalog/kits');
+const scalingCatalog = require('./catalog/skill-scaling');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -413,6 +414,54 @@ async function syncKits() {
   }
 }
 
+/**
+ * Atributo de escala de cada habilidade. Ver prisma/catalog/skill-scaling.js
+ * para o raciocínio; aqui só se aplica a regra.
+ *
+ * Roda por ÚLTIMO de propósito: a regra do kit depende da classe do dono, e
+ * a classe é escrita por syncCharacters. Rodar antes leria classe velha.
+ */
+async function syncSkillScaling() {
+  const skills = await prisma.skill.findMany({
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      scalingStat: true,
+      characterLinks: { select: { character: { select: { class: true } } } },
+    },
+  });
+
+  // Escada declarada vence a regra por classe: escada é compartilhada, então
+  // "a classe do dono" não é uma pergunta com resposta.
+  const statDaEscada = {};
+  for (const ladder of ladderCatalog.ladders) {
+    if (!ladder.scalingStat) continue;
+    for (const sk of ladder.skills) statDaEscada[sk.name] = ladder.scalingStat;
+  }
+
+  for (const sk of skills) {
+    const classes = sk.characterLinks.map((l) => l.character.class);
+    // Assinatura (um dono) decide pela classe. Técnica compartilhada decide
+    // pelo tema: categoria, ou a escada declarada quando a categoria é OTHER
+    // e portanto não distingue nada.
+    const desejado =
+      classes.length === 1
+        ? scalingCatalog.scalingStatDe(sk.category, classes)
+        : scalingCatalog.porCategoria[sk.category] ||
+          statDaEscada[sk.name] ||
+          scalingCatalog.scalingStatDe(sk.category, classes);
+    if (sk.scalingStat === desejado) {
+      relatorio.iguais += 1;
+      continue;
+    }
+    registra('escala', `${sk.name} (${sk.category}) ${sk.scalingStat} -> ${desejado}`, { acao: 'atualizar', campos: ['scalingStat'] });
+    if (!DRY_RUN) {
+      await prisma.skill.update({ where: { id: sk.id }, data: { scalingStat: desejado } });
+    }
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -430,6 +479,7 @@ async function main() {
   await syncCharacters();
   await syncKits();
   await syncSkillLadders();
+  await syncSkillScaling();
 
   console.log(`sem alteração: ${relatorio.iguais}`);
   if (relatorio.criados.length) {

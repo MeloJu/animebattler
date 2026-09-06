@@ -13,6 +13,7 @@ import {
   computeFighterStats,
 } from '@/app/lib/battle/engine'
 import type {
+  AppliedEffect,
   BaseStats,
   CombatantState,
   SkillDef,
@@ -56,6 +57,7 @@ const skill = (over: Partial<SkillDef> = {}): SkillDef => ({
   energyCost: 10,
   cooldown: 2,
   effects: [],
+  scalingStat: 'attack',
   ...over,
 })
 
@@ -550,5 +552,83 @@ describe('computeFighterStats', () => {
     const bonus = { hp: 0, attack: 2, defense: 0, speed: 0 }
     const peso = (lv: number) => 2 / computeFighterStats(base, lv, bonus).attack
     expect(peso(10)).toBeLessThan(peso(1))
+  })
+})
+
+describe('escala por atributo', () => {
+  // Um turno em que só o jogador age com a skill dada, sem crítico.
+  const usa = (s: ReturnType<typeof createInitialState>, sk: SkillDef) =>
+    resolveRound(
+      s,
+      { playerAction: { kind: 'ATTACK' as const, skillId: sk.id }, enemyAction: { skillId: null } },
+      { ...ctxVazio(), playerSkills: { [sk.id]: sk } },
+      NUNCA_CRITA
+    ).turnResults.find((t) => t.side === 'PLAYER')!
+
+  it('skill que escala de ataque ignora a energia do lançador', () => {
+    const sk = skill({ power: 20, energyCost: 0, effects: [], scalingStat: 'attack' })
+    const pouca = usa(createInitialState(stats({ energy: 50 }), stats()), sk).damage!
+    const muita = usa(createInitialState(stats({ energy: 300 }), stats()), sk).damage!
+    expect(pouca).toBe(muita)
+  })
+
+  it('skill que escala de energia bate mais forte com reserva maior', () => {
+    const sk = skill({ power: 20, energyCost: 0, effects: [], scalingStat: 'energy' })
+    const pouca = usa(createInitialState(stats({ energy: 50 }), stats()), sk).damage!
+    const muita = usa(createInitialState(stats({ energy: 300 }), stats()), sk).damage!
+    expect(muita).toBeGreaterThan(pouca)
+  })
+
+  it('escala da reserva MÁXIMA, não da atual — gastar energia não enfraquece', () => {
+    const sk = skill({ id: 'kido', power: 20, energyCost: 0, effects: [], scalingStat: 'energy' })
+    const cheio = createInitialState(stats({ energy: 200 }), stats())
+    const gasto = {
+      ...cheio,
+      player: { ...cheio.player, currentEnergy: 10 },
+    }
+    expect(usa(gasto, sk).damage!).toBe(usa(cheio, sk).damage!)
+  })
+
+  it('cura escala com o atributo de quem lança', () => {
+    const sk = skill({
+      power: 0,
+      energyCost: 0,
+      scalingStat: 'energy',
+      effects: [{ type: 'HEAL', target: 'SELF', magnitude: 10 }],
+    })
+    const ferido = (energia: number) => {
+      const s = createInitialState(stats({ energy: energia }), stats())
+      return { ...s, player: { ...s.player, currentHp: 1 } }
+    }
+    expect(usa(ferido(300), sk).healed!).toBeGreaterThan(usa(ferido(50), sk).healed!)
+  })
+
+  it('escudo escala, mas dano contínuo não — DOT multiplica pela duração', () => {
+    const escudo = skill({
+      power: 0,
+      energyCost: 0,
+      scalingStat: 'energy',
+      effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 10, duration: 2 }],
+    })
+    const dot = skill({
+      power: 0,
+      energyCost: 0,
+      scalingStat: 'energy',
+      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 2 }],
+    })
+    const mag = (sk: SkillDef, energia: number) =>
+      usa(createInitialState(stats({ energy: energia }), stats()), sk).effectsApplied!.find(
+        (e: AppliedEffect) => e.type === sk.effects[0].type
+      )!.magnitude
+
+    expect(mag(escudo, 300)).toBeGreaterThan(mag(escudo, 50))
+    expect(mag(dot, 300)).toBe(mag(dot, 50))
+  })
+
+  it('ataque básico escala de ataque, porque é golpe físico e não técnica', () => {
+    const s = (atk: number) => createInitialState(stats({ attack: atk }), stats())
+    const dano = (atk: number) =>
+      resolveRound(s(atk), ataqueBasico, ctxVazio(), NUNCA_CRITA).turnResults.find((t) => t.side === 'PLAYER')!.damage!
+    expect(dano(40)).toBeGreaterThan(dano(10))
   })
 })

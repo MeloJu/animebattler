@@ -6,6 +6,8 @@ import {
   CRIT_SPEED_COEFFICIENT,
   ENERGY_REGEN_PCT,
   LEVEL_SCALING,
+  SCALING_BASE,
+  SCALING_REFERENCE,
 } from './constants'
 import type {
   AppliedEffect,
@@ -14,6 +16,7 @@ import type {
   CombatantState,
   Outcome,
   PlayerAction,
+  ScalingStat,
   SkillDef,
   SkillEffect,
   Side,
@@ -164,17 +167,42 @@ export function isStunned(c: CombatantState): boolean {
   return c.statusEffects.some((e) => e.type === 'STUN' && e.remainingRounds > 0)
 }
 
+/**
+ * Valor do atributo do qual uma habilidade escala.
+ *
+ * Energia é lida de maxEnergy, NÃO de currentEnergy, e isso é deliberado: com
+ * a energia atual, cada lançamento enfraqueceria o próximo e um conjurador
+ * entraria em espiral de morte justamente por usar as habilidades dele.
+ * maxEnergy é atributo de build; currentEnergy é recurso da rodada.
+ *
+ * Os outros três passam por getCombatStat para respeitar BUFF/DEBUFF ativos —
+ * energia não tem buff porque não é um Stat.
+ */
+function scalingValue(c: CombatantState, stat: ScalingStat): number {
+  return stat === 'energy' ? c.maxEnergy : getCombatStat(c, stat)
+}
+
+/**
+ * Bônus plano que o atributo de escala soma a um valor base (poder, cura,
+ * escudo). É proporcional a quão acima da média do elenco o lançador está
+ * naquele atributo — ver SCALING_REFERENCE para por que não é um coeficiente
+ * fixo por atributo.
+ */
+function scaledBonus(c: CombatantState, stat: ScalingStat): number {
+  return SCALING_BASE * (scalingValue(c, stat) / SCALING_REFERENCE[stat])
+}
+
 function computeDamage(
   attacker: CombatantState,
   defender: CombatantState,
   power: number,
+  scalingStat: ScalingStat,
   rand: () => number
 ): { damage: number; isCrit: boolean } {
-  const atk = getCombatStat(attacker, 'attack')
   const def = getCombatStat(defender, 'defense')
   const atkSpeed = getCombatStat(attacker, 'speed')
   const defSpeed = getCombatStat(defender, 'speed')
-  const raw = power + atk * 0.5
+  const raw = power + scaledBonus(attacker, scalingStat)
   const mitigated = raw * (100 / (100 + def))
   const critChance = clamp(
     CRIT_BASE_CHANCE + Math.max(0, atkSpeed - defSpeed) * CRIT_SPEED_COEFFICIENT,
@@ -211,8 +239,17 @@ function applySkillEffects(
   user: CombatantState,
   target: CombatantState,
   effects: SkillEffect[],
-  skillName: string
+  skillName: string,
+  scalingStat: ScalingStat
 ): { user: CombatantState; target: CombatantState; applied: AppliedEffect[]; healed: number } {
+  // CURA e ESCUDO escalam junto com dano, senão um suporte que investe no
+  // próprio atributo continua curando o mesmo tanto do nível 1 ao 40 — que
+  // era exatamente o caso antes: magnitude era número fixo.
+  //
+  // DOT, BUFF e DEBUFF ficam fixos de propósito. DOT aplica por rodada e
+  // multiplica pela duração, e BUFF/DEBUFF são porcentagem: os três precisam
+  // de calibragem própria, e escalar junto os deixaria desproporcionais.
+  const bonus = Math.round(scaledBonus(user, scalingStat))
   let newUser = user
   let newTarget = target
   const applied: AppliedEffect[] = []
@@ -222,10 +259,11 @@ function applySkillEffects(
     const targetSide: Side = effect.target === 'SELF' ? side : side === 'PLAYER' ? 'ENEMY' : 'PLAYER'
 
     if (effect.type === 'HEAL') {
-      const amount = Math.min(effect.magnitude, newUser.maxHp - newUser.currentHp)
+      const total = effect.magnitude + bonus
+      const amount = Math.min(total, newUser.maxHp - newUser.currentHp)
       newUser = { ...newUser, currentHp: newUser.currentHp + amount }
       healed += amount
-      applied.push({ type: 'HEAL', target: side, magnitude: effect.magnitude })
+      applied.push({ type: 'HEAL', target: side, magnitude: total })
       continue
     }
 
@@ -233,7 +271,7 @@ function applySkillEffects(
       id: makeEffectId(),
       type: effect.type,
       stat: effect.stat,
-      magnitude: effect.magnitude,
+      magnitude: effect.type === 'SHIELD' ? effect.magnitude + bonus : effect.magnitude,
       remainingRounds: effect.duration ?? 1,
       sourceSkillName: skillName,
     }
@@ -245,7 +283,7 @@ function applySkillEffects(
     } else {
       newTarget = { ...newTarget, statusEffects: [...newTarget.statusEffects, instance] }
     }
-    applied.push({ type: effect.type, target: targetSide, stat: effect.stat, magnitude: effect.magnitude, duration: effect.duration })
+    applied.push({ type: effect.type, target: targetSide, stat: effect.stat, magnitude: instance.magnitude, duration: effect.duration })
   }
 
   return { user: newUser, target: newTarget, applied, healed }
@@ -261,6 +299,8 @@ function performSkillUse(
   const power = skill ? skill.power : BASIC_ATTACK_POWER
   const energyCost = skill ? skill.energyCost : 0
   const effects = skill ? skill.effects : []
+  // Ataque básico escala de ataque: é golpe físico, não técnica.
+  const scalingStat: ScalingStat = skill ? skill.scalingStat : 'attack'
 
   let newAttacker: CombatantState = {
     ...attacker,
@@ -280,7 +320,7 @@ function performSkillUse(
   if (power > 0) {
     targetHpBefore = newDefender.currentHp
     const counterIdx = newDefender.statusEffects.findIndex((e) => e.type === 'COUNTER' && e.remainingRounds > 0)
-    const computed = computeDamage(newAttacker, newDefender, power, rand)
+    const computed = computeDamage(newAttacker, newDefender, power, scalingStat, rand)
 
     if (counterIdx !== -1) {
       countered = true
@@ -309,7 +349,7 @@ function performSkillUse(
   // A countered attack didn't land, so effects aimed at the enemy shouldn't apply either —
   // but self-targeted effects (a buff/heal on the caster) still do, since the caster still acted.
   const supportEffects = effects.filter((e) => e.type !== 'LIFESTEAL' && (!countered || e.target === 'SELF'))
-  const supportResult = applySkillEffects(side, newAttacker, newDefender, supportEffects, skill?.name ?? 'Ataque Básico')
+  const supportResult = applySkillEffects(side, newAttacker, newDefender, supportEffects, skill?.name ?? 'Ataque Básico', scalingStat)
   newAttacker = supportResult.user
   newDefender = supportResult.target
   healed += supportResult.healed

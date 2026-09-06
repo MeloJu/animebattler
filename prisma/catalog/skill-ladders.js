@@ -33,6 +33,13 @@
 // fecha no 14), de modo que as duas se intercalam ao longo do jogo. Se a recompensa de batalha contra IA passar a escalar
 // com o nível, o teto sobe e as DUAS curvas se esticam juntas.
 
+// CADA ESCADA DECLARA scalingStat quando a categoria não basta. Ki e ninjutsu
+// já vêm de KI/NINJUTSU, que a regra por categoria resolve. Quincy, Espada,
+// Karakura e a metahumana usam categoria OTHER, e sem declaração explícita a
+// regra caía na classe do dono — que numa escada COMPARTILHADA não existe:
+// Chad (TANQUE) e Orihime (SUPORTE) dividem Karakura, o empate caía em ataque,
+// e as rejeições da Orihime passavam a escalar do atributo que ela menos tem.
+
 /** Ki — dano bruto e auto-buff. Cara em energia, recompensa quem sobrevive. */
 const ki = {
   anime: 'dragon-ball-z',
@@ -77,6 +84,7 @@ const ninjutsu = {
 const quincy = {
   anime: 'bleach',
   affiliation: 'Quincy',
+  scalingStat: 'ENERGY', // reishi é reserva espiritual, não músculo
   skills: [
     { name: 'Flecha de Reishi', category: 'OTHER', power: 9, energyCost: 9, cooldown: 1, tags: ['quincy'], effects: [], level: 1 },
     { name: 'Tiro Rápido', category: 'OTHER', power: 12, energyCost: 12, cooldown: 1, tags: ['quincy'], effects: [], level: 2 },
@@ -97,6 +105,7 @@ const quincy = {
 const hollow = {
   anime: 'bleach',
   affiliation: 'Espada',
+  scalingStat: 'ENERGY', // cero e hierro saem de reiatsu
   skills: [
     { name: 'Garra Corrosiva', category: 'OTHER', power: 9, energyCost: 9, cooldown: 1, tags: ['hollow'], effects: [], level: 1 },
     { name: 'Mordida Voraz', category: 'OTHER', power: 12, energyCost: 13, cooldown: 1, tags: ['hollow', 'lifesteal'], effects: [{ type: 'LIFESTEAL', target: 'SELF', magnitude: 15 }], level: 2 },
@@ -117,6 +126,7 @@ const hollow = {
 const karakura = {
   anime: 'bleach',
   affiliation: 'Karakura Town',
+  scalingStat: 'ENERGY', // as rejeições da Orihime dominam esta escada
   skills: [
     { name: 'Soco Reforçado', category: 'TAIJUTSU', power: 9, energyCost: 9, cooldown: 1, tags: ['humano'], effects: [], level: 1 },
     { name: 'Guarda Firme', category: 'TAIJUTSU', power: 0, energyCost: 11, cooldown: 2, tags: ['humano', 'shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 18, duration: 2 }], level: 2 },
@@ -142,6 +152,7 @@ const karakura = {
 const metahumano = {
   anime: null, // aplicada a várias afiliações, ver `aplicaA`
   affiliation: null,
+  scalingStat: 'ATTACK', // super-força e combate físico, não conjuração
   aplicaA: [
     { anime: 'dc-universe', affiliation: 'Justice League' },
     { anime: 'marvel-universe', affiliation: 'Avengers' },

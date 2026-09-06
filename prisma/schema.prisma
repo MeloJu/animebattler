@@ -148,6 +148,16 @@ enum SkillCategory {
   OTHER
 }
 
+// Atributo do qual uma habilidade tira força. Existe para que kidō recompense
+// energia e taijutsu recompense ataque — sem isso todo build ótimo é o mesmo
+// build, porque só ataque influenciava dano.
+enum ScalingStat {
+  ATTACK
+  DEFENSE
+  SPEED
+  ENERGY
+}
+
 model Skill {
   id          String        @id @default(cuid())
   name        String
@@ -158,6 +168,10 @@ model Skill {
   cooldown    Int           @default(0)
   tags        Json // JSON array of strings, e.g., ["bleed", "stun", "fire"] - flavor only
   effects     Json          @default("[]") // JSON array of SkillEffect (see app/lib/battle/types.ts) - mechanical source of truth
+  // De qual atributo do lançador esta habilidade escala. Ver SCALING_COEFFICIENT
+  // em app/lib/battle/constants.ts. ATTACK reproduz o comportamento antigo,
+  // em que TODA habilidade escalava de ataque e energia era só mana.
+  scalingStat ScalingStat   @default(ATTACK)
 
   // Ownership is many-to-many with characters
   characterLinks           CharacterSkill[]

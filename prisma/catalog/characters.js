@@ -45,7 +45,7 @@ const characters = [
   { name: 'Goku', class: 'ATACANTE', hp: 126, attack: 24, defense: 10, speed: 13, energy: 100 },
   { name: 'Grimmjow Jaegerjaquez', class: 'ATACANTE', hp: 120, attack: 25, defense: 10, speed: 14, energy: 97 },
   { name: 'Ichigo Kurosaki', class: 'ATACANTE', hp: 126, attack: 24, defense: 11, speed: 13, energy: 99 },
-  { name: 'Izuru Kira', class: 'CONJURADOR', hp: 118, attack: 20, defense: 12, speed: 14, energy: 159 },
+  { name: 'Izuru Kira', class: 'ATACANTE', hp: 122, attack: 25, defense: 11, speed: 14, energy: 100 },
   { name: 'Jean Grey', class: 'CONJURADOR', hp: 117, attack: 21, defense: 11, speed: 14, energy: 166 },
   { name: 'Jūshirō Ukitake', class: 'SUPORTE', hp: 131, attack: 16, defense: 14, speed: 14, energy: 150 },
   { name: 'Kaname Tosen', class: 'VELOZ', hp: 116, attack: 20, defense: 12, speed: 18, energy: 110 },

@@ -2,6 +2,13 @@ export type Outcome = 'PLAYER_WIN' | 'ENEMY_WIN' | 'DRAW' | null
 export type Side = 'PLAYER' | 'ENEMY'
 export type TransformationTrigger = 'MANUAL' | 'LOW_HP' | 'ON_DAMAGE_TAKEN' | 'ENERGY_CHARGE'
 export type Stat = 'attack' | 'defense' | 'speed'
+
+/**
+ * Atributo do qual uma habilidade tira força. Espelha o enum ScalingStat do
+ * Prisma. Note que inclui 'energy', que NÃO é um Stat: energia não recebe
+ * BUFF/DEBUFF e é lida do tamanho da reserva, não do valor atual.
+ */
+export type ScalingStat = 'attack' | 'defense' | 'speed' | 'energy'
 export type EffectType = 'BUFF' | 'DEBUFF' | 'DOT' | 'STUN' | 'COUNTER' | 'SHIELD' | 'HEAL' | 'LIFESTEAL'
 
 // Mechanical definition attached to a Skill (Skill.effects in the DB). A
@@ -90,6 +97,7 @@ export type SkillDef = {
   energyCost: number
   cooldown: number
   effects: SkillEffect[]
+  scalingStat: ScalingStat
 }
 
 export type TransformationDef = {

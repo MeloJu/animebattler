@@ -17,6 +17,7 @@ const skill = (over: Partial<SkillDef> = {}): SkillDef => ({
   energyCost: 0,
   cooldown: 0,
   effects: [],
+  scalingStat: 'attack',
   ...over,
 })
 
