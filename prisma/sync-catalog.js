@@ -27,6 +27,7 @@ const { PrismaClient } = require('@prisma/client');
 const storyCatalog = require('./catalog/story');
 const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
+const characterCatalog = require('./catalog/characters');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -291,6 +292,75 @@ async function syncSkillLadders() {
   }
 }
 
+/**
+ * Classe e stats base dos personagens.
+ *
+ * Os stats variavam 1,88x entre o mais forte e a mais fraca, sem custo nem
+ * desbloqueio separando os dois — ou seja, havia uma escolha certa e várias
+ * erradas. Ver prisma/catalog/characters.js para como os números saíram.
+ */
+async function syncCharacters() {
+  // Animes e afiliações que só existem por causa dos personagens novos.
+  for (const a of characterCatalog.novosAnimes) {
+    const atual = await prisma.anime.findUnique({ where: { slug: a.slug } });
+    registra('anime', a.name, diff(atual, { name: a.name, slug: a.slug }));
+    let animeId = atual?.id;
+    if (!DRY_RUN) {
+      const row = await prisma.anime.upsert({
+        where: { slug: a.slug },
+        create: { name: a.name, slug: a.slug },
+        update: { name: a.name },
+      });
+      animeId = row.id;
+    }
+    if (!animeId) continue;
+    for (const nome of a.affiliations) {
+      const atualAf = await prisma.affiliation.findUnique({
+        where: { animeId_name: { animeId, name: nome } },
+      });
+      registra('afiliação', `${a.name} · ${nome}`, diff(atualAf, { animeId, name: nome }));
+      if (!DRY_RUN && !atualAf) await prisma.affiliation.create({ data: { animeId, name: nome } });
+    }
+  }
+
+  // Classe e stats dos que já existem, casados por nome.
+  for (const c of characterCatalog.characters) {
+    const atual = await prisma.character.findFirst({ where: { name: c.name } });
+    if (!atual) {
+      console.log(`  (aviso) personagem do catálogo não existe neste banco: ${c.name}`);
+      continue;
+    }
+    const desejado = {
+      class: c.class, hp: c.hp, attack: c.attack,
+      defense: c.defense, speed: c.speed, energy: c.energy,
+    };
+    registra('personagem', c.name, diff(atual, desejado));
+    if (!DRY_RUN) await prisma.character.update({ where: { id: atual.id }, data: desejado });
+  }
+
+  // Personagens novos.
+  for (const c of characterCatalog.novosPersonagens) {
+    const atual = await prisma.character.findUnique({ where: { slug: c.slug } });
+    const anime = await prisma.anime.findUnique({ where: { slug: c.anime }, select: { id: true } });
+    if (!anime) {
+      if (DRY_RUN) { registra('personagem', c.name, { acao: 'criar', campos: ['novo'] }); continue; }
+      throw new Error(`Personagem novo referencia anime inexistente: ${c.anime}`);
+    }
+    const af = await prisma.affiliation.findUnique({
+      where: { animeId_name: { animeId: anime.id, name: c.affiliation } },
+      select: { id: true },
+    });
+    const desejado = {
+      name: c.name, slug: c.slug, animeId: anime.id, affiliationId: af?.id ?? null,
+      class: c.class, hp: c.hp, attack: c.attack, defense: c.defense, speed: c.speed, energy: c.energy,
+    };
+    registra('personagem', c.name, diff(atual, desejado));
+    if (!DRY_RUN) {
+      await prisma.character.upsert({ where: { slug: c.slug }, create: desejado, update: desejado });
+    }
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -305,6 +375,7 @@ async function main() {
   const skillIds = await syncEquipmentSkills(bleach.id);
   await syncEquipment(bleach.id, skillIds);
   await syncStory(bleach.id);
+  await syncCharacters();
   await syncSkillLadders();
 
   console.log(`sem alteração: ${relatorio.iguais}`);

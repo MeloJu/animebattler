@@ -88,14 +88,15 @@ model Affiliation {
 }
 
 model Character {
-  id            String       @id @default(cuid())
+  id            String         @id @default(cuid())
+  class         CharacterClass @default(ATACANTE)
   name          String
-  slug          String?      @unique
+  slug          String?        @unique
   imageUrl      String?
   description   String?
-  anime         Anime        @relation(fields: [animeId], references: [id])
+  anime         Anime          @relation(fields: [animeId], references: [id])
   animeId       String
-  affiliation   Affiliation? @relation(fields: [affiliationId], references: [id])
+  affiliation   Affiliation?   @relation(fields: [affiliationId], references: [id])
   affiliationId String?
 
   // Base stats
@@ -117,6 +118,23 @@ model Character {
   updatedAt DateTime @updatedAt
 
   @@unique([animeId, name])
+}
+
+/// Papel do personagem em combate. Define a distribuição dos stats base e QUAL
+/// ESCADA de habilidades ele recebe — antes a escada vinha da afiliação, o que
+/// obrigava Chad e Orihime a dividirem as mesmas técnicas só por serem os dois
+/// de Karakura, apesar de um ser tanque e a outra suporte.
+///
+/// Classe não é gaiola: ela dá as ferramentas e a linha de base, mas os pontos
+/// de nível são gastos onde o jogador quiser. É o que permite "suporte que
+/// builda dano".
+enum CharacterClass {
+  TANQUE
+  ATACANTE
+  VELOZ
+  SUPORTE
+  CONJURADOR
+  INVOCADOR
 }
 
 enum SkillCategory {
