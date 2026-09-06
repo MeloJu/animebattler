@@ -10,6 +10,7 @@ import {
   applyTransformation,
   resolveRound,
   sumStatBonuses,
+  computeFighterStats,
 } from '@/app/lib/battle/engine'
 import type {
   BaseStats,
@@ -503,5 +504,51 @@ describe('sumStatBonuses', () => {
   it('aceita mais de duas fontes', () => {
     const um = { hp: 1, attack: 1, defense: 1, speed: 1 }
     expect(sumStatBonuses(um, um, um)).toEqual({ hp: 3, attack: 3, defense: 3, speed: 3 })
+  })
+})
+
+// A correção estrutural: antes, só o inimigo do modo história escalava por
+// nível. O jogador ficava parado, então dificuldade e progressão divergiam
+// até a história virar invencível.
+describe('computeFighterStats', () => {
+  const base = { hp: 130, attack: 18, defense: 11, speed: 12, energy: 100 }
+  const semBonus = { hp: 0, attack: 0, defense: 0, speed: 0 }
+
+  it('no nível 1 é idêntico a só somar os bônus', () => {
+    const bonus = { hp: 10, attack: 2, defense: 0, speed: 0 }
+    expect(computeFighterStats(base, 1, bonus)).toEqual(computeBaseStats(base, bonus))
+  })
+
+  it('escala o personagem pelo nível', () => {
+    // nível 5 => 1 + 4*0.12 = 1.48
+    expect(computeFighterStats(base, 5, semBonus)).toEqual({
+      hp: 192, attack: 27, defense: 16, speed: 18, energy: 148,
+    })
+  })
+
+  it('bônus plano NÃO é escalado — entra depois, valor cheio', () => {
+    const bonus = { hp: 100, attack: 100, defense: 100, speed: 100 }
+    const semEle = computeFighterStats(base, 5, semBonus)
+    const comEle = computeFighterStats(base, 5, bonus)
+    expect(comEle.hp - semEle.hp).toBe(100)
+    expect(comEle.attack - semEle.attack).toBe(100)
+    expect(comEle.defense - semEle.defense).toBe(100)
+    expect(comEle.speed - semEle.speed).toBe(100)
+  })
+
+  it('escala antes de somar, e não o contrário', () => {
+    const bonus = { hp: 10, attack: 2, defense: 0, speed: 0 }
+    // se somasse antes de escalar, o HP seria round((130+10)*1.48) = 207
+    expect(computeFighterStats(base, 5, bonus).hp).toBe(202)
+  })
+
+  it('dois personagens iguais no mesmo nível continuam simétricos', () => {
+    expect(computeFighterStats(base, 7, semBonus)).toEqual(computeFighterStats(base, 7, semBonus))
+  })
+
+  it('o bônus perde peso relativo conforme o nível sobe (a gear se supera)', () => {
+    const bonus = { hp: 0, attack: 2, defense: 0, speed: 0 }
+    const peso = (lv: number) => 2 / computeFighterStats(base, lv, bonus).attack
+    expect(peso(10)).toBeLessThan(peso(1))
   })
 })

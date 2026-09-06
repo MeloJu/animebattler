@@ -85,6 +85,29 @@ export function sumStatBonuses(
   )
 }
 
+/**
+ * Stats com que um combatente entra em batalha: personagem escalado pelo
+ * nível, mais os bônus planos (árvore de habilidades, equipamento).
+ *
+ * Único lugar onde stats de batalha nascem. Antes, só o inimigo do modo
+ * história escalava por nível e o jogador ficava parado — o que fazia a
+ * dificuldade e a progressão divergirem até a história virar invencível.
+ *
+ * A ORDEM É DELIBERADA: escala primeiro, soma bônus depois. É a mesma que o
+ * modo história já usava para o inimigo, então os dois lados do combate
+ * passam a ter exatamente a mesma forma. E mantém árvore e equipamento como
+ * impulso de começo de jogo, que perde peso relativo conforme o nível sobe —
+ * a gear inicial se supera, como em qualquer RPG. Escalar os bônus junto os
+ * tornaria permanentemente decisivos, que não é o desenho.
+ */
+export function computeFighterStats(
+  character: { hp: number; attack: number; defense: number; speed: number; energy: number },
+  level: number,
+  bonus: { hp: number; attack: number; defense: number; speed: number }
+): BaseStats {
+  return computeBaseStats(scaleForLevel(character, level), bonus)
+}
+
 export function createInitialState(player: BaseStats, enemy: BaseStats): BattleState {
   return { version: 1, player: makeCombatant(player), enemy: makeCombatant(enemy), outcome: null }
 }
