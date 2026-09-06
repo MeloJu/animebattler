@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { requireUser } from '@/app/lib/session'
 import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression/actions'
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
-import { computeBaseStats, sumStatBonuses } from '@/app/lib/battle/engine'
+import { computeFighterStats, sumStatBonuses } from '@/app/lib/battle/engine'
 import { getEquipmentBonus } from '@/app/lib/equipment/queries'
 import { getEligiblePlayerSkills, getTreeBonus } from '@/app/lib/battle/queries'
 import { getEquippedSkillRows, getSelectedCharacter, getSkillTree, getUnlockedNodeIds } from '@/app/lib/progression/queries'
@@ -53,7 +53,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
     getEligiblePlayerSkills(selected.id, selected.characterId, selected.level),
     getEquippedSkillRows(selected.id),
   ])
-  const effectiveStats = computeBaseStats(selected.character, sumStatBonuses(treeBonus, equipmentBonus))
+  const effectiveStats = computeFighterStats(selected.character, selected.level, sumStatBonuses(treeBonus, equipmentBonus))
   const xpForNextLevel = selected.level * XP_PER_LEVEL
   const slotCount = getLoadoutSlotCount(selected.level)
 

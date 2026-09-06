@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { computeBaseStats, createInitialState, isLegalMove, resolveRound, sumStatBonuses } from './engine'
+import { computeFighterStats, createInitialState, isLegalMove, resolveRound, sumStatBonuses } from './engine'
 import { pickAiSkill } from './ai'
 import { applyExperience, battleXpGained } from './leveling'
 import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
@@ -248,7 +248,7 @@ type EnemyRef =
 // the 3 callers that folding them in here would silently change behavior.
 export async function createBattleAndRedirect(params: {
   userId: string
-  userCharacter: { id: string; character: { hp: number; attack: number; defense: number; speed: number; energy: number } }
+  userCharacter: { id: string; level: number; character: { hp: number; attack: number; defense: number; speed: number; energy: number } }
   enemy: EnemyRef
   storyStageId?: string
 }): Promise<never> {
@@ -256,7 +256,11 @@ export async function createBattleAndRedirect(params: {
     getTreeBonus(params.userCharacter.id),
     getEquipmentBonus(params.userCharacter.id),
   ])
-  const playerBase = computeBaseStats(params.userCharacter.character, sumStatBonuses(treeBonus, equipmentBonus))
+  const playerBase = computeFighterStats(
+    params.userCharacter.character,
+    params.userCharacter.level,
+    sumStatBonuses(treeBonus, equipmentBonus)
+  )
   const state = createInitialState(playerBase, params.enemy.base)
 
   const battle = await prisma.battle.create({
@@ -289,7 +293,10 @@ export async function startAiBattle(userCharacterId: string): Promise<never> {
 
   const enemyPool = await prisma.character.findMany({ where: { id: { not: userCharacter.characterId } } })
   const enemyCharacter = enemyPool[Math.floor(Math.random() * enemyPool.length)]
-  const enemyBase = computeBaseStats(enemyCharacter, { hp: 0, attack: 0, defense: 0, speed: 0 })
+  // Inimigo acompanha o nivel do jogador: sem isso, a luta contra IA vira
+  // trivial assim que o jogador passa a escalar, e deixa de servir como
+  // treino ou como fonte de recompensa.
+  const enemyBase = computeFighterStats(enemyCharacter, userCharacter.level, { hp: 0, attack: 0, defense: 0, speed: 0 })
 
   return createBattleAndRedirect({
     userId,
@@ -314,7 +321,10 @@ export async function startRaidBattle(userCharacterId: string): Promise<never> {
   // Only the tier-1 Hollow exists for now - no selection screen yet.
   const monster = await prisma.monster.findFirst({ where: { name: 'Hollow' } })
   if (!monster) redirect('/battle/raid?error=not_found')
-  const enemyBase = computeBaseStats(monster, { hp: 0, attack: 0, defense: 0, speed: 0 })
+  // Paliativo, nao desenho final: a raid vai ser refeita como conteudo de
+  // preparacao, com chefe proprio e loot proprio. Ate la ela acompanha o
+  // nivel do jogador pelo mesmo motivo da IA — senao vira passeio.
+  const enemyBase = computeFighterStats(monster, userCharacter.level, { hp: 0, attack: 0, defense: 0, speed: 0 })
 
   return createBattleAndRedirect({
     userId,

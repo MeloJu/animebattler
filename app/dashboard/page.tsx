@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { requireUser } from '@/app/lib/session'
 import { getDashboardUser } from '@/app/lib/progression/queries'
+import { getTreeBonus } from '@/app/lib/battle/queries'
+import { getEquipmentBonus } from '@/app/lib/equipment/queries'
+import { computeFighterStats, sumStatBonuses } from '@/app/lib/battle/engine'
 import { CharacterImage } from '@/app/components/CharacterImage'
 import { StatGrid } from '@/app/components/StatGrid'
 
@@ -24,7 +27,14 @@ export default async function DashboardPage() {
   }
 
   const uc = data.selectedCharacter
-  const base = uc.character
+  // Antes era `uc.character` cru: não refletia nem a escala de nível nem os
+  // bônus de árvore/equipamento, então o número da tela não batia com o da
+  // batalha. Mesma composição usada em /status e no combate.
+  const [treeBonus, equipmentBonus] = await Promise.all([
+    getTreeBonus(uc.id),
+    getEquipmentBonus(uc.id),
+  ])
+  const base = computeFighterStats(uc.character, uc.level, sumStatBonuses(treeBonus, equipmentBonus))
 
   return (
     <main className="mx-auto max-w-7xl p-6 space-y-6">
@@ -32,14 +42,14 @@ export default async function DashboardPage() {
         {/* Avatar Card */}
         <div className="card p-6 flex items-center gap-4 md:w-1/2">
           <CharacterImage
-            src={base.imageUrl}
+            src={uc.character.imageUrl}
             alt={uc.nickname}
             containerClassName="h-28 w-28 rounded-lg overflow-hidden bg-background-alt relative flex-shrink-0"
             sizes="112px"
           />
           <div>
             <div className="text-xl font-semibold">{uc.nickname}</div>
-            <div className="text-sm opacity-70">{base.name}</div>
+            <div className="text-sm opacity-70">{uc.character.name}</div>
             <div className="mt-2 flex flex-wrap gap-3 text-sm opacity-80">
               <span>Lv {uc.level}</span>
               <span>EXP {uc.experience}</span>

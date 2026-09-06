@@ -5,11 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { computeBaseStats, createInitialState, isLegalMove, resolveRound, sumStatBonuses } from '@/app/lib/battle/engine'
+import { computeFighterStats, createInitialState, isLegalMove, resolveRound, sumStatBonuses } from '@/app/lib/battle/engine'
 import { getEquippedSkills, getTreeBonus } from '@/app/lib/battle/queries'
 import { getEquipmentBonus } from '@/app/lib/equipment/queries'
 import { applyExperience } from '@/app/lib/battle/leveling'
-import { MAX_ROUNDS, XP_ON_LOSS, XP_ON_WIN } from '@/app/lib/battle/constants'
+import { MAX_ROUNDS, PVP_LEVEL_RANGE, XP_ON_LOSS, XP_ON_WIN } from '@/app/lib/battle/constants'
 import { publishPvpEvent } from './events'
 import type { BattleState, PlayerAction, TurnResult } from '@/app/lib/battle/types'
 
@@ -27,9 +27,10 @@ export async function joinPvpQueue(): Promise<void> {
 
   const me = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { selectedCharacter: { select: { id: true } } },
+    select: { selectedCharacter: { select: { id: true, level: true } } },
   })
   if (!me?.selectedCharacter) redirect('/battle/pvp?error=no_character')
+  const meuNivel = me.selectedCharacter.level
 
   // Já está numa batalha PvP? Volta pra ela em vez de duplicar.
   const existing = await prisma.battle.findFirst({
@@ -38,8 +39,14 @@ export async function joinPvpQueue(): Promise<void> {
   })
   if (existing) redirect(`/battle/pvp/${existing.id}`)
 
+  // Pareia so dentro da faixa de nivel: com os dois lados escalando, um
+  // nivel 12 contra um nivel 3 nao e partida, e desistir vira a unica
+  // jogada racional do lado fraco.
   const opponent = await prisma.pvpQueue.findFirst({
-    where: { userId: { not: user.id } },
+    where: {
+      userId: { not: user.id },
+      userCharacter: { level: { gte: meuNivel - PVP_LEVEL_RANGE, lte: meuNivel + PVP_LEVEL_RANGE } },
+    },
     orderBy: { joinedAt: 'asc' },
   })
 
@@ -82,7 +89,10 @@ async function buildFighter(userCharacterId: string) {
     getEquipmentBonus(uc.id),
     getEquippedSkills(uc.id),
   ])
-  return { uc, base: computeBaseStats(uc.character, sumStatBonuses(tree, equipment)), skills }
+  // Cada lado escala pelo PROPRIO nivel. A fila so pareia dentro de
+  // PVP_LEVEL_RANGE justamente porque, com os dois escalando, diferenca
+  // grande de nivel deixa de ser vantagem e vira atropelo.
+  return { uc, base: computeFighterStats(uc.character, uc.level, sumStatBonuses(tree, equipment)), skills }
 }
 
 async function pairPlayers(

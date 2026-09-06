@@ -24,6 +24,12 @@ export const NORMAL_BATTLE_XP_MULTIPLIER = 1
 
 export const NPC_WINS_ON_WIN = 1
 
+// Diferença de nível máxima aceita no pareamento de PvP, para cima ou para
+// baixo. Com os dois lados escalando por nível, uma diferença grande deixa de
+// ser vantagem e vira atropelo — e desistir passa a ser a única jogada
+// racional do lado fraco. O custo é esperar mais na fila.
+export const PVP_LEVEL_RANGE = 2
+
 // How much an enemy's stats scale per level above 1, used to turn a story
 // stage's `enemyLevel` into an actual stat block (see engine.ts's
 // scaleForLevel). Story mode is its first caller, but this is combatant
