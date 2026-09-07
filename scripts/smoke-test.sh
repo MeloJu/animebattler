@@ -93,6 +93,15 @@ docker exec -e SEED_FORCE=true "$APP" npm run prisma:seed >"$SEED_LOG" 2>&1 ||
   fail "seed forçado falhou: $(tail -5 "$SEED_LOG")"
 echo "✔ seed populou o banco — $(grep -o 'Seeded .*' "$SEED_LOG")"
 
+# 3b. o catalog:sync roda em cima do seed, que é a MESMA sequência do deploy.
+#     O seed cria só o arco de Bleach; tudo que veio depois — segundo arco,
+#     personagens novos, traços, transformações — entra por aqui. Testar isto
+#     não é zelo: o arco de Jujutsu subiu ausente para produção porque o sync
+#     o pulava em silêncio, e nada no caminho reclamava.
+docker exec "$APP" npm run catalog:sync >"$SEED_LOG" 2>&1 ||
+  fail "catalog:sync falhou: $(tail -5 "$SEED_LOG")"
+echo "✔ catalog:sync aplicou o catálogo"
+
 # 4. páginas renderizam (exercita SSR + Prisma no caminho da requisição)
 for path in / /login /register /characters; do
   code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE$path")"
@@ -139,8 +148,13 @@ echo "✔ /dashboard bloqueia anônimo"
 # uma vez as tabelas novas e a query que deriva bloqueio/progresso.
 code="$(curl -s -o /dev/null -w '%{http_code}' -b "$COOKIE_JAR" "$BASE/story")"
 [ "$code" = "200" ] || fail "/story com sessão respondeu $code (esperado 200)"
-curl -s -b "$COOKIE_JAR" "$BASE/story" | grep -q 'Soul Society' || fail "/story não listou o capítulo Soul Society"
-echo "✔ /story lista o arco Soul Society"
+# Checa os DOIS arcos. Antes só o de Bleach era verificado, e foi exatamente
+# assim que o arco de Jujutsu subiu ausente para produção sem ninguém notar:
+# o sync o pulava em silêncio e o smoke test não tinha como perceber.
+html="$(curl -s -b "$COOKIE_JAR" "$BASE/story")"
+echo "$html" | grep -q 'Soul Society' || fail "/story não listou o capítulo Soul Society"
+echo "$html" | grep -q 'Shibuya' || fail "/story não listou o capítulo Incidente de Shibuya"
+echo "✔ /story lista os dois arcos"
 
 echo ""
 echo "✔ smoke test passou"

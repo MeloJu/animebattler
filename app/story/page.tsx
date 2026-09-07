@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { prisma } from '@/app/lib/prisma'
-import { redirect } from 'next/navigation'
 import { requireUser } from '@/app/lib/session'
 import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStoryChapters } from '@/app/lib/story/queries'
@@ -16,11 +15,13 @@ export default async function StoryPage({ searchParams }: { searchParams: Promis
 
   const { error } = await searchParams
   const errorMessage = resolveErrorMessage(STORY_ERRORS, error, 'Ocorreu um erro.')
+  // Sem personagem escolhido a tela ainda LISTA os arcos, só não mostra
+  // progresso. Expulsar para /select esconderia o conteúdo de quem só quer
+  // olhar o que existe antes de decidir com quem jogar.
   const userCharacter = await getSelectedCharacter(user.id)
-  if (!userCharacter) redirect('/select')
 
   const [chapters, wallet] = await Promise.all([
-    getStoryChapters(userCharacter.id),
+    getStoryChapters(userCharacter?.id ?? null),
     prisma.user.findUnique({ where: { id: user.id }, select: { coins: true } }),
   ])
 
@@ -32,7 +33,20 @@ export default async function StoryPage({ searchParams }: { searchParams: Promis
           {/* O progresso é por personagem, então dizer de quem ele é deixou de
               ser detalhe: sem isto, trocar de personagem parece perda de save. */}
           <p className="text-sm opacity-70 mt-0.5">
-            Progresso de <span className="font-medium">{userCharacter.character.name}</span> · nível {userCharacter.level}
+            {userCharacter ? (
+              <>
+                Progresso de <span className="font-medium">{userCharacter.character.name}</span> · nível{' '}
+                {userCharacter.level}
+              </>
+            ) : (
+              <>
+                O progresso é por personagem —{' '}
+                <Link href="/select" className="underline">
+                  escolha um
+                </Link>{' '}
+                para começar.
+              </>
+            )}
           </p>
         </div>
         <span className="text-sm opacity-70 shrink-0">{wallet?.coins ?? 0} moedas</span>

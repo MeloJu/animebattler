@@ -8,7 +8,12 @@ import { prisma } from '@/app/lib/prisma'
  * existir a possibilidade de ficar dessincronizado do que o usuário realmente
  * completou.
  */
-export async function getStoryChapters(userCharacterId: string) {
+/**
+ * Um userCharacterId nulo significa "ainda não escolheu personagem": os
+ * capítulos são listados sem progresso nenhum, em vez de a tela ser negada.
+ * Ver o comentário em app/story/page.tsx para por que não é um redirect.
+ */
+export async function getStoryChapters(userCharacterId: string | null) {
   const [chapters, progress] = await Promise.all([
     prisma.storyChapter.findMany({
       orderBy: { order: 'asc' },
@@ -23,7 +28,9 @@ export async function getStoryChapters(userCharacterId: string) {
         },
       },
     }),
-    prisma.userStoryProgress.findMany({ where: { userCharacterId }, select: { stageId: true } }),
+    userCharacterId
+      ? prisma.userStoryProgress.findMany({ where: { userCharacterId }, select: { stageId: true } })
+      : Promise.resolve([]),
   ])
 
   const completed = new Set(progress.map((p) => p.stageId))
