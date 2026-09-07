@@ -36,6 +36,7 @@ const scalingCatalog = require('./catalog/skill-scaling');
 const summonerCatalog = require('./catalog/summoners');
 const signatureCatalog = require('./catalog/signatures');
 const jujutsuCatalog = require('./catalog/jujutsu');
+const transformationCatalog = require('./catalog/transformations');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -561,6 +562,61 @@ async function syncCharacterImages() {
   }
 }
 
+/**
+ * Transformações. Ver prisma/catalog/transformations.js para os níveis e o
+ * porquê do corte pela metade.
+ *
+ * Transformation não tem constraint única em (characterId, name), então a
+ * chave natural é resolvida com findFirst em vez de upsert. Se um dia virar
+ * unique no schema, isto vira upsert direto.
+ */
+async function syncTransformations() {
+  for (const def of transformationCatalog.transformations) {
+    const c = await prisma.character.findFirst({ where: { name: def.character }, select: { id: true, name: true } });
+    if (!c) throw new Error(`Transformação referencia personagem inexistente: ${def.character}`);
+
+    let unlocksSkillId = null;
+    if (def.unlocksSkill) {
+      const sk = await prisma.skill.findUnique({
+        where: { name_category: { name: def.unlocksSkill.name, category: def.unlocksSkill.category } },
+        select: { id: true },
+      });
+      if (!sk) throw new Error(`Transformação "${def.name}" libera habilidade inexistente: ${def.unlocksSkill.name}`);
+      unlocksSkillId = sk.id;
+    }
+
+    // Campos que o catálogo controla. Os ausentes voltam ao padrão de propósito:
+    // uma transformação que perde o dreno no catálogo tem que perder no banco.
+    const desejado = {
+      characterId: c.id,
+      name: def.name,
+      levelRequirement: def.levelRequirement,
+      energyModifier: def.energyModifier ?? 0,
+      attackModifier: def.attackModifier ?? 0,
+      defenseModifier: def.defenseModifier ?? 0,
+      speedModifier: def.speedModifier ?? 0,
+      flatHpBonus: def.flatHpBonus ?? 0,
+      flatAttackBonus: def.flatAttackBonus ?? 0,
+      flatDefenseBonus: def.flatDefenseBonus ?? 0,
+      flatSpeedBonus: def.flatSpeedBonus ?? 0,
+      drainPerTurn: def.drainPerTurn ?? 0,
+      triggerType: def.triggerType ?? 'MANUAL',
+      triggerPayload: def.triggerPayload ?? null,
+      unlocksSkillId,
+    };
+
+    const atual = await prisma.transformation.findFirst({ where: { characterId: c.id, name: def.name } });
+    registra('transformação', `${c.name} · ${def.name} (nv ${def.levelRequirement})`, diff(atual, desejado));
+    if (DRY_RUN) continue;
+
+    if (atual) {
+      await prisma.transformation.update({ where: { id: atual.id }, data: desejado });
+    } else {
+      await prisma.transformation.create({ data: desejado });
+    }
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -589,6 +645,7 @@ async function main() {
   await syncKits();
   await syncSummoners();
   await syncCharacterImages();
+  await syncTransformations();
   await syncSkillLadders();
   await syncSkillScaling();
 
