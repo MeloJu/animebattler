@@ -2,6 +2,8 @@ import { prisma } from '@/app/lib/prisma'
 import { computeBaseStats, hasBattleValue } from './engine'
 import { getEquipmentGrantedSkills } from '@/app/lib/equipment/queries'
 import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
+import { escolherLoadoutDaIa } from './ai'
+import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
 import type { BaseStats, ScalingStat, SkillDef, SkillEffect, TraitDef, TransformationDef } from './types'
 import type { ScalingStat as PrismaScalingStat } from '@prisma/client'
 
@@ -139,12 +141,27 @@ export async function getEligiblePlayerSkills(userCharacterId: string, character
   return skills
 }
 
-export async function getEnemySkills(characterId: string): Promise<Record<string, SkillDef>> {
-  const rows = await prisma.characterSkill.findMany({ where: { characterId }, include: { skill: true } })
+/**
+ * Habilidades com que um personagem controlado pela IA entra em batalha.
+ *
+ * FILTRA POR NÍVEL e LIMITA A QUANTIDADE. Antes não fazia nem uma coisa nem
+ * outra: buscava todas as linhas de CharacterSkill do personagem, então um
+ * inimigo de nível 2 chegava com o arsenal completo que teria no nível 40,
+ * contra um jogador que leva 4 habilidades no loadout. Ver
+ * escolherLoadoutDaIa para o porquê do teto e para a queixa de "a IA não tem
+ * cooldown", que era sintoma disto.
+ *
+ * O teto usa a MESMA regra de slots do jogador, aplicada ao nível do inimigo:
+ * ninguém entra em campo com mais opções do que o outro lado poderia levar.
+ */
+export async function getEnemySkills(characterId: string, level: number): Promise<Record<string, SkillDef>> {
+  const rows = await prisma.characterSkill.findMany({
+    where: { characterId, requiredLevel: { lte: level } },
+    include: { skill: true },
+  })
+  const usaveis = rows.map((cs) => cs.skill).filter(hasBattleValue).map(toSkillDef)
   const skills: Record<string, SkillDef> = {}
-  for (const cs of rows) {
-    if (hasBattleValue(cs.skill)) skills[cs.skill.id] = toSkillDef(cs.skill)
-  }
+  for (const s of escolherLoadoutDaIa(usaveis, getLoadoutSlotCount(level))) skills[s.id] = s
   return skills
 }
 
@@ -181,8 +198,41 @@ export async function getEquippedSkills(userCharacterId: string): Promise<Record
  * exactly one of enemyCharacterId/enemyMonsterId is set. Shared by the
  * server actions and the arena page so neither has to duplicate the branch.
  */
+/**
+ * Nível em que o inimigo desta batalha luta.
+ *
+ * História dita o nível no próprio estágio; batalha contra IA escala o inimigo
+ * pelo nível do jogador (ver startAiBattle). Sem isto, getEnemySkills não teria
+ * como filtrar o arsenal.
+ */
+async function enemyLevelFor(battle: {
+  storyStageId?: string | null
+  playerCharacterId?: string | null
+}): Promise<number> {
+  if (battle.storyStageId) {
+    const stage = await prisma.storyStage.findUnique({
+      where: { id: battle.storyStageId },
+      select: { enemyLevel: true },
+    })
+    if (stage) return stage.enemyLevel
+  }
+  if (battle.playerCharacterId) {
+    const uc = await prisma.userCharacter.findUnique({
+      where: { id: battle.playerCharacterId },
+      select: { level: true },
+    })
+    if (uc) return uc.level
+  }
+  return 1
+}
+
 export async function loadEnemyProfile(
-  battle: { enemyCharacterId: string | null; enemyMonsterId: string | null }
+  battle: {
+    enemyCharacterId: string | null
+    enemyMonsterId: string | null
+    storyStageId?: string | null
+    playerCharacterId?: string | null
+  }
 ): Promise<{ name: string; imageUrl: string | null; stats: BaseStats; skills: Record<string, SkillDef>; xpMultiplier: number } | null> {
   if (battle.enemyCharacterId) {
     const character = await prisma.character.findUnique({ where: { id: battle.enemyCharacterId } })
@@ -191,7 +241,7 @@ export async function loadEnemyProfile(
       name: character.name,
       imageUrl: character.imageUrl,
       stats: computeBaseStats(character, { hp: 0, attack: 0, defense: 0, speed: 0 }),
-      skills: await getEnemySkills(character.id),
+      skills: await getEnemySkills(character.id, await enemyLevelFor(battle)),
       xpMultiplier: NORMAL_BATTLE_XP_MULTIPLIER,
     }
   }
