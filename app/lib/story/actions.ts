@@ -21,6 +21,7 @@ export async function recordStoryProgress(battleId: string): Promise<void> {
     where: { id: battleId },
     select: {
       userId: true,
+      playerCharacterId: true,
       storyStageId: true,
       storyStage: { select: { coinReward: true } },
     },
@@ -31,7 +32,9 @@ export async function recordStoryProgress(battleId: string): Promise<void> {
     // createMany + skipDuplicates em vez de upsert para saber, pela contagem,
     // se esta foi mesmo a primeira conclusão — um upsert não distingue.
     const inserted = await tx.userStoryProgress.createMany({
-      data: [{ userId: battle.userId, stageId: battle.storyStageId! }],
+      // O personagem que lutou é quem conclui. Antes gravava só o userId, o
+      // que fazia o progresso valer para a conta inteira.
+      data: [{ userId: battle.userId, userCharacterId: battle.playerCharacterId, stageId: battle.storyStageId! }],
       skipDuplicates: true,
     })
     if (inserted.count === 0) return
@@ -49,7 +52,7 @@ export async function startStoryBattle(stageId: string): Promise<never> {
   const userCharacter = await getSelectedCharacter(user.id)
   if (!userCharacter) redirect('/select')
 
-  const found = await getStageForUser(stageId, user.id)
+  const found = await getStageForUser(stageId, userCharacter.id)
   if (!found) redirect('/story?error=not_found')
   // Revalidado no servidor de propósito: a UI já esconde estágios bloqueados,
   // mas a action é alcançável por POST direto.

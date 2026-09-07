@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { prisma } from '@/app/lib/prisma'
+import { redirect } from 'next/navigation'
 import { requireUser } from '@/app/lib/session'
+import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStoryChapters } from '@/app/lib/story/queries'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
 
@@ -14,15 +16,25 @@ export default async function StoryPage({ searchParams }: { searchParams: Promis
 
   const { error } = await searchParams
   const errorMessage = resolveErrorMessage(STORY_ERRORS, error, 'Ocorreu um erro.')
+  const userCharacter = await getSelectedCharacter(user.id)
+  if (!userCharacter) redirect('/select')
+
   const [chapters, wallet] = await Promise.all([
-    getStoryChapters(user.id),
+    getStoryChapters(userCharacter.id),
     prisma.user.findUnique({ where: { id: user.id }, select: { coins: true } }),
   ])
 
   return (
     <main className="mx-auto max-w-3xl p-6">
       <div className="flex items-baseline justify-between gap-4 mb-4">
-        <h1 className="text-2xl font-semibold">Modo História</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Modo História</h1>
+          {/* O progresso é por personagem, então dizer de quem ele é deixou de
+              ser detalhe: sem isto, trocar de personagem parece perda de save. */}
+          <p className="text-sm opacity-70 mt-0.5">
+            Progresso de <span className="font-medium">{userCharacter.character.name}</span> · nível {userCharacter.level}
+          </p>
+        </div>
         <span className="text-sm opacity-70 shrink-0">{wallet?.coins ?? 0} moedas</span>
       </div>
 

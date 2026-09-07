@@ -355,6 +355,7 @@ model UserCharacter {
   equipment             UserEquipment[]
   pvpQueue              PvpQueue[]
   pvpBattlesAsOpponent  Battle[]                      @relation("OpponentCharacter")
+  storyProgress         UserStoryProgress[]
 
   @@unique([userId, characterId])
 }
@@ -528,16 +529,28 @@ model StoryStage {
   @@unique([chapterId, order])
 }
 
+/// Progresso de história é POR PERSONAGEM, não por conta.
+///
+/// Era por conta: concluir um estágio com um personagem o desbloqueava para
+/// todos, então dava para atravessar a história com o personagem forte e usar
+/// o progresso para pular a parte difícil com os outros — e nenhum deles
+/// precisava subir de nível para isso.
+///
+/// userId continua aqui porque toda consulta parte do dono, e mantê-lo evita
+/// um join a UserCharacter só para responder "de quem é esta linha".
 model UserStoryProgress {
-  id          String     @id @default(cuid())
-  user        User       @relation(fields: [userId], references: [id])
-  userId      String
-  stage       StoryStage @relation(fields: [stageId], references: [id])
-  stageId     String
-  completedAt DateTime   @default(now())
+  id              String        @id @default(cuid())
+  user            User          @relation(fields: [userId], references: [id])
+  userId          String
+  userCharacter   UserCharacter @relation(fields: [userCharacterId], references: [id], onDelete: Cascade)
+  userCharacterId String
+  stage           StoryStage    @relation(fields: [stageId], references: [id])
+  stageId         String
+  completedAt     DateTime      @default(now())
 
-  @@unique([userId, stageId])
+  @@unique([userCharacterId, stageId])
   @@index([userId])
+  @@index([userCharacterId])
 }
 
 /// Skill que um UserCharacter específico ganhou fora do kit base e fora da

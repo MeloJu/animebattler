@@ -2,7 +2,7 @@ import { prisma } from '@/app/lib/prisma'
 import { computeBaseStats, hasBattleValue } from './engine'
 import { getEquipmentGrantedSkills } from '@/app/lib/equipment/queries'
 import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
-import { escolherLoadoutDaIa } from './ai'
+import { escolherLoadoutPadrao } from './ai'
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
 import type { BaseStats, ScalingStat, SkillDef, SkillEffect, TraitDef, TransformationDef } from './types'
 import type { ScalingStat as PrismaScalingStat } from '@prisma/client'
@@ -148,7 +148,7 @@ export async function getEligiblePlayerSkills(userCharacterId: string, character
  * outra: buscava todas as linhas de CharacterSkill do personagem, então um
  * inimigo de nível 2 chegava com o arsenal completo que teria no nível 40,
  * contra um jogador que leva 4 habilidades no loadout. Ver
- * escolherLoadoutDaIa para o porquê do teto e para a queixa de "a IA não tem
+ * escolherLoadoutPadrao para o porquê do teto e para a queixa de "a IA não tem
  * cooldown", que era sintoma disto.
  *
  * O teto usa a MESMA regra de slots do jogador, aplicada ao nível do inimigo:
@@ -161,7 +161,7 @@ export async function getEnemySkills(characterId: string, level: number): Promis
   })
   const usaveis = rows.map((cs) => cs.skill).filter(hasBattleValue).map(toSkillDef)
   const skills: Record<string, SkillDef> = {}
-  for (const s of escolherLoadoutDaIa(usaveis, getLoadoutSlotCount(level))) skills[s.id] = s
+  for (const s of escolherLoadoutPadrao(usaveis, getLoadoutSlotCount(level))) skills[s.id] = s
   return skills
 }
 

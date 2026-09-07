@@ -58,6 +58,15 @@ const stages = [
     outroText:
       'Kira cai de joelhos, ainda tentando erguer a Wabisuke. Ele não pediu para estar ali — mas obedecer era a única coisa que lhe restava.',
     enemyCharacterName: 'Izuru Kira',
+    // VELOCIDADE era a luta inteira. Com spd 16 ele agia primeiro toda rodada e
+    // o Vegeta ganhava 22%; com 14, 87%. Medido varrendo hp, ataque e
+    // velocidade — só a velocidade movia o número.
+    //
+    // O ataque sobe de 25 para 28 na mesma passada: chefe não precisa respeitar
+    // o orçamento do elenco jogável, e assim o estágio continua batendo forte
+    // em vez de virar apenas mais lento.
+    bossSpeed: 14,
+    bossAttack: 28,
     enemyLevel: 2,
     xpReward: 200,
     coinReward: 60,

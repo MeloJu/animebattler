@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { escolherLoadoutDaIa, pickAiSkill } from '@/app/lib/battle/ai'
+import { escolherLoadoutPadrao, pickAiSkill } from '@/app/lib/battle/ai'
 import { createInitialState } from '@/app/lib/battle/engine'
 import type { CombatantState, SkillDef } from '@/app/lib/battle/types'
 
@@ -89,7 +89,7 @@ describe('pickAiSkill', () => {
   })
 })
 
-describe('escolherLoadoutDaIa', () => {
+describe('escolherLoadoutPadrao', () => {
   const s = (id: string, power: number, energyCost: number): SkillDef => ({
     id,
     name: id,
@@ -102,17 +102,17 @@ describe('escolherLoadoutDaIa', () => {
 
   it('cabendo tudo, devolve tudo', () => {
     const todas = [s('a', 10, 10), s('b', 20, 20)]
-    expect(escolherLoadoutDaIa(todas, 4)).toEqual(todas)
+    expect(escolherLoadoutPadrao(todas, 4)).toEqual(todas)
   })
 
   it('estourando os slots, corta para o tamanho', () => {
     const todas = [s('a', 10, 10), s('b', 20, 20), s('c', 30, 30), s('d', 40, 40), s('e', 50, 50)]
-    expect(escolherLoadoutDaIa(todas, 3)).toHaveLength(3)
+    expect(escolherLoadoutPadrao(todas, 3)).toHaveLength(3)
   })
 
   it('prioriza os golpes mais fortes', () => {
     const todas = [s('fraca', 5, 5), s('media', 25, 20), s('forte', 50, 40)]
-    const r = escolherLoadoutDaIa(todas, 2).map((x) => x.id)
+    const r = escolherLoadoutPadrao(todas, 2).map((x) => x.id)
     expect(r).toContain('forte')
   })
 
@@ -125,7 +125,7 @@ describe('escolherLoadoutDaIa', () => {
       s('cara3', 46, 38),
       s('cara4', 44, 37),
     ]
-    const r = escolherLoadoutDaIa(todas, 4).map((x) => x.id)
+    const r = escolherLoadoutPadrao(todas, 4).map((x) => x.id)
     expect(r).toContain('barata')
     expect(r).toContain('cara1')
     expect(r).toHaveLength(4)
@@ -133,12 +133,12 @@ describe('escolherLoadoutDaIa', () => {
 
   it('é determinístico — o estado da batalha é snapshot, mesma entrada tem que dar mesma saída', () => {
     const todas = [s('a', 20, 10), s('b', 20, 10), s('c', 20, 10), s('d', 20, 10)]
-    const um = escolherLoadoutDaIa(todas, 2).map((x) => x.id)
-    const dois = escolherLoadoutDaIa(todas, 2).map((x) => x.id)
+    const um = escolherLoadoutPadrao(todas, 2).map((x) => x.id)
+    const dois = escolherLoadoutPadrao(todas, 2).map((x) => x.id)
     expect(um).toEqual(dois)
   })
 
   it('sem slot nenhum, devolve vazio', () => {
-    expect(escolherLoadoutDaIa([s('a', 10, 10)], 0)).toEqual([])
+    expect(escolherLoadoutPadrao([s('a', 10, 10)], 0)).toEqual([])
   })
 })

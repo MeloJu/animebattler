@@ -4,9 +4,13 @@ import type { CombatantState, SkillDef } from './types'
 const LOW_HP_HEAL_THRESHOLD = 0.4
 
 /**
- * Escolhe o loadout de um combatente controlado pela IA.
+ * Escolhe um loadout padrão a partir das habilidades disponíveis.
  *
- * POR QUE EXISTE: até aqui o inimigo entrava em batalha com TODAS as
+ * Usada pelos DOIS lados: monta o arsenal do inimigo e preenche os slots
+ * vazios do jogador. Ter uma regra só é o ponto — enquanto eram duas, cada
+ * lado errava de um jeito diferente.
+ *
+ * POR QUE EXISTE, LADO DO INIMIGO: até aqui ele entrava em batalha com TODAS as
  * habilidades do personagem, sem filtro de nível e sem teto de quantidade,
  * enquanto o jogador só leva o que cabe nos slots do loadout — 4 no começo do
  * jogo. Um Izuru Kira de nível 2 chegava com o arsenal inteiro que ele teria
@@ -22,10 +26,16 @@ const LOW_HP_HEAL_THRESHOLD = 0.4
  * ataque básico — o mesmo critério que já tinha sido medido para os kits de
  * assinatura dos personagens jogáveis.
  *
+ * POR QUE EXISTE, LADO DO JOGADOR: o preenchimento automático usava
+ * `Object.keys(eligible)`, que é a ordem em que o banco devolveu as linhas, e
+ * pegava as primeiras. Ou seja, o jogador começava com quatro habilidades
+ * QUAISQUER — o Galick Gun do Vegeta podia ficar de fora enquanto um buff
+ * entrava. Ele sempre pôde trocar à mão, mas o padrão não devia ser sorteio.
+ *
  * É determinístico de propósito: o estado da batalha é gravado como snapshot
  * na criação, então a mesma entrada tem que dar sempre o mesmo loadout.
  */
-export function escolherLoadoutDaIa(skills: SkillDef[], slots: number): SkillDef[] {
+export function escolherLoadoutPadrao(skills: SkillDef[], slots: number): SkillDef[] {
   if (slots <= 0) return []
   if (skills.length <= slots) return skills
 

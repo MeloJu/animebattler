@@ -8,7 +8,7 @@ import { prisma } from '@/app/lib/prisma'
  * existir a possibilidade de ficar dessincronizado do que o usuário realmente
  * completou.
  */
-export async function getStoryChapters(userId: string) {
+export async function getStoryChapters(userCharacterId: string) {
   const [chapters, progress] = await Promise.all([
     prisma.storyChapter.findMany({
       orderBy: { order: 'asc' },
@@ -23,7 +23,7 @@ export async function getStoryChapters(userId: string) {
         },
       },
     }),
-    prisma.userStoryProgress.findMany({ where: { userId }, select: { stageId: true } }),
+    prisma.userStoryProgress.findMany({ where: { userCharacterId }, select: { stageId: true } }),
   ])
 
   const completed = new Set(progress.map((p) => p.stageId))
@@ -45,7 +45,7 @@ export async function getStoryChapters(userId: string) {
 }
 
 /** Um estágio com o contexto necessário pra tela de detalhe. */
-export async function getStageForUser(stageId: string, userId: string) {
+export async function getStageForUser(stageId: string, userCharacterId: string) {
   const stage = await prisma.storyStage.findUnique({
     where: { id: stageId },
     include: {
@@ -60,7 +60,7 @@ export async function getStageForUser(stageId: string, userId: string) {
   // encadeada, se o N-1 está concluído todos antes dele também estão.
   const [done, previous] = await Promise.all([
     prisma.userStoryProgress.findUnique({
-      where: { userId_stageId: { userId, stageId } },
+      where: { userCharacterId_stageId: { userCharacterId, stageId } },
       select: { completedAt: true },
     }),
     stage.order > 1
@@ -72,7 +72,11 @@ export async function getStageForUser(stageId: string, userId: string) {
   ])
 
   const previousDone = previous
-    ? Boolean(await prisma.userStoryProgress.findUnique({ where: { userId_stageId: { userId, stageId: previous.id } } }))
+    ? Boolean(
+        await prisma.userStoryProgress.findUnique({
+          where: { userCharacterId_stageId: { userCharacterId, stageId: previous.id } },
+        })
+      )
     : true
 
   return { stage, completed: Boolean(done), locked: !previousDone, previous }

@@ -55,7 +55,9 @@ async function loadActiveBattleContext(battleId: string) {
     const [stage, progresso] = await Promise.all([
       prisma.storyStage.findUnique({ where: { id: battle.storyStageId }, select: { xpReward: true } }),
       prisma.userStoryProgress.findUnique({
-        where: { userId_stageId: { userId: user.id, stageId: battle.storyStageId } },
+        where: {
+          userCharacterId_stageId: { userCharacterId: battle.playerCharacterId, stageId: battle.storyStageId },
+        },
         select: { completedAt: true },
       }),
     ])

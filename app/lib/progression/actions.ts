@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import { getEligiblePlayerSkills } from '@/app/lib/battle/queries'
+import { escolherLoadoutPadrao } from '@/app/lib/battle/ai'
 import { getLoadoutSlotCount } from './constants'
 
 type Db = Prisma.TransactionClient | typeof prisma
@@ -38,11 +39,15 @@ export async function autoFillLoadout(userCharacterId: string, characterId: stri
   if (freeSlots.length === 0) return
 
   const equippedSkillIds = new Set(equipped.map((e) => e.skillId))
-  const candidates = Object.keys(eligible).filter((skillId) => !equippedSkillIds.has(skillId))
+  const candidates = Object.values(eligible).filter((skill) => !equippedSkillIds.has(skill.id))
   if (candidates.length === 0) return
 
-  const creates = candidates
-    .slice(0, freeSlots.length)
+  // Mesma regra que monta o arsenal do inimigo. Antes isto era
+  // Object.keys(...).slice(), ou seja, as primeiras que o banco devolvesse:
+  // o jogador começava com quatro habilidades quaisquer, e podia perfeitamente
+  // não ter o próprio golpe principal equipado.
+  const creates = escolherLoadoutPadrao(candidates, freeSlots.length)
+    .map((s) => s.id)
     .map((skillId, i) => db.userCharacterEquippedSkill.create({ data: { userCharacterId, skillId, slot: freeSlots[i] } }))
 
   if (db === prisma) {

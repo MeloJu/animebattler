@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/app/lib/session'
+import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStageForUser } from '@/app/lib/story/queries'
 import { startStoryBattle } from '@/app/lib/story/actions'
 
@@ -9,7 +10,12 @@ export default async function StoryStagePage({ params }: { params: Promise<{ sta
 
   const user = await requireUser()
 
-  const found = await getStageForUser(stageId, user.id)
+  // Progresso é por personagem, então a tela precisa saber QUAL personagem
+  // está em campo antes de dizer se o estágio está concluído ou bloqueado.
+  const userCharacter = await getSelectedCharacter(user.id)
+  if (!userCharacter) redirect('/select')
+
+  const found = await getStageForUser(stageId, userCharacter.id)
   if (!found) redirect('/story?error=not_found')
   if (found.locked) redirect('/story?error=locked')
 
