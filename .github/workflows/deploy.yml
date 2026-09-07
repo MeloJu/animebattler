@@ -144,5 +144,20 @@ jobs:
               sleep 5
             done
 
+            # Catálogo entra DEPOIS do app estar healthy, e não antes: ele fala
+            # com o banco pelo container do app, que só existe quando o
+            # `prisma migrate deploy` do CMD já terminou. Rodar antes pegaria o
+            # schema velho.
+            #
+            # Era o único passo manual que sobrava no deploy — subir a imagem
+            # publicava o CÓDIGO novo mas deixava o CONTEÚDO velho, então
+            # personagem, arco de história e habilidade novos simplesmente não
+            # apareciam, sem erro nenhum no caminho.
+            #
+            # É idempotente e não toca em tabela de jogador: rodar duas vezes
+            # seguidas imprime "catálogo já está em dia" na segunda.
+            echo "Sincronizando catálogo..."
+            docker compose -f docker-compose.prod.yml exec -T app npm run catalog:sync
+
             # Imagens antigas acumulam a cada deploy e enchem o disco da VM.
             docker image prune -f
