@@ -45,6 +45,14 @@ export type CombatantState = {
   baseMaxHp: number
   currentEnergy: number
   maxEnergy: number
+  /**
+   * Reserva defensiva. Opcional porque batalhas em andamento foram gravadas
+   * antes deste campo existir — ausente vale 0, e um combatente sem stamina
+   * simplesmente não consegue usar habilidade defensiva, que é o mesmo que
+   * ficar sem energia para atacar.
+   */
+  currentStamina?: number
+  maxStamina?: number
   baseMaxEnergy: number
   attack: number
   baseAttack: number
@@ -143,6 +151,7 @@ export type BaseStats = {
   defense: number
   speed: number
   energy: number
+  stamina: number
 }
 
 export type PlayerAction =

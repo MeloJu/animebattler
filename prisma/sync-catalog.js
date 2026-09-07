@@ -348,7 +348,7 @@ async function syncCharacters() {
     }
     const desejado = {
       class: c.class, hp: c.hp, attack: c.attack,
-      defense: c.defense, speed: c.speed, energy: c.energy,
+      defense: c.defense, speed: c.speed, energy: c.energy, stamina: c.stamina,
     };
     registra('personagem', c.name, diff(atual, desejado));
     if (!DRY_RUN) await prisma.character.update({ where: { id: atual.id }, data: desejado });
@@ -368,7 +368,7 @@ async function syncCharacters() {
     });
     const desejado = {
       name: c.name, slug: c.slug, animeId: anime.id, affiliationId: af?.id ?? null,
-      class: c.class, hp: c.hp, attack: c.attack, defense: c.defense, speed: c.speed, energy: c.energy,
+      class: c.class, hp: c.hp, attack: c.attack, defense: c.defense, speed: c.speed, energy: c.energy, stamina: c.stamina,
     };
     registra('personagem', c.name, diff(atual, desejado));
     if (!DRY_RUN) {

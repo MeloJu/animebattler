@@ -5,6 +5,7 @@ import {
   CRIT_MULTIPLIER,
   CRIT_SPEED_COEFFICIENT,
   ENERGY_REGEN_PCT,
+  STAMINA_REGEN_PCT,
   LEVEL_SCALING,
   SCALING_BASE,
   SCALING_REFERENCE,
@@ -43,6 +44,8 @@ function makeCombatant(stats: BaseStats, energyCostModifier = 0): CombatantState
     baseMaxHp: stats.hp,
     currentEnergy: stats.energy,
     maxEnergy: stats.energy,
+    currentStamina: stats.stamina,
+    maxStamina: stats.stamina,
     baseMaxEnergy: stats.energy,
     attack: stats.attack,
     baseAttack: stats.attack,
@@ -59,7 +62,7 @@ function makeCombatant(stats: BaseStats, energyCostModifier = 0): CombatantState
 
 /** Character base stats + flat bonuses from unlocked skill-tree nodes. Battles always start untransformed. */
 export function computeBaseStats(
-  character: { hp: number; attack: number; defense: number; speed: number; energy: number },
+  character: { hp: number; attack: number; defense: number; speed: number; energy: number; stamina: number },
   treeBonus: { hp: number; attack: number; defense: number; speed: number }
 ): BaseStats {
   return {
@@ -68,6 +71,7 @@ export function computeBaseStats(
     defense: character.defense + treeBonus.defense,
     speed: character.speed + treeBonus.speed,
     energy: character.energy,
+    stamina: character.stamina,
   }
 }
 
@@ -106,7 +110,7 @@ export function sumStatBonuses(
  * tornaria permanentemente decisivos, que não é o desenho.
  */
 export function computeFighterStats(
-  character: { hp: number; attack: number; defense: number; speed: number; energy: number },
+  character: { hp: number; attack: number; defense: number; speed: number; energy: number; stamina: number },
   level: number,
   bonus: { hp: number; attack: number; defense: number; speed: number }
 ): BaseStats {
@@ -130,6 +134,7 @@ export function applyBossOverrides(
     bossDefense?: number | null
     bossSpeed?: number | null
     bossEnergy?: number | null
+    bossStamina?: number | null
   }
 ): BaseStats {
   return {
@@ -138,6 +143,7 @@ export function applyBossOverrides(
     defense: overrides.bossDefense ?? stats.defense,
     speed: overrides.bossSpeed ?? stats.speed,
     energy: overrides.bossEnergy ?? stats.energy,
+    stamina: overrides.bossStamina ?? stats.stamina,
   }
 }
 
@@ -179,6 +185,10 @@ export function applyTraits(stats: BaseStats, traits: TraitDef[]): BaseStats {
     defense: Math.round(stats.defense * (1 + pct.defense)) + plano.defense,
     speed: Math.round(stats.speed * (1 + pct.speed)) + plano.speed,
     energy: Math.round(stats.energy * (1 + pct.energy)),
+    // Stamina não tem modificador próprio de traço, e é decisão: mais um
+    // eixo por traço multiplicaria os casos sem acrescentar escolha. Um traço
+    // que quisesse mexer em defesa mexe em defesa.
+    stamina: stats.stamina,
   }
 }
 
@@ -217,7 +227,7 @@ export function energyCostFor(c: CombatantState, energyCost: number): number {
  * catalog characters/monsters with `enemyLevel` applied, so a stage's enemy
  * is stronger without needing a stat row of its own.
  */
-export function scaleForLevel<T extends { hp: number; attack: number; defense: number; speed: number; energy: number }>(
+export function scaleForLevel<T extends { hp: number; attack: number; defense: number; speed: number; energy: number; stamina: number }>(
   base: T,
   level: number
 ): T {
@@ -229,6 +239,7 @@ export function scaleForLevel<T extends { hp: number; attack: number; defense: n
     defense: Math.round(base.defense * m),
     speed: Math.round(base.speed * m),
     energy: Math.round(base.energy * m),
+    stamina: Math.round(base.stamina * m),
   }
 }
 
@@ -237,10 +248,39 @@ export function hasBattleValue(skill: { power: number; effects: unknown }): bool
   return skill.power > 0 || (Array.isArray(skill.effects) && skill.effects.length > 0)
 }
 
+/**
+ * Se esta habilidade é paga com STAMINA em vez de energia.
+ *
+ * A regra é derivada do que a habilidade FAZ, e não de um campo escrito à
+ * mão: é defensiva quando não causa dano nenhum e traz proteção — escudo,
+ * cura, counter, ou buff em si mesmo. Deriva porque são 581 habilidades no
+ * catálogo, e um campo novo em cada uma seria 581 oportunidades de errar.
+ *
+ * A exigência de poder ZERO é o que impede o abuso óbvio: uma habilidade que
+ * bate forte E dá escudo continua saindo da energia, senão o atacante pagaria
+ * o próprio dano com a barra defensiva.
+ *
+ * O efeito de jogo é a decisão que a stamina existe para criar: atacar e se
+ * proteger deixam de disputar a mesma barra, então quem tem reserva defensiva
+ * alta aguenta muitas rodadas — e o adversário precisa estourar antes de ela
+ * voltar, em vez de simplesmente esperar.
+ */
+export function custaStamina(skill: SkillDef): boolean {
+  if (skill.power > 0) return false
+  return skill.effects.some(
+    (e) => e.type === 'SHIELD' || e.type === 'HEAL' || e.type === 'COUNTER' || (e.type === 'BUFF' && e.target === 'SELF')
+  )
+}
+
+/** Quanto o combatente tem da reserva que ESTA habilidade consome. */
+function reservaPara(c: CombatantState, skill: SkillDef): number {
+  return custaStamina(skill) ? c.currentStamina ?? 0 : c.currentEnergy
+}
+
 export function isLegalMove(combatant: CombatantState, skill: SkillDef | null): boolean {
   if (!skill) return true // Basic Attack is always legal
   const onCooldown = (combatant.cooldowns[skill.id] ?? 0) > 0
-  return !onCooldown && combatant.currentEnergy >= energyCostFor(combatant, skill.energyCost)
+  return !onCooldown && reservaPara(combatant, skill) >= energyCostFor(combatant, skill.energyCost)
 }
 
 /**
@@ -433,9 +473,14 @@ function performSkillUse(
   // Ataque básico escala de ataque: é golpe físico, não técnica.
   const scalingStat: ScalingStat = skill ? skill.scalingStat : 'attack'
 
+  // O custo sai da reserva certa: defesa da stamina, o resto da energia.
+  const daStamina = skill ? custaStamina(skill) : false
   let newAttacker: CombatantState = {
     ...attacker,
-    currentEnergy: Math.max(0, attacker.currentEnergy - energyCost),
+    currentEnergy: daStamina ? attacker.currentEnergy : Math.max(0, attacker.currentEnergy - energyCost),
+    currentStamina: daStamina
+      ? Math.max(0, (attacker.currentStamina ?? 0) - energyCost)
+      : attacker.currentStamina,
     cooldowns: skill ? { ...attacker.cooldowns, [skill.id]: skill.cooldown } : attacker.cooldowns,
   }
   let newDefender = defender
@@ -507,7 +552,13 @@ function performSkillUse(
 
 function regenEnergy(c: CombatantState): CombatantState {
   const regen = Math.round(c.maxEnergy * ENERGY_REGEN_PCT)
-  return { ...c, currentEnergy: Math.min(c.maxEnergy, c.currentEnergy + regen) }
+  const maxStamina = c.maxStamina ?? 0
+  const stamina = Math.min(maxStamina, (c.currentStamina ?? 0) + Math.round(maxStamina * STAMINA_REGEN_PCT))
+  return {
+    ...c,
+    currentEnergy: Math.min(c.maxEnergy, c.currentEnergy + regen),
+    currentStamina: stamina,
+  }
 }
 
 function tickCooldowns(c: CombatantState): CombatantState {

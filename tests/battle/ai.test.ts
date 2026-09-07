@@ -4,8 +4,8 @@ import { createInitialState } from '@/app/lib/battle/engine'
 import type { CombatantState, SkillDef } from '@/app/lib/battle/types'
 
 const base = createInitialState(
-  { hp: 100, attack: 20, defense: 10, speed: 15, energy: 100 },
-  { hp: 100, attack: 20, defense: 10, speed: 15, energy: 100 }
+  { hp: 100, attack: 20, defense: 10, speed: 15, energy: 100, stamina: 100 },
+  { hp: 100, attack: 20, defense: 10, speed: 15, energy: 100, stamina: 100 }
 ).player
 
 const eu = (over: Partial<CombatantState> = {}): CombatantState => ({ ...base, ...over })

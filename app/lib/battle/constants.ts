@@ -1,6 +1,20 @@
 import type { ScalingStat } from './types'
 
 export const ENERGY_REGEN_PCT = 0.08
+
+/**
+ * Regeneração de stamina por rodada, MENOR que a de energia de propósito.
+ *
+ * É o que impede o suporte de se tornar invencível por defesa. Com regen
+ * igual à da energia, quem tivesse reserva alta poderia se proteger toda
+ * rodada para sempre e a luta nunca fecharia — que é exatamente a falha que
+ * a stamina existe para evitar, não para criar.
+ *
+ * Com 5%, uma reserva de 160 devolve 8 por rodada: dá para se proteger
+ * seguidamente por um tempo, e não indefinidamente. O atacante tem uma
+ * janela real para estourar, que é a decisão que a mecânica quer provocar.
+ */
+export const STAMINA_REGEN_PCT = 0.05
 export const MAX_ROUNDS = 50
 
 export const CRIT_BASE_CHANCE = 0.05

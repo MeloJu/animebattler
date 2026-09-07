@@ -15,6 +15,7 @@ import {
   applyTraits,
   energyCostFor,
   traitEnergyCostModifier,
+  custaStamina,
 } from '@/app/lib/battle/engine'
 import type {
   AppliedEffect,
@@ -38,6 +39,7 @@ const stats = (over: Partial<BaseStats> = {}): BaseStats => ({
   defense: 10,
   speed: 15,
   energy: 100,
+  stamina: 100,
   ...over,
 })
 
@@ -91,15 +93,15 @@ const ataqueBasico = { playerAction: { kind: 'ATTACK' as const, skillId: null },
 describe('computeBaseStats', () => {
   it('soma os bônus da skill tree aos stats do personagem', () => {
     const r = computeBaseStats(
-      { hp: 100, attack: 20, defense: 10, speed: 15, energy: 80 },
+      { hp: 100, attack: 20, defense: 10, speed: 15, energy: 80, stamina: 60 },
       { hp: 25, attack: 5, defense: 3, speed: 2 }
     )
-    expect(r).toEqual({ hp: 125, attack: 25, defense: 13, speed: 17, energy: 80 })
+    expect(r).toEqual({ hp: 125, attack: 25, defense: 13, speed: 17, energy: 80, stamina: 60 })
   })
 
   it('não altera energia — a skill tree não dá bônus de energia', () => {
     const r = computeBaseStats(
-      { hp: 100, attack: 20, defense: 10, speed: 15, energy: 80 },
+      { hp: 100, attack: 20, defense: 10, speed: 15, energy: 80, stamina: 60 },
       { hp: 0, attack: 0, defense: 0, speed: 0 }
     )
     expect(r.energy).toBe(80)
@@ -127,18 +129,18 @@ describe('createInitialState', () => {
 
 describe('scaleForLevel', () => {
   it('não altera nada no nível 1', () => {
-    const base = { hp: 100, attack: 20, defense: 10, speed: 15, energy: 50 }
+    const base = { hp: 100, attack: 20, defense: 10, speed: 15, energy: 50, stamina: 50 }
     expect(scaleForLevel(base, 1)).toEqual(base)
   })
 
   it('escala 12% por nível acima de 1 (LEVEL_SCALING)', () => {
     // nível 5 => multiplicador 1 + 4*0.12 = 1.48
-    const r = scaleForLevel({ hp: 100, attack: 20, defense: 10, speed: 15, energy: 50 }, 5)
-    expect(r).toEqual({ hp: 148, attack: 30, defense: 15, speed: 22, energy: 74 })
+    const r = scaleForLevel({ hp: 100, attack: 20, defense: 10, speed: 15, energy: 50, stamina: 50 }, 5)
+    expect(r).toEqual({ hp: 148, attack: 30, defense: 15, speed: 22, energy: 74, stamina: 74 })
   })
 
   it('preserva campos extras do objeto original', () => {
-    const r = scaleForLevel({ hp: 10, attack: 1, defense: 1, speed: 1, energy: 1, nome: 'Hollow' }, 3)
+    const r = scaleForLevel({ hp: 10, attack: 1, defense: 1, speed: 1, energy: 1, stamina: 1, nome: 'Hollow' }, 3)
     expect(r.nome).toBe('Hollow')
   })
 })
@@ -518,7 +520,7 @@ describe('sumStatBonuses', () => {
 // nível. O jogador ficava parado, então dificuldade e progressão divergiam
 // até a história virar invencível.
 describe('computeFighterStats', () => {
-  const base = { hp: 130, attack: 18, defense: 11, speed: 12, energy: 100 }
+  const base = { hp: 130, attack: 18, defense: 11, speed: 12, energy: 100, stamina: 90 }
   const semBonus = { hp: 0, attack: 0, defense: 0, speed: 0 }
 
   it('no nível 1 é idêntico a só somar os bônus', () => {
@@ -529,7 +531,7 @@ describe('computeFighterStats', () => {
   it('escala o personagem pelo nível', () => {
     // nível 5 => 1 + 4*0.12 = 1.48
     expect(computeFighterStats(base, 5, semBonus)).toEqual({
-      hp: 192, attack: 27, defense: 16, speed: 18, energy: 148,
+      hp: 192, attack: 27, defense: 16, speed: 18, energy: 148, stamina: 133,
     })
   })
 
@@ -746,8 +748,15 @@ describe('applyBossOverrides', () => {
 
   it('substitui todos quando todos são dados', () => {
     expect(
-      applyBossOverrides(base, { bossHp: 1, bossAttack: 2, bossDefense: 3, bossSpeed: 4, bossEnergy: 5 })
-    ).toEqual({ hp: 1, attack: 2, defense: 3, speed: 4, energy: 5 })
+      applyBossOverrides(base, {
+        bossHp: 1,
+        bossAttack: 2,
+        bossDefense: 3,
+        bossSpeed: 4,
+        bossEnergy: 5,
+        bossStamina: 6,
+      })
+    ).toEqual({ hp: 1, attack: 2, defense: 3, speed: 4, energy: 5, stamina: 6 })
   })
 })
 
@@ -822,5 +831,78 @@ describe('traços passivos', () => {
     expect(
       traitEnergyCostModifier([traco({ energyCostModifier: -0.3 }), traco({ name: 'B', energyCostModifier: -0.15 })])
     ).toBeCloseTo(-0.45)
+  })
+})
+
+describe('stamina — reserva defensiva separada', () => {
+  const escudo = skill({
+    id: 'escudo',
+    power: 0,
+    energyCost: 20,
+    cooldown: 0,
+    effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 20, duration: 2 }],
+  })
+  const golpe = skill({ id: 'golpe', power: 20, energyCost: 20, cooldown: 0, effects: [] })
+
+  it('habilidade puramente defensiva sai da stamina', () => {
+    expect(custaStamina(escudo)).toBe(true)
+    expect(custaStamina(skill({ power: 0, effects: [{ type: 'HEAL', target: 'SELF', magnitude: 10 }] }))).toBe(true)
+    expect(custaStamina(skill({ power: 0, effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 40, duration: 1 }] }))).toBe(true)
+  })
+
+  it('buff em si mesmo é defensivo; debuff no inimigo não é', () => {
+    const proprio = skill({ power: 0, effects: [{ type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 10, duration: 2 }] })
+    const alheio = skill({ power: 0, effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 10, duration: 2 }] })
+    expect(custaStamina(proprio)).toBe(true)
+    expect(custaStamina(alheio)).toBe(false)
+  })
+
+  it('habilidade que causa dano E protege continua saindo da energia', () => {
+    // Senão o atacante pagaria o próprio dano com a barra defensiva.
+    const hibrida = skill({ power: 25, effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 20, duration: 2 }] })
+    expect(custaStamina(hibrida)).toBe(false)
+  })
+
+  it('sem stamina, a defensiva é ilegal mesmo com energia cheia', () => {
+    const c = combatant({ currentEnergy: 100, currentStamina: 0, maxStamina: 100 })
+    expect(isLegalMove(c, escudo)).toBe(false)
+    expect(isLegalMove(c, golpe)).toBe(true)
+  })
+
+  it('sem energia, o golpe é ilegal mesmo com stamina cheia', () => {
+    const c = combatant({ currentEnergy: 0, currentStamina: 100, maxStamina: 100 })
+    expect(isLegalMove(c, golpe)).toBe(false)
+    expect(isLegalMove(c, escudo)).toBe(true)
+  })
+
+  it('usar defensiva NÃO gasta energia, e vice-versa', () => {
+    const s = createInitialState(stats({ energy: 100, stamina: 100 }), stats())
+    const r = resolveRound(
+      s,
+      { playerAction: { kind: 'ATTACK', skillId: 'escudo' }, enemyAction: { skillId: null } },
+      { ...ctxVazio(), playerSkills: { escudo } },
+      NUNCA_CRITA
+    )
+    // A energia só varia pela regeneração da rodada, nunca pelo custo.
+    expect(r.state.player.currentEnergy).toBeGreaterThanOrEqual(100)
+    expect(r.state.player.currentStamina!).toBeLessThan(100)
+  })
+
+  it('stamina regenera mais devagar que energia — é o que impede defesa infinita', () => {
+    const s = createInitialState(stats({ energy: 100, stamina: 100 }), stats())
+    const gasto = {
+      ...s,
+      player: { ...s.player, currentEnergy: 0, currentStamina: 0 },
+    }
+    const r = resolveRound(gasto, ataqueBasico, ctxVazio(), NUNCA_CRITA)
+    expect(r.state.player.currentStamina!).toBeLessThan(r.state.player.currentEnergy)
+  })
+
+  it('batalha antiga, sem o campo, trata stamina como zero em vez de quebrar', () => {
+    const c = combatant()
+    delete (c as { currentStamina?: number }).currentStamina
+    delete (c as { maxStamina?: number }).maxStamina
+    expect(isLegalMove(c, escudo)).toBe(false)
+    expect(isLegalMove(c, golpe)).toBe(true)
   })
 })

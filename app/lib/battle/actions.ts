@@ -258,7 +258,7 @@ type EnemyRef =
 // the 3 callers that folding them in here would silently change behavior.
 export async function createBattleAndRedirect(params: {
   userId: string
-  userCharacter: { id: string; level: number; character: { hp: number; attack: number; defense: number; speed: number; energy: number } }
+  userCharacter: { id: string; level: number; character: { hp: number; attack: number; defense: number; speed: number; energy: number; stamina: number } }
   enemy: EnemyRef
   storyStageId?: string
 }): Promise<never> {

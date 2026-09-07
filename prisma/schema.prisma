@@ -149,6 +149,11 @@ model Character {
   defense Int @default(10)
   speed   Int @default(10)
   energy  Int @default(100)
+  /// Reserva DEFENSIVA. Habilidade que só protege (escudo, cura, counter,
+  /// buff em si mesmo) é paga daqui em vez da energia — ver custaStamina em
+  /// app/lib/battle/engine.ts. Existe para separar "quantas vezes eu ataco"
+  /// de "quantas vezes eu me protejo", que antes disputavam a mesma barra.
+  stamina Int @default(80)
 
   // Relations
   characterSkills CharacterSkill[]
@@ -248,6 +253,9 @@ model Monster {
   defense       Int            @default(10)
   speed         Int            @default(10)
   energy        Int            @default(100)
+  /// Mesma reserva defensiva do Character. Monstro sem ela seria o único
+  /// combatente incapaz de usar habilidade de proteção.
+  stamina Int @default(80)
   monsterSkills MonsterSkill[]
   battles       Battle[]
   storyStages   StoryStage[]

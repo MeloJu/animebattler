@@ -37,6 +37,16 @@ export function FighterCard({
       </div>
       <StatBar label="HP" current={combatant.currentHp} max={combatant.maxHp} colorClass="bg-green-500" />
       <StatBar label="Energia" current={combatant.currentEnergy} max={combatant.maxEnergy} colorClass="bg-spirit" />
+      {/* Só aparece para quem tem reserva: batalha antiga foi gravada antes da
+          stamina existir, e uma barra zerada ali seria informação falsa. */}
+      {(combatant.maxStamina ?? 0) > 0 && (
+        <StatBar
+          label="Stamina"
+          current={combatant.currentStamina ?? 0}
+          max={combatant.maxStamina ?? 0}
+          colorClass="bg-amber-500"
+        />
+      )}
       <StatusBadges effects={combatant.statusEffects} />
     </div>
   )

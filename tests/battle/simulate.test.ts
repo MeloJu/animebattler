@@ -3,7 +3,7 @@ import { seededRandom, simulateBattle, winRate, type Combatente } from './simula
 import type { BaseStats, SkillDef } from '@/app/lib/battle/types'
 
 const stats = (o: Partial<BaseStats> = {}): BaseStats => ({
-  hp: 130, attack: 18, defense: 11, speed: 12, energy: 100, ...o,
+  hp: 130, attack: 18, defense: 11, speed: 12, energy: 100, stamina: 90, ...o,
 })
 const semSkills: SkillDef[] = []
 
