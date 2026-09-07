@@ -12,6 +12,9 @@ import {
   sumStatBonuses,
   computeFighterStats,
   applyBossOverrides,
+  applyTraits,
+  energyCostFor,
+  traitEnergyCostModifier,
 } from '@/app/lib/battle/engine'
 import type {
   AppliedEffect,
@@ -20,6 +23,7 @@ import type {
   SkillDef,
   SkillEffect,
   StatusEffectInstance,
+  TraitDef,
   TransformationDef,
 } from '@/app/lib/battle/types'
 
@@ -744,5 +748,79 @@ describe('applyBossOverrides', () => {
     expect(
       applyBossOverrides(base, { bossHp: 1, bossAttack: 2, bossDefense: 3, bossSpeed: 4, bossEnergy: 5 })
     ).toEqual({ hp: 1, attack: 2, defense: 3, speed: 4, energy: 5 })
+  })
+})
+
+describe('traços passivos', () => {
+  const traco = (over: Partial<TraitDef> = {}): TraitDef => ({
+    name: 'Traço',
+    energyModifier: 0,
+    attackModifier: 0,
+    defenseModifier: 0,
+    speedModifier: 0,
+    flatHpBonus: 0,
+    flatAttackBonus: 0,
+    flatDefenseBonus: 0,
+    flatSpeedBonus: 0,
+    energyCostModifier: 0,
+    ...over,
+  })
+
+  it('sem traço nenhum, devolve os stats intactos', () => {
+    const s = stats()
+    expect(applyTraits(s, [])).toBe(s)
+  })
+
+  it('modificador percentual multiplica o atributo', () => {
+    const r = applyTraits(stats({ speed: 20 }), [traco({ speedModifier: 0.5 })])
+    expect(r.speed).toBe(30)
+  })
+
+  it('bônus plano soma DEPOIS do percentual', () => {
+    // 20 * 1.5 = 30, e só então +5. Se somasse antes daria 37.
+    const r = applyTraits(stats({ speed: 20 }), [traco({ speedModifier: 0.5, flatSpeedBonus: 5 })])
+    expect(r.speed).toBe(35)
+  })
+
+  it('traço com lado ruim reduz de verdade', () => {
+    const r = applyTraits(stats({ attack: 20, defense: 20 }), [
+      traco({ attackModifier: 0.12, defenseModifier: -0.06 }),
+    ])
+    expect(r.attack).toBe(22)
+    expect(r.defense).toBe(19)
+  })
+
+  it('vários traços somam os percentuais', () => {
+    const r = applyTraits(stats({ attack: 100 }), [
+      traco({ attackModifier: 0.1 }),
+      traco({ name: 'B', attackModifier: 0.2 }),
+    ])
+    expect(r.attack).toBe(130)
+  })
+
+  it('desconto de custo de energia barateia a habilidade', () => {
+    const c = combatant({ energyCostModifier: -0.3 })
+    expect(energyCostFor(c, 20)).toBe(14)
+  })
+
+  it('habilidade gratuita continua gratuita', () => {
+    expect(energyCostFor(combatant({ energyCostModifier: -0.9 }), 0)).toBe(0)
+  })
+
+  it('desconto extremo nunca zera o custo de quem custa algo', () => {
+    // Energia tem que continuar sendo recurso, senão a rotação perde sentido.
+    expect(energyCostFor(combatant({ energyCostModifier: -0.99 }), 20)).toBe(1)
+  })
+
+  it('batalha antiga, gravada sem o campo, é tratada como sem desconto', () => {
+    const c = combatant()
+    delete (c as { energyCostModifier?: number }).energyCostModifier
+    expect(energyCostFor(c, 20)).toBe(20)
+  })
+
+  it('traitEnergyCostModifier soma os descontos', () => {
+    expect(
+      traitEnergyCostModifier([traco({ energyCostModifier: -0.3 }), traco({ name: 'B', energyCostModifier: -0.15 })])
+    ).toBeCloseTo(-0.45)
   })
 })

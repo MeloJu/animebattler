@@ -37,6 +37,7 @@ const summonerCatalog = require('./catalog/summoners');
 const signatureCatalog = require('./catalog/signatures');
 const jujutsuCatalog = require('./catalog/jujutsu');
 const transformationCatalog = require('./catalog/transformations');
+const traitCatalog = require('./catalog/traits');
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -617,6 +618,44 @@ async function syncTransformations() {
   }
 }
 
+/** Traços passivos. Ver prisma/catalog/traits.js. */
+async function syncTraits() {
+  for (const def of traitCatalog.traits) {
+    const c = await prisma.character.findFirst({ where: { name: def.character }, select: { id: true, name: true } });
+    if (!c) throw new Error(`Traço referencia personagem inexistente: ${def.character}`);
+
+    // Campos ausentes voltam ao padrão: tirar um modificador do catálogo tem
+    // que tirá-lo do banco, senão o arquivo deixa de descrever o que está no ar.
+    const desejado = {
+      characterId: c.id,
+      name: def.name,
+      description: def.description ?? null,
+      levelRequirement: def.levelRequirement ?? 1,
+      energyModifier: def.energyModifier ?? 0,
+      attackModifier: def.attackModifier ?? 0,
+      defenseModifier: def.defenseModifier ?? 0,
+      speedModifier: def.speedModifier ?? 0,
+      flatHpBonus: def.flatHpBonus ?? 0,
+      flatAttackBonus: def.flatAttackBonus ?? 0,
+      flatDefenseBonus: def.flatDefenseBonus ?? 0,
+      flatSpeedBonus: def.flatSpeedBonus ?? 0,
+      energyCostModifier: def.energyCostModifier ?? 0,
+    };
+
+    const atual = await prisma.trait.findUnique({
+      where: { characterId_name: { characterId: c.id, name: def.name } },
+    });
+    registra('traço', `${c.name} · ${def.name}`, diff(atual, desejado));
+    if (!DRY_RUN) {
+      await prisma.trait.upsert({
+        where: { characterId_name: { characterId: c.id, name: def.name } },
+        create: desejado,
+        update: desejado,
+      });
+    }
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -646,6 +685,7 @@ async function main() {
   await syncSummoners();
   await syncCharacterImages();
   await syncTransformations();
+  await syncTraits();
   await syncSkillLadders();
   await syncSkillScaling();
 

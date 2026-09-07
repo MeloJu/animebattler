@@ -5,10 +5,18 @@ import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { computeFighterStats, createInitialState, isLegalMove, resolveRound, sumStatBonuses } from './engine'
+import {
+  applyTraits,
+  computeFighterStats,
+  createInitialState,
+  isLegalMove,
+  resolveRound,
+  sumStatBonuses,
+  traitEnergyCostModifier,
+} from './engine'
 import { pickAiSkill } from './ai'
 import { applyExperience, battleXpGained } from './leveling'
-import { getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
+import { getCharacterTraits, getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
 import { getEquipmentBonus } from '@/app/lib/equipment/queries'
 import { autoFillLoadout } from '@/app/lib/progression/actions'
 import { recordStoryProgress } from '@/app/lib/story/actions'
@@ -252,16 +260,24 @@ export async function createBattleAndRedirect(params: {
   enemy: EnemyRef
   storyStageId?: string
 }): Promise<never> {
-  const [treeBonus, equipmentBonus] = await Promise.all([
+  const [treeBonus, equipmentBonus, traits] = await Promise.all([
     getTreeBonus(params.userCharacter.id),
     getEquipmentBonus(params.userCharacter.id),
+    getCharacterTraits(params.userCharacter.id, params.userCharacter.level),
   ])
-  const playerBase = computeFighterStats(
-    params.userCharacter.character,
-    params.userCharacter.level,
-    sumStatBonuses(treeBonus, equipmentBonus)
+  // Traço entra DEPOIS de nível, árvore e equipamento: é o que o personagem é,
+  // aplicado sobre tudo que ele conquistou.
+  const playerBase = applyTraits(
+    computeFighterStats(
+      params.userCharacter.character,
+      params.userCharacter.level,
+      sumStatBonuses(treeBonus, equipmentBonus)
+    ),
+    traits
   )
-  const state = createInitialState(playerBase, params.enemy.base)
+  const state = createInitialState(playerBase, params.enemy.base, {
+    player: traitEnergyCostModifier(traits),
+  })
 
   const battle = await prisma.battle.create({
     data: {

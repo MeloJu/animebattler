@@ -10,6 +10,50 @@ enum UserRole {
   ADMIN
 }
 
+/**
+ * Traço passivo: sempre ativo, sem ativação e sem duração.
+ *
+ * Transformação é ESTADO TEMPORÁRIO — liga, custa, e cai. Traço é o que o
+ * personagem É. Os Seis Olhos do Gojo não se ativam: ele nasceu com eles.
+ * Forçar isso a ser transformação daria a coisa errada, um botão para ligar
+ * os próprios olhos.
+ *
+ * energyCostModifier é o motivo de o traço não ser só um bônus de atributo
+ * disfarçado: -0.30 significa que toda habilidade custa 30% menos energia.
+ * É a leitura correta dos Seis Olhos, que na obra são sobre EFICIÊNCIA de
+ * energia amaldiçoada, não sobre bater mais forte.
+ *
+ * characterId nulo fica reservado para traço concedido por clã, que é o
+ * próximo passo — a mesma tabela serve aos dois casos.
+ */
+model Trait {
+  id               String  @id @default(cuid())
+  name             String
+  description      String?
+  character        Character? @relation(fields: [characterId], references: [id])
+  characterId      String?
+  levelRequirement Int     @default(1)
+
+  energyModifier  Float @default(0)
+  attackModifier  Float @default(0)
+  defenseModifier Float @default(0)
+  speedModifier   Float @default(0)
+
+  flatHpBonus      Int @default(0)
+  flatAttackBonus  Int @default(0)
+  flatDefenseBonus Int @default(0)
+  flatSpeedBonus   Int @default(0)
+
+  /// Fração subtraída do custo de energia de toda habilidade. -0.3 = 30% mais barato.
+  energyCostModifier Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([characterId, name])
+  @@index([characterId, levelRequirement])
+}
+
 model Transformation {
   id               String                @id @default(cuid())
   character        Character             @relation(fields: [characterId], references: [id])
@@ -112,6 +156,7 @@ model Character {
   userCharacters  UserCharacter[]
   enemyBattles    Battle[]         @relation("EnemyCharacter")
   transformations Transformation[]
+  traits          Trait[]
   storyStages     StoryStage[]
 
   createdAt DateTime @default(now())

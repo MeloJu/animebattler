@@ -36,6 +36,13 @@ export function seededRandom(seed: number): () => number {
 export type Combatente = {
   stats: BaseStats
   skills: SkillDef[]
+  /**
+   * Desconto de custo de energia vindo de traço passivo. Opcional para os
+   * casos sintéticos, mas necessário para medir personagem com traço: sem
+   * isto o simulador diria que os Seis Olhos não mudam nada, quando na
+   * batalha real eles mudam.
+   */
+  energyCostModifier?: number
 }
 
 export type ResultadoSimulacao = {
@@ -47,7 +54,10 @@ export type ResultadoSimulacao = {
 
 export function simulateBattle(jogador: Combatente, inimigo: Combatente, seed: number): ResultadoSimulacao {
   const rand = seededRandom(seed)
-  let state = createInitialState(jogador.stats, inimigo.stats)
+  let state = createInitialState(jogador.stats, inimigo.stats, {
+    player: jogador.energyCostModifier ?? 0,
+    enemy: inimigo.energyCostModifier ?? 0,
+  })
 
   const jogadorPorId = Object.fromEntries(jogador.skills.map((s) => [s.id, s]))
   const inimigoPorId = Object.fromEntries(inimigo.skills.map((s) => [s.id, s]))

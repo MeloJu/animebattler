@@ -54,6 +54,12 @@ export type CombatantState = {
   baseSpeed: number
   cooldowns: Record<string, number> // skillId -> rounds remaining
   activeTransformationId: string | null
+  /**
+   * Fração descontada do custo de energia de toda habilidade, vinda de traço
+   * passivo. -0.3 = 30% mais barato. Opcional porque batalhas em andamento
+   * foram gravadas antes deste campo existir; ausente vale 0.
+   */
+  energyCostModifier?: number
   statusEffects: StatusEffectInstance[]
 }
 
@@ -98,6 +104,20 @@ export type SkillDef = {
   cooldown: number
   effects: SkillEffect[]
   scalingStat: ScalingStat
+}
+
+/** Traço passivo já resolvido para uso no motor. Ver model Trait. */
+export type TraitDef = {
+  name: string
+  energyModifier: number
+  attackModifier: number
+  defenseModifier: number
+  speedModifier: number
+  flatHpBonus: number
+  flatAttackBonus: number
+  flatDefenseBonus: number
+  flatSpeedBonus: number
+  energyCostModifier: number
 }
 
 export type TransformationDef = {

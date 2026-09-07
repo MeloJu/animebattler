@@ -2,7 +2,7 @@ import { prisma } from '@/app/lib/prisma'
 import { computeBaseStats, hasBattleValue } from './engine'
 import { getEquipmentGrantedSkills } from '@/app/lib/equipment/queries'
 import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
-import type { BaseStats, ScalingStat, SkillDef, SkillEffect, TransformationDef } from './types'
+import type { BaseStats, ScalingStat, SkillDef, SkillEffect, TraitDef, TransformationDef } from './types'
 import type { ScalingStat as PrismaScalingStat } from '@prisma/client'
 
 function parseEffects(json: unknown): SkillEffect[] {
@@ -73,6 +73,35 @@ export function toTransformationDef(t: {
     triggerType: t.triggerType as TransformationDef['triggerType'],
     triggerPayload: t.triggerPayload,
   }
+}
+
+/**
+ * Traços passivos do personagem por trás deste UserCharacter, filtrados pelo
+ * nível dele.
+ *
+ * A consulta parte do UserCharacter de propósito, para que nenhum chamador
+ * precise passar characterId junto — traço é sempre "o que este personagem é",
+ * e quem já tem o UserCharacter já sabe disso implicitamente.
+ */
+export async function getCharacterTraits(userCharacterId: string, level: number): Promise<TraitDef[]> {
+  const traits = await prisma.trait.findMany({
+    where: {
+      levelRequirement: { lte: level },
+      character: { userCharacters: { some: { id: userCharacterId } } },
+    },
+  })
+  return traits.map((t) => ({
+    name: t.name,
+    energyModifier: t.energyModifier,
+    attackModifier: t.attackModifier,
+    defenseModifier: t.defenseModifier,
+    speedModifier: t.speedModifier,
+    flatHpBonus: t.flatHpBonus,
+    flatAttackBonus: t.flatAttackBonus,
+    flatDefenseBonus: t.flatDefenseBonus,
+    flatSpeedBonus: t.flatSpeedBonus,
+    energyCostModifier: t.energyCostModifier,
+  }))
 }
 
 export async function getTreeBonus(userCharacterId: string) {

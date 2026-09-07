@@ -22,6 +22,7 @@ import type {
   Side,
   Stat,
   StatusEffectInstance,
+  TraitDef,
   TransformationDef,
   TransformationTrigger,
   TurnResult,
@@ -35,7 +36,7 @@ function makeEffectId(): string {
   return `fx-${Math.random().toString(36).slice(2, 10)}`
 }
 
-function makeCombatant(stats: BaseStats): CombatantState {
+function makeCombatant(stats: BaseStats, energyCostModifier = 0): CombatantState {
   return {
     currentHp: stats.hp,
     maxHp: stats.hp,
@@ -51,6 +52,7 @@ function makeCombatant(stats: BaseStats): CombatantState {
     baseSpeed: stats.speed,
     cooldowns: {},
     activeTransformationId: null,
+    energyCostModifier,
     statusEffects: [],
   }
 }
@@ -139,8 +141,75 @@ export function applyBossOverrides(
   }
 }
 
-export function createInitialState(player: BaseStats, enemy: BaseStats): BattleState {
-  return { version: 1, player: makeCombatant(player), enemy: makeCombatant(enemy), outcome: null }
+/**
+ * O terceiro parâmetro é opcional para não obrigar todo chamador a conhecer
+ * traços passivos: quem não tem traço nenhum não muda nada.
+ */
+/**
+ * Aplica traços passivos a um bloco de atributos.
+ *
+ * Percentual primeiro, plano depois — a mesma ordem de computeFighterStats,
+ * para que um traço de +10% não multiplique também o bônus plano de
+ * equipamento e acabe valendo mais do que diz.
+ */
+export function applyTraits(stats: BaseStats, traits: TraitDef[]): BaseStats {
+  if (traits.length === 0) return stats
+  const pct = traits.reduce(
+    (a, t) => ({
+      hp: a.hp,
+      attack: a.attack + t.attackModifier,
+      defense: a.defense + t.defenseModifier,
+      speed: a.speed + t.speedModifier,
+      energy: a.energy + t.energyModifier,
+    }),
+    { hp: 0, attack: 0, defense: 0, speed: 0, energy: 0 }
+  )
+  const plano = traits.reduce(
+    (a, t) => ({
+      hp: a.hp + t.flatHpBonus,
+      attack: a.attack + t.flatAttackBonus,
+      defense: a.defense + t.flatDefenseBonus,
+      speed: a.speed + t.flatSpeedBonus,
+    }),
+    { hp: 0, attack: 0, defense: 0, speed: 0 }
+  )
+  return {
+    hp: Math.round(stats.hp) + plano.hp,
+    attack: Math.round(stats.attack * (1 + pct.attack)) + plano.attack,
+    defense: Math.round(stats.defense * (1 + pct.defense)) + plano.defense,
+    speed: Math.round(stats.speed * (1 + pct.speed)) + plano.speed,
+    energy: Math.round(stats.energy * (1 + pct.energy)),
+  }
+}
+
+/** Soma o desconto de custo de energia de todos os traços ativos. */
+export function traitEnergyCostModifier(traits: TraitDef[]): number {
+  return traits.reduce((a, t) => a + t.energyCostModifier, 0)
+}
+
+export function createInitialState(
+  player: BaseStats,
+  enemy: BaseStats,
+  passivos?: { player?: number; enemy?: number }
+): BattleState {
+  return {
+    version: 1,
+    player: makeCombatant(player, passivos?.player ?? 0),
+    enemy: makeCombatant(enemy, passivos?.enemy ?? 0),
+    outcome: null,
+  }
+}
+
+/**
+ * Custo de energia de uma habilidade para ESTE combatente, já com o desconto
+ * de traço passivo. Nunca desce abaixo de 1 quando a habilidade custa algo:
+ * um traço muito forte não deve tornar tudo gratuito, senão energia deixa de
+ * ser recurso e a rotação de habilidades perde o sentido.
+ */
+export function energyCostFor(c: CombatantState, energyCost: number): number {
+  if (energyCost <= 0) return 0
+  const fator = 1 + (c.energyCostModifier ?? 0)
+  return Math.max(1, Math.round(energyCost * fator))
 }
 
 /**
@@ -171,7 +240,7 @@ export function hasBattleValue(skill: { power: number; effects: unknown }): bool
 export function isLegalMove(combatant: CombatantState, skill: SkillDef | null): boolean {
   if (!skill) return true // Basic Attack is always legal
   const onCooldown = (combatant.cooldowns[skill.id] ?? 0) > 0
-  return !onCooldown && combatant.currentEnergy >= skill.energyCost
+  return !onCooldown && combatant.currentEnergy >= energyCostFor(combatant, skill.energyCost)
 }
 
 /**
@@ -359,7 +428,7 @@ function performSkillUse(
   rand: () => number
 ): { attacker: CombatantState; defender: CombatantState; turnResult: TurnResult } {
   const power = skill ? skill.power : BASIC_ATTACK_POWER
-  const energyCost = skill ? skill.energyCost : 0
+  const energyCost = skill ? energyCostFor(attacker, skill.energyCost) : 0
   const effects = skill ? skill.effects : []
   // Ataque básico escala de ataque: é golpe físico, não técnica.
   const scalingStat: ScalingStat = skill ? skill.scalingStat : 'attack'
