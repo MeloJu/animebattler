@@ -1,10 +1,12 @@
 import { prisma } from '@/app/lib/prisma'
-import { computeBaseStats, hasBattleValue } from './engine'
+import { computeBaseStats, hasBattleValue,
+  SEM_BONUS,
+} from './engine'
 import { getEquipmentGrantedSkills } from '@/app/lib/equipment/queries'
 import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
 import { escolherLoadoutPadrao } from './ai'
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
-import type { BaseStats, ScalingStat, SkillDef, SkillEffect, TraitDef, TransformationDef } from './types'
+import type { BaseStats, ScalingStat, SkillDef, SkillEffect, StatBonus, TraitDef, TransformationDef } from './types'
 import type { ScalingStat as PrismaScalingStat } from '@prisma/client'
 
 function parseEffects(json: unknown): SkillEffect[] {
@@ -106,16 +108,17 @@ export async function getCharacterTraits(userCharacterId: string, level: number)
   }))
 }
 
-export async function getTreeBonus(userCharacterId: string) {
+export async function getTreeBonus(userCharacterId: string): Promise<StatBonus> {
   const unlocks = await prisma.userSkillUnlock.findMany({ where: { userCharacterId }, include: { node: true } })
-  return unlocks.reduce(
+  return unlocks.reduce<StatBonus>(
     (acc, u) => ({
+      ...acc,
       hp: acc.hp + u.node.flatHpBonus,
       attack: acc.attack + u.node.flatAttackBonus,
       defense: acc.defense + u.node.flatDefenseBonus,
       speed: acc.speed + u.node.flatSpeedBonus,
     }),
-    { hp: 0, attack: 0, defense: 0, speed: 0 }
+    { ...SEM_BONUS }
   )
 }
 
@@ -240,7 +243,7 @@ export async function loadEnemyProfile(
     return {
       name: character.name,
       imageUrl: character.imageUrl,
-      stats: computeBaseStats(character, { hp: 0, attack: 0, defense: 0, speed: 0 }),
+      stats: computeBaseStats(character, SEM_BONUS),
       skills: await getEnemySkills(character.id, await enemyLevelFor(battle)),
       xpMultiplier: NORMAL_BATTLE_XP_MULTIPLIER,
     }
@@ -251,7 +254,7 @@ export async function loadEnemyProfile(
     return {
       name: monster.name,
       imageUrl: monster.imageUrl,
-      stats: computeBaseStats(monster, { hp: 0, attack: 0, defense: 0, speed: 0 }),
+      stats: computeBaseStats(monster, SEM_BONUS),
       skills: await getMonsterSkills(monster.id),
       xpMultiplier: monster.tier,
     }

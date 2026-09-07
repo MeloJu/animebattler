@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { bonusDeAtributos } from '@/app/lib/progression/atributos'
 import { requireUser } from '@/app/lib/session'
 import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression/actions'
 import { getLoadoutSlotCount } from '@/app/lib/progression/constants'
@@ -9,7 +10,7 @@ import { getEquippedSkillRows, getSelectedCharacter, getSkillTree, getUnlockedNo
 import { describeEffect } from '@/app/lib/battle/presentation'
 import { XP_PER_LEVEL } from '@/app/lib/battle/constants'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
-import { StatGrid } from '@/app/components/StatGrid'
+import { PainelDeAtributos } from '@/app/components/progression/PainelDeAtributos'
 import type { SkillEffect } from '@/app/lib/battle/types'
 
 const STATUS_ERROR_MESSAGES: Record<string, string> = {
@@ -19,6 +20,7 @@ const STATUS_ERROR_MESSAGES: Record<string, string> = {
   missing_prerequisite: 'Pré-requisito ainda não desbloqueado.',
   invalid_skill: 'Essa skill não está disponível pra equipar.',
   invalid_slot: 'Slot de loadout inválido.',
+  invalid_attribute: 'Atributo inválido.',
 }
 
 function parseEffects(json: unknown): SkillEffect[] {
@@ -53,7 +55,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
     getEligiblePlayerSkills(selected.id, selected.characterId, selected.level),
     getEquippedSkillRows(selected.id),
   ])
-  const effectiveStats = computeFighterStats(selected.character, selected.level, sumStatBonuses(treeBonus, equipmentBonus))
+  const effectiveStats = computeFighterStats(selected.character, selected.level, sumStatBonuses(treeBonus, equipmentBonus, bonusDeAtributos(selected)))
   const xpForNextLevel = selected.level * XP_PER_LEVEL
   const slotCount = getLoadoutSlotCount(selected.level)
 
@@ -83,17 +85,32 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
       )}
 
       <div className="card p-4 space-y-3">
-        <h2 className="font-semibold">Atributos</h2>
-        <div className="text-sm opacity-70">Nível {selected.level} · EXP {selected.experience} / {xpForNextLevel}</div>
-        <StatGrid
-          stats={[
-            { label: 'HP', value: effectiveStats.hp },
-            { label: 'ATK', value: effectiveStats.attack },
-            { label: 'DEF', value: effectiveStats.defense },
-            { label: 'SPD', value: effectiveStats.speed },
-            { label: 'EN', value: effectiveStats.energy },
-          ]}
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="font-semibold">Atributos</h2>
+          {selected.pointsAvailable > 0 && (
+            <span className="text-sm text-accent font-medium">
+              {selected.pointsAvailable} ponto{selected.pointsAvailable > 1 ? 's' : ''} para investir
+            </span>
+          )}
+        </div>
+        <div className="text-sm opacity-70">
+          Nível {selected.level} · EXP {selected.experience} / {xpForNextLevel}
+        </div>
+        <PainelDeAtributos
+          stats={effectiveStats}
+          pontosDisponiveis={selected.pointsAvailable}
+          alocado={{
+            hp: selected.allocHp,
+            attack: selected.allocAttack,
+            defense: selected.allocDefense,
+            speed: selected.allocSpeed,
+            energy: selected.allocEnergy,
+            stamina: selected.allocStamina,
+          }}
         />
+        {selected.pointsAvailable === 0 && (
+          <p className="text-xs opacity-50">Você ganha um ponto a cada nível. Passe de nível para investir.</p>
+        )}
       </div>
 
       <div className="card p-4 space-y-3">

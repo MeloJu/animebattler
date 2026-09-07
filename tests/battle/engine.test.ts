@@ -16,6 +16,7 @@ import {
   energyCostFor,
   traitEnergyCostModifier,
   custaStamina,
+  SEM_BONUS,
 } from '@/app/lib/battle/engine'
 import type {
   AppliedEffect,
@@ -94,7 +95,7 @@ describe('computeBaseStats', () => {
   it('soma os bônus da skill tree aos stats do personagem', () => {
     const r = computeBaseStats(
       { hp: 100, attack: 20, defense: 10, speed: 15, energy: 80, stamina: 60 },
-      { hp: 25, attack: 5, defense: 3, speed: 2 }
+      { hp: 25, attack: 5, defense: 3, speed: 2, energy: 0, stamina: 0 }
     )
     expect(r).toEqual({ hp: 125, attack: 25, defense: 13, speed: 17, energy: 80, stamina: 60 })
   })
@@ -102,7 +103,7 @@ describe('computeBaseStats', () => {
   it('não altera energia — a skill tree não dá bônus de energia', () => {
     const r = computeBaseStats(
       { hp: 100, attack: 20, defense: 10, speed: 15, energy: 80, stamina: 60 },
-      { hp: 0, attack: 0, defense: 0, speed: 0 }
+      SEM_BONUS
     )
     expect(r.energy).toBe(80)
   })
@@ -492,27 +493,29 @@ describe('resolveRound — ordem, transformação e desfecho', () => {
 
 describe('sumStatBonuses', () => {
   it('sem fontes, devolve tudo zerado', () => {
-    expect(sumStatBonuses()).toEqual({ hp: 0, attack: 0, defense: 0, speed: 0 })
+    expect(sumStatBonuses()).toEqual(SEM_BONUS)
   })
 
   it('soma árvore de skills e equipamento campo a campo', () => {
-    const arvore = { hp: 10, attack: 2, defense: 1, speed: 0 }
-    const equipamento = { hp: 8, attack: 0, defense: 3, speed: 5 }
-    expect(sumStatBonuses(arvore, equipamento)).toEqual({ hp: 18, attack: 2, defense: 4, speed: 5 })
+    const arvore = { hp: 10, attack: 2, defense: 1, speed: 0, energy: 0, stamina: 0 }
+    const equipamento = { hp: 8, attack: 0, defense: 3, speed: 5, energy: 0, stamina: 0 }
+    expect(sumStatBonuses(arvore, equipamento)).toEqual({ hp: 18, attack: 2, defense: 4, speed: 5, energy: 0, stamina: 0 })
   })
 
   it('bônus negativo (ex: Fragmento de Máscara Hollow) subtrai', () => {
-    expect(sumStatBonuses({ hp: 20, attack: 0, defense: 0, speed: 0 }, { hp: -10, attack: 12, defense: 0, speed: 0 })).toEqual({
+    expect(sumStatBonuses({ hp: 20, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0 }, { hp: -10, attack: 12, defense: 0, speed: 0 })).toEqual({
       hp: 10,
       attack: 12,
       defense: 0,
       speed: 0,
+      energy: 0,
+      stamina: 0,
     })
   })
 
   it('aceita mais de duas fontes', () => {
-    const um = { hp: 1, attack: 1, defense: 1, speed: 1 }
-    expect(sumStatBonuses(um, um, um)).toEqual({ hp: 3, attack: 3, defense: 3, speed: 3 })
+    const um = { hp: 1, attack: 1, defense: 1, speed: 1, energy: 0, stamina: 0 }
+    expect(sumStatBonuses(um, um, um)).toEqual({ hp: 3, attack: 3, defense: 3, speed: 3, energy: 0, stamina: 0 })
   })
 })
 
@@ -521,10 +524,10 @@ describe('sumStatBonuses', () => {
 // até a história virar invencível.
 describe('computeFighterStats', () => {
   const base = { hp: 130, attack: 18, defense: 11, speed: 12, energy: 100, stamina: 90 }
-  const semBonus = { hp: 0, attack: 0, defense: 0, speed: 0 }
+  const semBonus = SEM_BONUS
 
   it('no nível 1 é idêntico a só somar os bônus', () => {
-    const bonus = { hp: 10, attack: 2, defense: 0, speed: 0 }
+    const bonus = { hp: 10, attack: 2, defense: 0, speed: 0, energy: 0, stamina: 0 }
     expect(computeFighterStats(base, 1, bonus)).toEqual(computeBaseStats(base, bonus))
   })
 
@@ -536,7 +539,7 @@ describe('computeFighterStats', () => {
   })
 
   it('bônus plano NÃO é escalado — entra depois, valor cheio', () => {
-    const bonus = { hp: 100, attack: 100, defense: 100, speed: 100 }
+    const bonus = { hp: 100, attack: 100, defense: 100, speed: 100, energy: 0, stamina: 0 }
     const semEle = computeFighterStats(base, 5, semBonus)
     const comEle = computeFighterStats(base, 5, bonus)
     expect(comEle.hp - semEle.hp).toBe(100)
@@ -546,7 +549,7 @@ describe('computeFighterStats', () => {
   })
 
   it('escala antes de somar, e não o contrário', () => {
-    const bonus = { hp: 10, attack: 2, defense: 0, speed: 0 }
+    const bonus = { hp: 10, attack: 2, defense: 0, speed: 0, energy: 0, stamina: 0 }
     // se somasse antes de escalar, o HP seria round((130+10)*1.48) = 207
     expect(computeFighterStats(base, 5, bonus).hp).toBe(202)
   })
@@ -556,7 +559,7 @@ describe('computeFighterStats', () => {
   })
 
   it('o bônus perde peso relativo conforme o nível sobe (a gear se supera)', () => {
-    const bonus = { hp: 0, attack: 2, defense: 0, speed: 0 }
+    const bonus = { hp: 0, attack: 2, defense: 0, speed: 0, energy: 0, stamina: 0 }
     const peso = (lv: number) => 2 / computeFighterStats(base, lv, bonus).attack
     expect(peso(10)).toBeLessThan(peso(1))
   })

@@ -346,6 +346,23 @@ model UserCharacter {
   level                  Int             @default(1)
   experience             Int             @default(0)
   pointsAvailable        Int             @default(0)
+
+  /// Pontos de nível gastos em atributo, por atributo.
+  ///
+  /// Existem porque o ponto não tinha para onde ir: ele só comprava nó de
+  /// árvore de habilidade, e 39 dos 52 personagens não têm nó nenhum. Quem
+  /// jogasse com qualquer um deles acumulava pontos que nunca viravam nada.
+  ///
+  /// Guardado como pontos GASTOS e não como bônus final de propósito: assim
+  /// mudar quanto cada ponto vale (ver ATRIBUTO_POR_PONTO) reajusta todo
+  /// mundo de uma vez, em vez de deixar personagens antigos com números
+  /// calculados por uma regra que não existe mais.
+  allocHp                Int             @default(0)
+  allocAttack            Int             @default(0)
+  allocDefense           Int             @default(0)
+  allocSpeed             Int             @default(0)
+  allocEnergy            Int             @default(0)
+  allocStamina           Int             @default(0)
   nickname               String          @default("Hero")
   pvpWins                Int             @default(0)
   npcWins                Int             @default(0)

@@ -1,5 +1,6 @@
 import { prisma } from '@/app/lib/prisma'
 import type { EquipmentSlot } from '@prisma/client'
+import type { StatBonus } from '@/app/lib/battle/types'
 
 /** Ordem em que os slots aparecem na UI — do mais definidor pro acessório. */
 export const SLOT_ORDER: EquipmentSlot[] = ['ZANPAKUTO', 'TRAJE', 'ACESSORIO']
@@ -64,7 +65,7 @@ export async function getEquippedBySlot(userCharacterId: string) {
  * antes de virar os stats de batalha, então formato idêntico evita conversão
  * no meio do caminho.
  */
-export async function getEquipmentBonus(userCharacterId: string) {
+export async function getEquipmentBonus(userCharacterId: string): Promise<StatBonus> {
   const rows = await prisma.userEquipment.findMany({
     where: { equippedOnId: userCharacterId },
     select: {
@@ -73,14 +74,15 @@ export async function getEquipmentBonus(userCharacterId: string) {
       },
     },
   })
-  return rows.reduce(
+  return rows.reduce<StatBonus>(
     (acc, r) => ({
+      ...acc,
       hp: acc.hp + r.equipment.flatHpBonus,
       attack: acc.attack + r.equipment.flatAttackBonus,
       defense: acc.defense + r.equipment.flatDefenseBonus,
       speed: acc.speed + r.equipment.flatSpeedBonus,
     }),
-    { hp: 0, attack: 0, defense: 0, speed: 0 }
+    { hp: 0, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0 }
   )
 }
 

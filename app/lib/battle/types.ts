@@ -145,6 +145,21 @@ export type TransformationDef = {
   triggerPayload: unknown
 }
 
+/**
+ * Bônus PLANO somado aos stats base: árvore de habilidade, equipamento e
+ * pontos de atributo. Energia e stamina entram aqui desde que existe alocação
+ * livre — antes só HP, ataque, defesa e velocidade recebiam bônus, e um
+ * personagem não tinha como investir nas duas reservas.
+ */
+export type StatBonus = {
+  hp: number
+  attack: number
+  defense: number
+  speed: number
+  energy: number
+  stamina: number
+}
+
 export type BaseStats = {
   hp: number
   attack: number

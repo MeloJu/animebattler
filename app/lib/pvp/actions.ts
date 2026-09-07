@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { bonusDeAtributos } from '@/app/lib/progression/atributos'
 import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
@@ -92,7 +93,7 @@ async function buildFighter(userCharacterId: string) {
   // Cada lado escala pelo PROPRIO nivel. A fila so pareia dentro de
   // PVP_LEVEL_RANGE justamente porque, com os dois escalando, diferenca
   // grande de nivel deixa de ser vantagem e vira atropelo.
-  return { uc, base: computeFighterStats(uc.character, uc.level, sumStatBonuses(tree, equipment)), skills }
+  return { uc, base: computeFighterStats(uc.character, uc.level, sumStatBonuses(tree, equipment, bonusDeAtributos(uc))), skills }
 }
 
 async function pairPlayers(

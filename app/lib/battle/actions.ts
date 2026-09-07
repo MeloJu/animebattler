@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { getBonusDeAtributos } from '@/app/lib/progression/queries'
 import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
@@ -13,6 +14,7 @@ import {
   resolveRound,
   sumStatBonuses,
   traitEnergyCostModifier,
+  SEM_BONUS,
 } from './engine'
 import { pickAiSkill } from './ai'
 import { applyExperience, battleXpGained } from './leveling'
@@ -262,9 +264,10 @@ export async function createBattleAndRedirect(params: {
   enemy: EnemyRef
   storyStageId?: string
 }): Promise<never> {
-  const [treeBonus, equipmentBonus, traits] = await Promise.all([
+  const [treeBonus, equipmentBonus, atributos, traits] = await Promise.all([
     getTreeBonus(params.userCharacter.id),
     getEquipmentBonus(params.userCharacter.id),
+    getBonusDeAtributos(params.userCharacter.id),
     getCharacterTraits(params.userCharacter.id, params.userCharacter.level),
   ])
   // Traço entra DEPOIS de nível, árvore e equipamento: é o que o personagem é,
@@ -273,7 +276,7 @@ export async function createBattleAndRedirect(params: {
     computeFighterStats(
       params.userCharacter.character,
       params.userCharacter.level,
-      sumStatBonuses(treeBonus, equipmentBonus)
+      sumStatBonuses(treeBonus, equipmentBonus, atributos)
     ),
     traits
   )
@@ -314,7 +317,7 @@ export async function startAiBattle(userCharacterId: string): Promise<never> {
   // Inimigo acompanha o nivel do jogador: sem isso, a luta contra IA vira
   // trivial assim que o jogador passa a escalar, e deixa de servir como
   // treino ou como fonte de recompensa.
-  const enemyBase = computeFighterStats(enemyCharacter, userCharacter.level, { hp: 0, attack: 0, defense: 0, speed: 0 })
+  const enemyBase = computeFighterStats(enemyCharacter, userCharacter.level, SEM_BONUS)
 
   return createBattleAndRedirect({
     userId,
@@ -342,7 +345,7 @@ export async function startRaidBattle(userCharacterId: string): Promise<never> {
   // Paliativo, nao desenho final: a raid vai ser refeita como conteudo de
   // preparacao, com chefe proprio e loot proprio. Ate la ela acompanha o
   // nivel do jogador pelo mesmo motivo da IA — senao vira passeio.
-  const enemyBase = computeFighterStats(monster, userCharacter.level, { hp: 0, attack: 0, defense: 0, speed: 0 })
+  const enemyBase = computeFighterStats(monster, userCharacter.level, SEM_BONUS)
 
   return createBattleAndRedirect({
     userId,

@@ -22,6 +22,7 @@ import type {
   SkillEffect,
   Side,
   Stat,
+  StatBonus,
   StatusEffectInstance,
   TraitDef,
   TransformationDef,
@@ -63,15 +64,15 @@ function makeCombatant(stats: BaseStats, energyCostModifier = 0): CombatantState
 /** Character base stats + flat bonuses from unlocked skill-tree nodes. Battles always start untransformed. */
 export function computeBaseStats(
   character: { hp: number; attack: number; defense: number; speed: number; energy: number; stamina: number },
-  treeBonus: { hp: number; attack: number; defense: number; speed: number }
+  bonus: StatBonus
 ): BaseStats {
   return {
-    hp: character.hp + treeBonus.hp,
-    attack: character.attack + treeBonus.attack,
-    defense: character.defense + treeBonus.defense,
-    speed: character.speed + treeBonus.speed,
-    energy: character.energy,
-    stamina: character.stamina,
+    hp: character.hp + bonus.hp,
+    attack: character.attack + bonus.attack,
+    defense: character.defense + bonus.defense,
+    speed: character.speed + bonus.speed,
+    energy: character.energy + bonus.energy,
+    stamina: character.stamina + bonus.stamina,
   }
 }
 
@@ -80,17 +81,19 @@ export function computeBaseStats(
  * bloco antes dele virar stat de batalha. Existe pra que adicionar uma nova
  * fonte não signifique tocar em cada chamador de computeBaseStats.
  */
-export function sumStatBonuses(
-  ...bonuses: { hp: number; attack: number; defense: number; speed: number }[]
-): { hp: number; attack: number; defense: number; speed: number } {
-  return bonuses.reduce(
+export const SEM_BONUS: StatBonus = { hp: 0, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0 }
+
+export function sumStatBonuses(...bonuses: Partial<StatBonus>[]): StatBonus {
+  return bonuses.reduce<StatBonus>(
     (acc, b) => ({
-      hp: acc.hp + b.hp,
-      attack: acc.attack + b.attack,
-      defense: acc.defense + b.defense,
-      speed: acc.speed + b.speed,
+      hp: acc.hp + (b.hp ?? 0),
+      attack: acc.attack + (b.attack ?? 0),
+      defense: acc.defense + (b.defense ?? 0),
+      speed: acc.speed + (b.speed ?? 0),
+      energy: acc.energy + (b.energy ?? 0),
+      stamina: acc.stamina + (b.stamina ?? 0),
     }),
-    { hp: 0, attack: 0, defense: 0, speed: 0 }
+    { ...SEM_BONUS }
   )
 }
 
@@ -112,7 +115,7 @@ export function sumStatBonuses(
 export function computeFighterStats(
   character: { hp: number; attack: number; defense: number; speed: number; energy: number; stamina: number },
   level: number,
-  bonus: { hp: number; attack: number; defense: number; speed: number }
+  bonus: StatBonus
 ): BaseStats {
   return computeBaseStats(scaleForLevel(character, level), bonus)
 }

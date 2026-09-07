@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { bonusDeAtributos } from '@/app/lib/progression/atributos'
 import { requireUser } from '@/app/lib/session'
 import { getDashboardUser } from '@/app/lib/progression/queries'
 import { getTreeBonus } from '@/app/lib/battle/queries'
@@ -34,7 +35,7 @@ export default async function DashboardPage() {
     getTreeBonus(uc.id),
     getEquipmentBonus(uc.id),
   ])
-  const base = computeFighterStats(uc.character, uc.level, sumStatBonuses(treeBonus, equipmentBonus))
+  const base = computeFighterStats(uc.character, uc.level, sumStatBonuses(treeBonus, equipmentBonus, bonusDeAtributos(uc)))
 
   return (
     <main className="mx-auto max-w-7xl p-6 space-y-6">

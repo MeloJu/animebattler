@@ -3,7 +3,9 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { applyBossOverrides, computeBaseStats, scaleForLevel } from '@/app/lib/battle/engine'
+import { applyBossOverrides, computeBaseStats, scaleForLevel,
+  SEM_BONUS,
+} from '@/app/lib/battle/engine'
 import { createBattleAndRedirect } from '@/app/lib/battle/actions'
 import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStageForUser } from './queries'
@@ -70,7 +72,7 @@ export async function startStoryBattle(stageId: string): Promise<never> {
   // O chefe pode ter atributos próprios — ver o comentário de bossHp em
   // schema.prisma para por que ele não é obrigado a ser o personagem jogável.
   const enemyBase = applyBossOverrides(
-    computeBaseStats(scaleForLevel(enemy, stage.enemyLevel), { hp: 0, attack: 0, defense: 0, speed: 0 }),
+    computeBaseStats(scaleForLevel(enemy, stage.enemyLevel), SEM_BONUS),
     stage
   )
 

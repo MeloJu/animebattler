@@ -8,6 +8,8 @@ import { requireUser } from '@/app/lib/session'
 import { getEligiblePlayerSkills } from '@/app/lib/battle/queries'
 import { escolherLoadoutPadrao } from '@/app/lib/battle/ai'
 import { getLoadoutSlotCount } from './constants'
+import { colunaDe, ehAtributo } from './atributos'
+import { getSelectedCharacter } from './queries'
 
 type Db = Prisma.TransactionClient | typeof prisma
 
@@ -153,6 +155,39 @@ export async function unequipSkill(userCharacterId: string, slot: number): Promi
   if (!userCharacter) redirect('/status?error=not_found')
 
   await prisma.userCharacterEquippedSkill.deleteMany({ where: { userCharacterId, slot } })
+
+  revalidatePath('/status')
+}
+
+/**
+ * Gasta um ponto de nível num atributo.
+ *
+ * Existe porque o ponto não tinha para onde ir: ele só comprava nó de árvore
+ * de habilidade, e 39 dos 52 personagens não têm nó nenhum. Quem jogasse com
+ * qualquer um deles acumulava pontos que nunca viravam nada.
+ *
+ * Um ponto por chamada, de propósito. Alocar em lote precisaria de um formulário
+ * com estado e de validar o total no servidor; um de cada vez é atômico por
+ * construção e não tem como divergir do que a tela mostra.
+ */
+export async function alocarAtributo(atributo: string): Promise<void> {
+  const user = await requireUser()
+  if (!ehAtributo(atributo)) redirect('/status?error=invalid_attribute')
+
+  const userCharacter = await getSelectedCharacter(user.id)
+  if (!userCharacter) redirect('/select')
+
+  // A checagem do saldo é refeita aqui e não confiada à tela: a action é
+  // alcançável por POST direto.
+  if (userCharacter.pointsAvailable < 1) redirect('/status?error=insufficient_points')
+
+  await prisma.userCharacter.update({
+    where: { id: userCharacter.id },
+    data: {
+      pointsAvailable: { decrement: 1 },
+      [colunaDe(atributo)]: { increment: 1 },
+    },
+  })
 
   revalidatePath('/status')
 }

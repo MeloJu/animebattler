@@ -1,4 +1,6 @@
 import { prisma } from '@/app/lib/prisma'
+import { bonusDeAtributos } from './atributos'
+import type { StatBonus } from '@/app/lib/battle/types'
 
 // Duplicated identically across battle/ai, battle/raid, story/actions and
 // status before this: the user's selected character with its catalog
@@ -43,4 +45,26 @@ export async function getUnlockedNodeIds(userCharacterId: string): Promise<Set<s
 /** This UserCharacter's current loadout, one row per occupied slot. */
 export async function getEquippedSkillRows(userCharacterId: string) {
   return prisma.userCharacterEquippedSkill.findMany({ where: { userCharacterId }, include: { skill: true } })
+}
+
+/**
+ * Bônus vindo dos pontos de atributo gastos neste personagem.
+ *
+ * Busca por id em vez de receber o objeto para que quem monta uma batalha não
+ * precise carregar as seis colunas de alocação — o mesmo caminho que já vale
+ * para árvore de habilidade e equipamento.
+ */
+export async function getBonusDeAtributos(userCharacterId: string): Promise<StatBonus> {
+  const uc = await prisma.userCharacter.findUnique({
+    where: { id: userCharacterId },
+    select: {
+      allocHp: true,
+      allocAttack: true,
+      allocDefense: true,
+      allocSpeed: true,
+      allocEnergy: true,
+      allocStamina: true,
+    },
+  })
+  return uc ? bonusDeAtributos(uc) : { hp: 0, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0 }
 }
