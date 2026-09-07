@@ -17,6 +17,7 @@ import {
   SEM_BONUS,
 } from './engine'
 import { pickAiSkill } from './ai'
+import { recompensaComTeto, vitoriasContraIaHoje } from './recompensa'
 import { applyExperience, battleXpGained } from './leveling'
 import { getCharacterTraits, getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
 import { getEquipmentBonus } from '@/app/lib/equipment/queries'
@@ -107,22 +108,32 @@ async function persistRound(
   userCharacterExperience: number,
   xpMultiplier: number,
   storyXpReward: number | null,
-  isFirstStoryClear: boolean
-): Promise<{ finalState: BattleState; isFinished: boolean; reward: Reward | null }> {
+  isFirstStoryClear: boolean,
+  ehBatalhaContraIa: boolean,
+  userId: string
+): Promise<{ finalState: BattleState; isFinished: boolean; reward: Reward | null; moedas: number }> {
   const nextTurnNumber = expectedTurnNumber + 1
   const forcedEnd = newState.outcome === null && nextTurnNumber > MAX_ROUNDS
   const finalState: BattleState = forcedEnd ? { ...newState, outcome: decideDrawOrHpTiebreak(newState) } : newState
   const isFinished = finalState.outcome !== null
 
+  // A recompensa de batalha contra IA escala com o nível e tem teto DIÁRIO,
+  // que corta o pagamento e não a partida — ver app/lib/battle/recompensa.ts.
+  // A contagem é consultada aqui, fora da transação, porque é leitura de algo
+  // que já aconteceu: batalhas anteriores, não esta.
+  let moedas = 0
+  let xpGanho = battleXpGained(finalState.outcome, xpMultiplier, storyXpReward, isFirstStoryClear)
+
+  if (isFinished && ehBatalhaContraIa && finalState.outcome === 'PLAYER_WIN') {
+    const jaVenceuHoje = await vitoriasContraIaHoje(userCharacterId)
+    const pago = recompensaComTeto(userCharacterLevel, jaVenceuHoje)
+    xpGanho = pago.xp
+    moedas = pago.moedas
+  }
+
   // Computed up front (pure function, no DB needed) so we know the resulting
   // level outside the transaction too, without re-fetching afterward.
-  const reward = isFinished
-    ? applyExperience(
-        userCharacterLevel,
-        userCharacterExperience,
-        battleXpGained(finalState.outcome, xpMultiplier, storyXpReward, isFirstStoryClear)
-      )
-    : null
+  const reward = isFinished ? applyExperience(userCharacterLevel, userCharacterExperience, xpGanho) : null
 
   await prisma.$transaction(async (tx) => {
     const updateResult = await tx.battle.updateMany({
@@ -131,6 +142,10 @@ async function persistRound(
         state: finalState as unknown as Prisma.InputJsonValue,
         turnNumber: nextTurnNumber,
         status: isFinished ? 'FINISHED' : 'ACTIVE',
+        // O resultado vira COLUNA ao terminar. Sem isso ele só existiria
+        // dentro do JSON, e contar vitórias do dia exigiria desserializar
+        // todas as batalhas — que é o que o teto diário precisa perguntar.
+        ...(isFinished ? { outcome: finalState.outcome } : {}),
       },
     })
     if (updateResult.count === 0) throw new Error('CONCURRENT_UPDATE')
@@ -156,6 +171,10 @@ async function persistRound(
       }
     }
 
+    if (moedas > 0) {
+      await tx.user.update({ where: { id: userId }, data: { coins: { increment: moedas } } })
+    }
+
     if (reward) {
       await tx.userCharacter.update({
         where: { id: userCharacterId },
@@ -169,7 +188,7 @@ async function persistRound(
     }
   })
 
-  return { finalState, isFinished, reward }
+  return { finalState, isFinished, reward, moedas }
 }
 
 /**
@@ -236,7 +255,13 @@ async function finalizeRound(
       ctx.userCharacter.experience,
       ctx.xpMultiplier,
       ctx.storyXpReward,
-      ctx.isFirstStoryClear
+      ctx.isFirstStoryClear,
+      // Batalha contra IA é a que tem inimigo do catálogo e nada mais:
+      // história tem estágio, raid tem monstro, PvP tem oponente humano.
+      ctx.battle.enemyCharacterId !== null &&
+        ctx.battle.storyStageId === null &&
+        ctx.battle.opponentUserId === null,
+      ctx.battle.userId
     )
     await applyPostBattleEffects(battleId, ctx.userCharacter.id, ctx.userCharacter.characterId, ctx.userCharacter.level, result)
   } catch (e) {

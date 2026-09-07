@@ -410,6 +410,18 @@ model UserCharacterEquippedSkill {
   @@unique([userCharacterId, slot])
 }
 
+/// Resultado de uma batalha terminada.
+///
+/// Vivia só dentro do JSON de `state`, o que tornava impossível PERGUNTAR
+/// "quantas vitórias este personagem teve hoje" sem carregar e desserializar
+/// todas as batalhas do dia. O teto diário de recompensa precisa exatamente
+/// dessa pergunta.
+enum BattleOutcome {
+  PLAYER_WIN
+  ENEMY_WIN
+  DRAW
+}
+
 enum BattleStatus {
   PENDING
   ACTIVE
@@ -450,6 +462,8 @@ model Battle {
   pendingHostAction     Json?
   pendingOpponentAction Json?
   status                BattleStatus   @default(PENDING)
+  /// Preenchido quando a batalha termina. Nulo enquanto ela corre.
+  outcome               BattleOutcome?
   turnNumber            Int            @default(1)
   // JSON state snapshot for current combat (HP, energy, effects)
   state                 Json
