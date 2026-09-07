@@ -499,6 +499,11 @@ model StoryStage {
   /// Nulo significa "sem cena", e a tela cai no comportamento antigo.
   introDialogue Json?
 
+  /// Mesma forma do introDialogue, encenada quando o inimigo cai. É o desfecho
+  /// no momento em que ele acontece, e não um parágrafo que o jogador lê
+  /// depois na tela do estágio.
+  outroDialogue Json?
+
   // Exatamente um dos dois é preenchido — mesma convenção do model Battle,
   // garantida no código da aplicação e não por constraint declarativa.
   enemyCharacter   Character? @relation(fields: [enemyCharacterId], references: [id])

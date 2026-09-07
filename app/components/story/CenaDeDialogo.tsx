@@ -7,33 +7,42 @@ import { CharacterMonogram } from '@/app/components/CharacterImage'
 export type Fala = { speaker: string | null; text: string }
 
 /**
- * Cena de diálogo que abre antes da luta.
+ * Cena de diálogo: as falas de um estágio, encenadas uma a uma.
  *
  * A narrativa já existia como um parágrafo estático na tela do estágio, o que
  * dava contexto mas não dava presença: era um bloco de texto que se pulava com
  * os olhos. Aqui as falas vêm uma a uma, com quem fala e o retrato, e a luta só
  * começa quando a cena termina.
  *
- * O botão de lutar de verdade chega por `children` — é um form com server
- * action, e mantê-lo como filho evita duplicar a action no cliente. Ele só
- * aparece na última fala, então quem quer ler não esbarra nele antes da hora.
+ * Serve aos dois momentos do estágio. Na ABERTURA o jogador clica para entrar
+ * na cena, e a ação final é lutar. No DESFECHO ela abre sozinha assim que o
+ * inimigo cai (autoAbrir), e a ação final é voltar à história — o desfecho é
+ * o prêmio do momento, não um parágrafo para se ler depois numa tela.
+ *
+ * A ação final chega por `children`, seja um form com server action ou um
+ * link. Ela só aparece na última fala, então quem quer ler não esbarra nela
+ * antes da hora.
  *
  * Falas de narração têm speaker nulo e são apresentadas em itálico, sem
  * retrato: distinguir quem fala de quem descreve é o mínimo para a cena ser
  * legível.
  */
-export function CenaDeAbertura({
+export function CenaDeDialogo({
   falas,
   retratos,
   children,
   rotuloAbrir,
+  autoAbrir = false,
 }: {
   falas: Fala[]
   retratos: Record<string, string | null>
   children: React.ReactNode
-  rotuloAbrir: string
+  /** Rótulo do botão que abre a cena. Ignorado quando autoAbrir. */
+  rotuloAbrir?: string
+  /** Abre sozinha ao montar, para o desfecho logo depois da luta. */
+  autoAbrir?: boolean
 }) {
-  const [aberta, setAberta] = useState(false)
+  const [aberta, setAberta] = useState(autoAbrir)
   const [indice, setIndice] = useState(0)
 
   const ultima = indice >= falas.length - 1
@@ -62,6 +71,9 @@ export function CenaDeAbertura({
   if (falas.length === 0) return <>{children}</>
 
   if (!aberta) {
+    // Fechada e sem trigger significa desfecho já dispensado: a ação final
+    // continua acessível, senão o jogador ficaria preso na tela da batalha.
+    if (autoAbrir) return <>{children}</>
     return (
       <button
         type="button"
@@ -85,7 +97,7 @@ export function CenaDeAbertura({
       aria-modal="true"
       aria-label="Cena de abertura"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 p-4"
-      onClick={() => !ultima && avancar()}
+      onClick={() => (ultima ? setAberta(false) : avancar())}
     >
       <div
         className="w-full max-w-2xl rounded-lg border border-border bg-surface-raised shadow-xl"

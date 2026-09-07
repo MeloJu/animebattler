@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { requireUser } from '@/app/lib/session'
 import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getRetratosDosFalantes, getStageForUser, parseDialogo } from '@/app/lib/story/queries'
-import { CenaDeAbertura } from '@/app/components/story/CenaDeAbertura'
+import { CenaDeDialogo } from '@/app/components/story/CenaDeDialogo'
 import { startStoryBattle } from '@/app/lib/story/actions'
 
 export default async function StoryStagePage({ params }: { params: Promise<{ stageId: string }> }) {
@@ -70,23 +70,23 @@ export default async function StoryStagePage({ params }: { params: Promise<{ sta
               <div className="text-xs uppercase tracking-wide text-green-800 opacity-70">Concluído</div>
               <p className="whitespace-pre-line leading-relaxed mt-1 text-green-900">{stage.outroText}</p>
             </div>
-            <CenaDeAbertura falas={falas} retratos={retratos} rotuloAbrir="Rejogar">
+            <CenaDeDialogo falas={falas} retratos={retratos} rotuloAbrir="Rejogar">
               <form action={startStoryBattle.bind(null, stage.id)}>
                 <button type="submit" className="btn-primary rounded-md px-4 py-2 text-sm">
                   Lutar
                 </button>
               </form>
-            </CenaDeAbertura>
+            </CenaDeDialogo>
             <p className="text-xs opacity-50 mt-2">Rejogar rende metade do XP do estágio, e nenhuma moeda — as moedas saem só na primeira conclusão.</p>
           </>
         ) : (
-          <CenaDeAbertura falas={falas} retratos={retratos} rotuloAbrir="Começar">
+          <CenaDeDialogo falas={falas} retratos={retratos} rotuloAbrir="Começar">
             <form action={startStoryBattle.bind(null, stage.id)}>
               <button type="submit" className="btn-primary rounded-md px-4 py-2 text-sm">
                 Lutar
               </button>
             </form>
-          </CenaDeAbertura>
+          </CenaDeDialogo>
         )}
       </div>
     </main>

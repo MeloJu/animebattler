@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { requireUser } from '@/app/lib/session'
 import { activateTransformation, takeTurn } from '@/app/lib/battle/actions'
 import { getBattleView, getEquippedSkills, getPlayerTransformations } from '@/app/lib/battle/queries'
+import { getRetratosDosFalantes, getStageOutro, parseDialogo } from '@/app/lib/story/queries'
+import { CenaDeDialogo } from '@/app/components/story/CenaDeDialogo'
 import { isLegalMove } from '@/app/lib/battle/engine'
 import { battleErrorMessage, describeEffect } from '@/app/lib/battle/presentation'
 import { FighterCard } from '@/app/components/battle/FighterCard'
@@ -42,6 +44,16 @@ export default async function BattleArenaPage({
     getPlayerTransformations(userCharacter.characterId, userCharacter.level),
   ])
 
+  // Desfecho do estágio, encenado no momento em que o inimigo cai. Só é
+  // buscado numa VITÓRIA de história: perder não tem desfecho, e ler o
+  // fechamento do arco depois de morrer seria o oposto de recompensa.
+  const venceuEstagio = isStory && !isActive && state.outcome === 'PLAYER_WIN'
+  const stage = venceuEstagio && battle.storyStageId ? await getStageOutro(battle.storyStageId) : null
+  const desfecho = parseDialogo(stage?.outroDialogue)
+  const retratosDesfecho = await getRetratosDosFalantes(
+    desfecho.map((f) => f.speaker).filter((n): n is string => n !== null)
+  )
+
   const availableTransformations = Object.values(playerTransformations).filter(
     (t) => t.triggerType === 'MANUAL' && !state.player.activeTransformationId
   )
@@ -70,12 +82,20 @@ export default async function BattleArenaPage({
             {state.outcome === 'ENEMY_WIN' && 'Derrota.'}
             {state.outcome === 'DRAW' && 'Empate.'}
           </div>
-          <div className="flex gap-2">
-            <Link href="/dashboard" className="btn-primary rounded-md px-4 py-2 text-sm">Dashboard</Link>
-            <Link href={backHref} className="rounded-md px-4 py-2 text-sm border border-border">
-              {backLabel}
-            </Link>
-          </div>
+          {desfecho.length > 0 ? (
+            <CenaDeDialogo falas={desfecho} retratos={retratosDesfecho} autoAbrir>
+              <Link href={backHref} className="btn-primary rounded-md px-4 py-2 text-sm">
+                {backLabel}
+              </Link>
+            </CenaDeDialogo>
+          ) : (
+            <div className="flex gap-2">
+              <Link href="/dashboard" className="btn-primary rounded-md px-4 py-2 text-sm">Dashboard</Link>
+              <Link href={backHref} className="rounded-md px-4 py-2 text-sm border border-border">
+                {backLabel}
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

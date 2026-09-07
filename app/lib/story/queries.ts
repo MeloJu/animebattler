@@ -87,6 +87,11 @@ export async function getRetratosDosFalantes(nomes: string[]): Promise<Record<st
   return Object.fromEntries(linhas.map((c) => [c.name, c.imageUrl]))
 }
 
+/** Só o desfecho de um estágio. A tela da batalha não precisa do resto. */
+export async function getStageOutro(stageId: string) {
+  return prisma.storyStage.findUnique({ where: { id: stageId }, select: { outroDialogue: true } })
+}
+
 export async function getStageForUser(stageId: string, userCharacterId: string) {
   const stage = await prisma.storyStage.findUnique({
     where: { id: stageId },
