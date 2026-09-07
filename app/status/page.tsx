@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { prisma } from '@/app/lib/prisma'
 import { bonusDeAtributos } from '@/app/lib/progression/atributos'
 import { requireUser } from '@/app/lib/session'
 import { equipSkill, unequipSkill, unlockSkillNode } from '@/app/lib/progression/actions'
@@ -11,6 +12,7 @@ import { describeEffect } from '@/app/lib/battle/presentation'
 import { XP_PER_LEVEL } from '@/app/lib/battle/constants'
 import { resolveErrorMessage } from '@/app/lib/error-messages'
 import { PainelDeAtributos } from '@/app/components/progression/PainelDeAtributos'
+import { PainelDeTransformacoes } from '@/app/components/progression/PainelDeTransformacoes'
 import type { SkillEffect } from '@/app/lib/battle/types'
 
 const STATUS_ERROR_MESSAGES: Record<string, string> = {
@@ -55,6 +57,13 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
     getEligiblePlayerSkills(selected.id, selected.characterId, selected.level),
     getEquippedSkillRows(selected.id),
   ])
+  // Todas, não só as liberadas: ver a forma que ainda falta é o que dá razão
+  // para continuar subindo de nível.
+  const transformacoes = await prisma.transformation.findMany({
+    where: { characterId: selected.characterId },
+    orderBy: { levelRequirement: 'asc' },
+  })
+
   const effectiveStats = computeFighterStats(selected.character, selected.level, sumStatBonuses(treeBonus, equipmentBonus, bonusDeAtributos(selected)))
   const xpForNextLevel = selected.level * XP_PER_LEVEL
   const slotCount = getLoadoutSlotCount(selected.level)
@@ -111,6 +120,11 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
         {selected.pointsAvailable === 0 && (
           <p className="text-xs opacity-50">Você ganha um ponto a cada nível. Passe de nível para investir.</p>
         )}
+      </div>
+
+      <div className="card p-4 space-y-3">
+        <h2 className="font-semibold">Transformações</h2>
+        <PainelDeTransformacoes transformacoes={transformacoes} nivel={selected.level} />
       </div>
 
       <div className="card p-4 space-y-3">
