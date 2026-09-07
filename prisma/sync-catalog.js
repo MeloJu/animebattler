@@ -23,6 +23,8 @@
  *   node prisma/sync-catalog.js --dry-run   # mostra o que mudaria
  *   node prisma/sync-catalog.js             # aplica
  */
+const fs = require('fs');
+const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const storyCatalog = require('./catalog/story');
 const storyJujutsu = require('./catalog/story-jujutsu');
@@ -519,6 +521,46 @@ async function syncSummoners() {
   }
 }
 
+/**
+ * Liga cada personagem à arte dele, POR CONVENÇÃO em vez de por edição manual.
+ *
+ * Procura public/images/characters/<slug>/<slug>_default.<ext>. Achou, grava o
+ * caminho em imageUrl; não achou, não faz nada.
+ *
+ * NUNCA APAGA imageUrl existente, e isso importa: o sync roda em produção,
+ * onde public/ vem embutido na imagem Docker. Se um dia rodar num ambiente sem
+ * os arquivos, limpar o campo tiraria a arte de todo o elenco de uma vez.
+ *
+ * Existe porque adicionar personagem eram dois passos desconexos — colocar o
+ * arquivo e lembrar de escrever o caminho no banco. Os 11 personagens
+ * adicionados recentemente ficaram sem arte justamente por isso. Agora basta
+ * soltar o arquivo na pasta certa e rodar o sync.
+ */
+async function syncCharacterImages() {
+  const raiz = path.join(__dirname, '..', 'public', 'images', 'characters');
+  if (!fs.existsSync(raiz)) {
+    console.log('  (sem public/images/characters neste ambiente — imagens não tocadas)');
+    return;
+  }
+
+  const personagens = await prisma.character.findMany({ select: { id: true, name: true, slug: true, imageUrl: true } });
+  for (const c of personagens) {
+    const pasta = path.join(raiz, c.slug);
+    if (!fs.existsSync(pasta)) continue;
+
+    const arquivo = fs.readdirSync(pasta).find((f) => f.startsWith(`${c.slug}_default.`) || f.startsWith(`${c.slug.split('-')[0]}_default.`));
+    if (!arquivo) continue;
+
+    const url = `/images/characters/${c.slug}/${arquivo}`;
+    if (c.imageUrl === url) {
+      relatorio.iguais += 1;
+      continue;
+    }
+    registra('imagem', `${c.name} -> ${arquivo}`, diff(c.imageUrl ? { imageUrl: c.imageUrl } : null, { imageUrl: url }));
+    if (!DRY_RUN) await prisma.character.update({ where: { id: c.id }, data: { imageUrl: url } });
+  }
+}
+
 async function main() {
   console.log(DRY_RUN ? '— simulação (nada será gravado) —\n' : '— sincronizando catálogo —\n');
 
@@ -546,6 +588,7 @@ async function main() {
   await syncCharacters();
   await syncKits();
   await syncSummoners();
+  await syncCharacterImages();
   await syncSkillLadders();
   await syncSkillScaling();
 

@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { CharacterMonogram } from '@/app/components/CharacterImage'
 import Link from 'next/link'
 import { listCharacters } from '@/app/lib/characters/queries'
 
@@ -26,9 +27,7 @@ export default async function CharactersPage() {
                     quality={90}
                   />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <span className="text-xs text-muted">No Image</span>
-                  </div>
+                  <CharacterMonogram name={c.name} />
                 )}
               </div>
               <div>

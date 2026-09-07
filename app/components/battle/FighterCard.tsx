@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { CharacterMonogram } from '@/app/components/CharacterImage'
 import { StatBar } from './StatBar'
 import { StatusBadges } from './StatusBadges'
 import type { CombatantState } from '@/app/lib/battle/types'
@@ -22,7 +23,7 @@ export function FighterCard({
         {imageUrl ? (
           <Image src={imageUrl} alt={name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 320px" />
         ) : (
-          <div className="h-full w-full flex items-center justify-center text-sm text-muted">No Image</div>
+          <CharacterMonogram name={name} />
         )}
         {levelBadge !== undefined && (
           <span className="absolute top-2 right-2 rounded-full bg-accent text-background text-xs font-semibold px-2 py-1">Lv.{levelBadge}</span>
