@@ -21,6 +21,7 @@ export default async function AppNav() {
     { href: "/battle", label: "Batalha" },
     ...(authed ? [{ href: "/battle/pvp", label: "PvP" }] : []),
     ...(authed ? [{ href: "/equipment", label: "Equipamento" }] : []),
+    ...(authed ? [{ href: "/treino", label: "Treino" }] : []),
     ...(authed ? [{ href: "/shop", label: "Loja" }] : []),
     ...(authed ? [{ href: "/status", label: "Status" }] : []),
     ...(!authed ? [{ href: "/login", label: "Entrar" }, { href: "/register", label: "Criar conta" }] : []),

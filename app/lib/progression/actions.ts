@@ -9,6 +9,7 @@ import { getEligiblePlayerSkills } from '@/app/lib/battle/queries'
 import { escolherLoadoutPadrao } from '@/app/lib/battle/ai'
 import { getLoadoutSlotCount } from './constants'
 import { colunaDe, ehAtributo } from './atributos'
+import { custoDoTreino } from './treino'
 import { getSelectedCharacter } from './queries'
 
 type Db = Prisma.TransactionClient | typeof prisma
@@ -189,5 +190,48 @@ export async function alocarAtributo(atributo: string): Promise<void> {
     },
   })
 
+  revalidatePath('/status')
+}
+
+/**
+ * Compra um ponto de atributo com moeda.
+ *
+ * Diferente de alocarAtributo, que gasta ponto de nível: aqui o recurso é
+ * dinheiro, e o preço sobe a cada treino. Ver app/lib/progression/treino.ts
+ * para por que o preço crescente substitui um teto diário.
+ *
+ * A cobrança e o ganho vão na MESMA transação. Sem isso, uma falha no meio
+ * deixaria o jogador pagando sem receber, ou recebendo sem pagar.
+ */
+export async function treinarAtributo(atributo: string): Promise<void> {
+  const user = await requireUser()
+  if (!ehAtributo(atributo)) redirect('/treino?error=invalid_attribute')
+
+  const userCharacter = await getSelectedCharacter(user.id)
+  if (!userCharacter) redirect('/select')
+
+  // Saldo e preço são relidos aqui, e não confiados à tela: a action é
+  // alcançável por POST direto, e o preço muda a cada compra.
+  const [conta, personagem] = await Promise.all([
+    prisma.user.findUnique({ where: { id: user.id }, select: { coins: true } }),
+    prisma.userCharacter.findUnique({ where: { id: userCharacter.id }, select: { treinos: true } }),
+  ])
+  if (!conta || !personagem) redirect('/treino?error=not_found')
+
+  const custo = custoDoTreino(personagem.treinos)
+  if (conta.coins < custo) redirect('/treino?error=insufficient_coins')
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: user.id }, data: { coins: { decrement: custo } } }),
+    prisma.userCharacter.update({
+      where: { id: userCharacter.id },
+      data: {
+        treinos: { increment: 1 },
+        [colunaDe(atributo)]: { increment: 1 },
+      },
+    }),
+  ])
+
+  revalidatePath('/treino')
   revalidatePath('/status')
 }

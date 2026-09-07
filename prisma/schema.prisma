@@ -378,6 +378,14 @@ model UserCharacter {
   allocSpeed             Int             @default(0)
   allocEnergy            Int             @default(0)
   allocStamina           Int             @default(0)
+
+  /// Quantos treinos este personagem já comprou. Guardado só para PRECIFICAR
+  /// o próximo: o ganho em si vai para as colunas alloc acima, para que a
+  /// matemática de atributo continue num lugar só.
+  ///
+  /// O preço crescente é o que substitui um teto diário — em vez de proibir,
+  /// encarece, e o jogador decide quando parou de valer a pena.
+  treinos                Int             @default(0)
   nickname               String          @default("Hero")
   pvpWins                Int             @default(0)
   npcWins                Int             @default(0)
