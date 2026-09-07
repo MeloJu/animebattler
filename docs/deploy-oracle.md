@@ -127,7 +127,9 @@ deixar um PAT permanente guardado na VM.
 
 ## 6. Primeiro deploy
 
-Aba **Actions** do repo → workflow **Deploy** → **Run workflow**. Ele:
+Aba **Actions** do repo → workflow **Deploy** → **Run workflow** (depois do
+primeiro, ele passa a rodar sozinho a cada CI verde em `master` — ver o
+passo 8). Ele:
 
 1. builda a imagem na arquitetura da VM (ver a tabela de shapes no passo 3 —
    `E2.1.Micro` é amd64, Ampere é arm64; imagem da arquitetura errada não
@@ -138,6 +140,9 @@ Aba **Actions** do repo → workflow **Deploy** → **Run workflow**. Ele:
 5. **espera o healthcheck (`/api/health`) passar** antes de dar o job por
    concluído — se o container entrar em loop de restart, o deploy falha e
    imprime os logs em vez de ficar verde mentindo.
+6. roda `catalog:sync` dentro do container, DEPOIS do healthcheck — sem isso
+   o deploy publicaria o código novo com o conteúdo velho no banco, e
+   personagem, arco e habilidade novos simplesmente não apareceriam.
 
 ## 7. Popular o catálogo (uma vez só)
 
@@ -184,16 +189,30 @@ divergirem.
 
 ## 8. Deploy automático
 
-Depois de confirmar que funcionou, edite `.github/workflows/deploy.yml` e
-adicione o gatilho automático (a branch principal aqui é `master`, não
-`main`):
+O deploy **já é automático**: ele dispara sozinho quando o workflow **CI**
+termina verde em `master`.
+
+O gatilho é `workflow_run`, e não `push`, de propósito. Com `push`, o deploy
+correria em paralelo com o CI — um commit que quebra teste ou tipo subiria
+para produção do mesmo jeito, e o CI ficaria vermelho depois, com o defeito
+já no ar. Assim, nada sobe sem ter passado.
 
 ```yaml
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
     branches: [master]
 ```
+
+O `workflow_dispatch` continua para redeploy e **rollback**: rodar o workflow
+a partir de um commit anterior republica aquela imagem.
+
+Detalhe que morde: em `workflow_run`, `github.sha` aponta para o commit do
+ramo padrão, não para o que o CI validou. Por isso o workflow usa
+`github.event.workflow_run.head_sha` — senão dá para publicar uma imagem
+diferente da que passou nos testes.
 
 ## 9. (Opcional, mas recomendado) Domínio próprio
 

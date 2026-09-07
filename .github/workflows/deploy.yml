@@ -1,18 +1,34 @@
 name: Deploy
 
-# Manual (workflow_dispatch) até a VM existir e os secrets estarem cadastrados.
-# Depois do primeiro deploy bem-sucedido, adicione o gatilho automático:
-#   on:
-#     workflow_dispatch:
-#     push:
-#       branches: [master]
+# Dispara sozinho quando o CI passa em master, e não no push.
+#
+# A diferença importa: com gatilho em `push`, o deploy correria EM PARALELO
+# com o CI, então um commit que quebra teste ou tipo iria para produção do
+# mesmo jeito — o CI ficaria vermelho depois, com o defeito já no ar. Com
+# workflow_run + conclusion == 'success', nada sobe sem ter passado.
+#
+# workflow_dispatch continua, para redeploy e rollback à mão (rodar a partir
+# de outro commit republica aquela imagem).
+#
 # Secrets necessários: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY
 # (ver docs/deploy-oracle.md).
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [master]
+
+# Em workflow_run, github.sha aponta para o commit do ramo padrão, NÃO para o
+# que o CI validou. Usar head_sha garante que se publica exatamente o que
+# passou nos testes; no disparo manual, github.sha já é o certo.
+env:
+  DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
   build-and-push:
+    # Disparo manual roda sempre; disparo por CI só quando ele passou.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     # A arquitetura aqui TEM que bater com a da VM, senão o container morre na
     # hora com "exec format error". Hoje a VM é uma E2.1.Micro (amd64), porque
     # a Ampere/aarch64 do Always Free segue sem capacidade em sa-saopaulo-1.
@@ -26,6 +42,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
 
       # O GHCR só aceita nome de repositório em minúsculas, mas o login do
       # GitHub pode ter maiúsculas (MeloJu). Usar github.repository_owner cru
@@ -51,7 +69,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:${{ env.DEPLOY_SHA }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -60,8 +78,8 @@ jobs:
       # aqui, o job `deploy` nem começa e a VM não é tocada.
       - name: Smoke test the image
         run: |
-          docker pull ${{ env.IMAGE }}:${{ github.sha }}
-          bash scripts/smoke-test.sh ${{ env.IMAGE }}:${{ github.sha }}
+          docker pull ${{ env.IMAGE }}:${{ env.DEPLOY_SHA }}
+          bash scripts/smoke-test.sh ${{ env.IMAGE }}:${{ env.DEPLOY_SHA }}
 
   deploy:
     needs: build-and-push
@@ -72,6 +90,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
 
       # Mantém compose e Caddyfile da VM em sincronia com o repo. Antes isso
       # era um scp manual feito uma vez, que ia silenciosamente ficando velho a
@@ -90,7 +110,7 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.actor }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ env.DEPLOY_SHA }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
