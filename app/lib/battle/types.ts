@@ -89,7 +89,9 @@ export type AppliedEffect = {
 export type TurnResult = {
   version: 1
   side: Side
-  kind: 'ATTACK' | 'TRANSFORM' | 'SUPPORT' | 'STUNNED' | 'DOT_TICK'
+  kind: 'ATTACK' | 'TRANSFORM' | 'SUPPORT' | 'STUNNED' | 'DOT_TICK' | 'CLASH'
+  /** CLASH: a natureza do choque ('beam', 'espada', 'fisico'). */
+  clashTag?: string
   skillId: string | null // null = Basic Attack (synthesized, not a DB row)
   skillName: string
   transformationId?: string
@@ -112,6 +114,12 @@ export type SkillDef = {
   cooldown: number
   effects: SkillEffect[]
   scalingStat: ScalingStat
+  /**
+   * Marcadores temáticos da habilidade — 'beam', 'espada', 'fogo'. O schema
+   * as chamava de "flavor only"; o clash é o primeiro lugar onde elas decidem
+   * alguma coisa.
+   */
+  tags: string[]
 }
 
 /** Traço passivo já resolvido para uso no motor. Ver model Trait. */

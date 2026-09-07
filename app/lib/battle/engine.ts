@@ -722,6 +722,74 @@ function makeStunResult(side: Side): TurnResult {
   return { version: 1, side, kind: 'STUNNED', skillId: null, skillName: 'Atordoado' }
 }
 
+/**
+ * Tags em que duas habilidades podem se CHOCAR.
+ *
+ * O conjunto é pequeno e explícito de propósito. As tags do catálogo são
+ * bagunçadas — misturam mecânica ('buff', 'stun') com tema, e há duplicatas
+ * em duas línguas ('fire' e 'fogo', 'ice' e 'gelo'). Só entram aqui as em que
+ * "duas forças se encontrando" faz sentido e que TODAS causam dano: feixe
+ * contra feixe é o choque de Dragon Ball, lâmina contra lâmina é o de Bleach,
+ * punho contra punho é qualquer luta. Hadō e cero entram porque no arco que
+ * existe é o choque que de fato acontece — dois feiticeiros lançando o mesmo
+ * tipo de magia um contra o outro.
+ *
+ * MEDIÇÃO HONESTA: contra a IA o choque quase nunca dispara, e as taxas de
+ * vitória da história ficaram IDÊNTICAS às de antes dele. O motivo não é o
+ * conjunto de tags — é que pickAiSkill escolhe sempre a de maior poder e
+ * portanto nunca DECIDE contestar. Este é um mecanismo de escolha humana e de
+ * PvP; ele só vai brilhar quando a IA souber jogar tempo, ou contra outro
+ * jogador.
+ */
+export const TAGS_DE_CLASH = ['beam', 'espada', 'fisico', 'hado', 'cero'] as const
+
+/** A tag em que estas duas habilidades se chocam, ou null se não há choque. */
+export function tagDeClash(a: SkillDef | null, b: SkillDef | null): string | null {
+  // Ataque básico não choca, e nem habilidade que não causa dano: não há força
+  // a opor.
+  if (!a || !b || a.power <= 0 || b.power <= 0) return null
+  return TAGS_DE_CLASH.find((t) => a.tags.includes(t) && b.tags.includes(t)) ?? null
+}
+
+/** Quanto o vencedor do choque tem o próprio golpe amplificado. */
+export const CLASH_BONUS_DO_VENCEDOR = 0.35
+
+/**
+ * Margem, em fração, dentro da qual o choque termina EMPATADO e os dois
+ * golpes se anulam. Sem ela, uma diferença de um ponto de poder decidiria a
+ * troca inteira, o que faria o choque parecer arbitrário em vez de disputado.
+ */
+export const CLASH_MARGEM_DE_EMPATE = 0.12
+
+/**
+ * Resolve o choque entre dois golpes da mesma natureza.
+ *
+ * A força de cada lado é o poder do golpe mais o bônus do atributo de escala —
+ * a mesma conta que decide o dano —, com uma variação aleatória de até 15%
+ * para que o choque não seja sempre previsível a partir da ficha.
+ *
+ * O perdedor tem o golpe ANULADO na rodada e o vencedor bate mais forte. É por
+ * isso que levar um feixe para uma luta de feixes é aposta: ganhar troca uma
+ * rodada por vantagem grande, perder troca por nada.
+ */
+export function resolverClash(
+  atacante: CombatantState,
+  defensor: CombatantState,
+  aSkill: SkillDef,
+  bSkill: SkillDef,
+  rand: () => number
+): { vencedor: Side | null } {
+  const forca = (c: CombatantState, sk: SkillDef) =>
+    (sk.power + scaledBonus(c, sk.scalingStat)) * (0.85 + rand() * 0.3)
+
+  const fa = forca(atacante, aSkill)
+  const fb = forca(defensor, bSkill)
+  const total = fa + fb
+  if (total <= 0) return { vencedor: null }
+  if (Math.abs(fa - fb) / total < CLASH_MARGEM_DE_EMPATE) return { vencedor: null }
+  return { vencedor: fa > fb ? 'PLAYER' : 'ENEMY' }
+}
+
 export function resolveRound(
   state: BattleState,
   input: {
@@ -758,7 +826,53 @@ export function resolveRound(
     turnResults.push(makeTransformResult('PLAYER', startAuto.transformation))
   }
 
-  // 3. Resolve actions in effective-speed order (ties go to the player)
+  // 3. CHOQUE, antes da ordem por velocidade — ele é simultâneo por natureza:
+  // os dois golpes partem juntos e se encontram no meio. Resolver na ordem de
+  // iniciativa faria o mais rápido "acertar primeiro" e não haveria choque.
+  let habilidadeDoJogador =
+    input.playerAction.kind === 'ATTACK' && input.playerAction.skillId
+      ? ctx.playerSkills[input.playerAction.skillId] ?? null
+      : null
+  let habilidadeDoInimigo = input.enemyAction.skillId ? ctx.enemySkills[input.enemyAction.skillId] ?? null : null
+
+  const tagChoque =
+    !isStunned(player) && !isStunned(enemy) ? tagDeClash(habilidadeDoJogador, habilidadeDoInimigo) : null
+
+  if (tagChoque && habilidadeDoJogador && habilidadeDoInimigo) {
+    const { vencedor } = resolverClash(player, enemy, habilidadeDoJogador, habilidadeDoInimigo, rand)
+    turnResults.push({
+      version: 1,
+      side: vencedor ?? 'PLAYER',
+      kind: 'CLASH',
+      clashTag: tagChoque,
+      skillId: null,
+      skillName: vencedor === null ? 'Choque equilibrado' : 'Choque',
+    })
+
+    // O perdedor tem o golpe anulado; o vencedor bate mais forte. Empate anula
+    // os dois — a rodada foi gasta na disputa.
+    const amplificar = (sk: SkillDef): SkillDef => ({
+      ...sk,
+      power: Math.round(sk.power * (1 + CLASH_BONUS_DO_VENCEDOR)),
+    })
+    if (vencedor === 'PLAYER') {
+      habilidadeDoJogador = amplificar(habilidadeDoJogador)
+      habilidadeDoInimigo = null
+    } else if (vencedor === 'ENEMY') {
+      habilidadeDoInimigo = amplificar(habilidadeDoInimigo)
+      habilidadeDoJogador = null
+    } else {
+      habilidadeDoJogador = null
+      habilidadeDoInimigo = null
+    }
+  }
+
+  // Um golpe anulado pelo choque não vira ataque básico: a rodada foi gasta na
+  // disputa. Quem NÃO estava chocando segue normalmente.
+  const jogadorAnulado = tagChoque !== null && habilidadeDoJogador === null
+  const inimigoAnulado = tagChoque !== null && habilidadeDoInimigo === null
+
+  // 3b. Resolve actions in effective-speed order (ties go to the player)
   const order: Side[] = getCombatStat(player, 'speed') >= getCombatStat(enemy, 'speed') ? ['PLAYER', 'ENEMY'] : ['ENEMY', 'PLAYER']
 
   for (const side of order) {
@@ -777,7 +891,8 @@ export function resolveRound(
         }
         continue
       }
-      const skill = input.playerAction.skillId ? ctx.playerSkills[input.playerAction.skillId] ?? null : null
+      if (jogadorAnulado) continue
+      const skill = habilidadeDoJogador
       const hpBefore = player.currentHp
       const result = performSkillUse('PLAYER', player, enemy, skill, rand)
       player = result.attacker
@@ -798,7 +913,8 @@ export function resolveRound(
         turnResults.push(makeStunResult('ENEMY'))
         continue
       }
-      const skill = input.enemyAction.skillId ? ctx.enemySkills[input.enemyAction.skillId] ?? null : null
+      if (inimigoAnulado) continue
+      const skill = habilidadeDoInimigo
       const result = performSkillUse('ENEMY', enemy, player, skill, rand)
       enemy = result.attacker
       player = result.defender

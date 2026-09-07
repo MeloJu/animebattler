@@ -32,6 +32,7 @@ export function toSkillDef(skill: {
   energyCost: number
   cooldown: number
   effects: unknown
+  tags: unknown
   scalingStat: PrismaScalingStat
 }): SkillDef {
   return {
@@ -41,6 +42,8 @@ export function toSkillDef(skill: {
     energyCost: skill.energyCost,
     cooldown: skill.cooldown,
     effects: parseEffects(skill.effects),
+    // Json sem garantia de forma: só entram as strings.
+    tags: Array.isArray(skill.tags) ? skill.tags.filter((t): t is string => typeof t === 'string') : [],
     scalingStat: SCALING_STAT_DO_BANCO[skill.scalingStat],
   }
 }

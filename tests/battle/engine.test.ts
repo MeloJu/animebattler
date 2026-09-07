@@ -16,6 +16,8 @@ import {
   energyCostFor,
   traitEnergyCostModifier,
   custaStamina,
+  tagDeClash,
+  resolverClash,
   SEM_BONUS,
 } from '@/app/lib/battle/engine'
 import type {
@@ -66,6 +68,7 @@ const skill = (over: Partial<SkillDef> = {}): SkillDef => ({
   cooldown: 2,
   effects: [],
   scalingStat: 'attack',
+  tags: [],
   ...over,
 })
 
@@ -962,5 +965,77 @@ describe('dreno de vida da transformação', () => {
     delete (t as { drainHpPerTurn?: number }).drainHpPerTurn
     const r = rodada(comForma(200, t), t)
     expect(r.state.player.activeTransformationId).toBe('portoes')
+  })
+})
+
+describe('choque de golpes', () => {
+  const feixe = (id: string, power: number) =>
+    skill({ id, name: id, power, energyCost: 0, cooldown: 0, effects: [], tags: ['beam'] })
+
+  it('duas habilidades da mesma natureza se chocam', () => {
+    expect(tagDeClash(feixe('a', 20), feixe('b', 20))).toBe('beam')
+  })
+
+  it('naturezas diferentes não se chocam', () => {
+    const lamina = skill({ id: 'l', power: 20, tags: ['espada'] })
+    expect(tagDeClash(feixe('a', 20), lamina)).toBe(null)
+  })
+
+  it('ataque básico não choca — não há força a opor', () => {
+    expect(tagDeClash(null, feixe('b', 20))).toBe(null)
+    expect(tagDeClash(feixe('a', 20), null)).toBe(null)
+  })
+
+  it('habilidade sem dano não choca, mesmo com a tag', () => {
+    const escudoComTag = skill({ id: 's', power: 0, tags: ['beam'] })
+    expect(tagDeClash(escudoComTag, feixe('b', 20))).toBe(null)
+  })
+
+  it('tag que não está na lista não gera choque', () => {
+    const fogo = skill({ id: 'f', power: 20, tags: ['fogo'] })
+    const outroFogo = skill({ id: 'f2', power: 20, tags: ['fogo'] })
+    expect(tagDeClash(fogo, outroFogo)).toBe(null)
+  })
+
+  it('o golpe muito mais forte vence o choque', () => {
+    const c = combatant()
+    const r = resolverClash(c, c, feixe('forte', 200), feixe('fraco', 5), () => 0.5)
+    expect(r.vencedor).toBe('PLAYER')
+  })
+
+  it('golpes iguais empatam, e os dois se anulam', () => {
+    const c = combatant()
+    expect(resolverClash(c, c, feixe('a', 30), feixe('b', 30), () => 0.5).vencedor).toBe(null)
+  })
+
+  it('na batalha, o choque anula o golpe do perdedor', () => {
+    const s = createInitialState(stats(), stats())
+    const meu = feixe('meu', 200)
+    const dele = feixe('dele', 5)
+    const r = resolveRound(
+      s,
+      { playerAction: { kind: 'ATTACK', skillId: 'meu' }, enemyAction: { skillId: 'dele' } },
+      { ...ctxVazio(), playerSkills: { meu }, enemySkills: { dele } },
+      NUNCA_CRITA
+    )
+    expect(r.turnResults.some((t) => t.kind === 'CLASH')).toBe(true)
+    // O inimigo perdeu: não deve haver ataque dele na rodada.
+    expect(r.turnResults.some((t) => t.side === 'ENEMY' && t.kind === 'ATTACK')).toBe(false)
+    expect(r.state.enemy.currentHp).toBeLessThan(100)
+  })
+
+  it('empate no choque gasta a rodada dos dois', () => {
+    const s = createInitialState(stats(), stats())
+    const a = feixe('a', 30)
+    const b = feixe('b', 30)
+    const r = resolveRound(
+      s,
+      { playerAction: { kind: 'ATTACK', skillId: 'a' }, enemyAction: { skillId: 'b' } },
+      { ...ctxVazio(), playerSkills: { a }, enemySkills: { b } },
+      NUNCA_CRITA
+    )
+    expect(r.turnResults.filter((t) => t.kind === 'ATTACK')).toHaveLength(0)
+    expect(r.state.player.currentHp).toBe(100)
+    expect(r.state.enemy.currentHp).toBe(100)
   })
 })

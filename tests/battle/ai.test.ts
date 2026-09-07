@@ -18,6 +18,7 @@ const skill = (over: Partial<SkillDef> = {}): SkillDef => ({
   cooldown: 0,
   effects: [],
   scalingStat: 'attack',
+  tags: [],
   ...over,
 })
 
@@ -98,6 +99,7 @@ describe('escolherLoadoutPadrao', () => {
     cooldown: 1,
     effects: [],
     scalingStat: 'attack',
+    tags: [],
   })
 
   it('cabendo tudo, devolve tudo', () => {
