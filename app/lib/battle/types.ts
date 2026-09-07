@@ -141,6 +141,8 @@ export type TransformationDef = {
   flatDefenseBonus: number
   flatSpeedBonus: number
   drainPerTurn: number
+  /** Vida por rodada. Opcional: transformações antigas não tinham o campo. */
+  drainHpPerTurn?: number
   triggerType: TransformationTrigger
   triggerPayload: unknown
 }

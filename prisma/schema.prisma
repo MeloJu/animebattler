@@ -47,6 +47,9 @@ model Trait {
   /// Fração subtraída do custo de energia de toda habilidade. -0.3 = 30% mais barato.
   energyCostModifier Float @default(0)
 
+  /// Ícone do traço. Ver o comentário em Skill.icon.
+  icon String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -70,6 +73,11 @@ model Transformation {
   flatDefenseBonus Int                   @default(0)
   flatSpeedBonus   Int                   @default(0)
   drainPerTurn     Int                   @default(0) // energy drain each turn
+  /// Vida drenada por rodada. Separado do dreno de energia porque o preço é
+  /// de natureza diferente: ficar sem energia faz a forma CAIR, ficar sem
+  /// vida faz o personagem MORRER. É o custo dos Oito Portões e do Mangekyō,
+  /// que na obra cobram o corpo e não o chakra.
+  drainHpPerTurn   Int                   @default(0)
   unlocksSkill     Skill?                @relation("TransformationUnlockSkill", fields: [unlocksSkillId], references: [id])
   unlocksSkillId   String?
   triggerType      TransformationTrigger @default(MANUAL)
@@ -217,6 +225,10 @@ model Skill {
   energyCost  Int           @default(10)
   cooldown    Int           @default(0)
   tags        Json // JSON array of strings, e.g., ["bleed", "stun", "fire"] - flavor only
+  /// Ícone da habilidade. Curto de propósito — um emoji ou o nome de um
+  /// glifo de biblioteca aberta — porque arte de anime é material com
+  /// direito autoral e este repositório é público.
+  icon        String?
   effects     Json          @default("[]") // JSON array of SkillEffect (see app/lib/battle/types.ts) - mechanical source of truth
   // De qual atributo do lançador esta habilidade escala. Ver SCALING_COEFFICIENT
   // em app/lib/battle/constants.ts. ATTACK reproduz o comportamento antigo,
@@ -303,6 +315,9 @@ model SkillTreeNode {
   flatAttackBonus  Int @default(0)
   flatDefenseBonus Int @default(0)
   flatSpeedBonus   Int @default(0)
+
+  /// Ícone do nó. Ver o comentário em Skill.icon.
+  icon             String?
 
   // Self-referential many-to-many for prerequisites
   prerequisites SkillTreeNode[] @relation("Prerequisites")

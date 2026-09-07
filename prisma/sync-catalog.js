@@ -602,6 +602,7 @@ async function syncTransformations() {
       flatDefenseBonus: def.flatDefenseBonus ?? 0,
       flatSpeedBonus: def.flatSpeedBonus ?? 0,
       drainPerTurn: def.drainPerTurn ?? 0,
+      drainHpPerTurn: def.drainHpPerTurn ?? 0,
       triggerType: def.triggerType ?? 'MANUAL',
       triggerPayload: def.triggerPayload ?? null,
       unlocksSkillId,
@@ -641,6 +642,7 @@ async function syncTraits() {
       flatDefenseBonus: def.flatDefenseBonus ?? 0,
       flatSpeedBonus: def.flatSpeedBonus ?? 0,
       energyCostModifier: def.energyCostModifier ?? 0,
+      icon: def.icon ?? null,
     };
 
     const atual = await prisma.trait.findUnique({

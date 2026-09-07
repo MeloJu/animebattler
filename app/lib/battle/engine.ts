@@ -627,12 +627,41 @@ function revertTransformation(c: CombatantState): CombatantState {
   }
 }
 
+/**
+ * Cobra o preço por rodada de uma forma ativa.
+ *
+ * SÃO DOIS PREÇOS DE NATUREZA DIFERENTE, e por isso não compartilham campo.
+ * Ficar sem ENERGIA faz a forma CAIR — é o Super Saiyan 3, que se sustenta
+ * enquanto houver fôlego. Ficar sem VIDA mataria — é o custo dos Oito Portões
+ * e do Mangekyō, que na obra cobram o corpo.
+ *
+ * O dreno de vida NÃO MATA. Ao chegar em 1 de HP a forma cai e o personagem
+ * fica de pé, queimado. A alternativa — deixar a própria transformação matar
+ * quem a usou — é fiel à obra e péssima de jogar: o jogador perderia a luta
+ * por uma escolha feita cinco rodadas antes, sem nada na tela avisando. O
+ * risco continua real, porque sair da forma em 1 de HP é perder do mesmo
+ * jeito na rodada seguinte; só que aí é o adversário que decide, não a
+ * aritmética.
+ */
 function applyDrain(c: CombatantState, transformations: Record<string, TransformationDef>): CombatantState {
   if (!c.activeTransformationId) return c
   const t = transformations[c.activeTransformationId]
-  if (!t || t.drainPerTurn <= 0) return c
-  if (c.currentEnergy < t.drainPerTurn) return revertTransformation(c) // can no longer sustain it
-  return { ...c, currentEnergy: c.currentEnergy - t.drainPerTurn }
+  if (!t) return c
+
+  const drenoHp = t.drainHpPerTurn ?? 0
+  if (t.drainPerTurn <= 0 && drenoHp <= 0) return c
+
+  // Sem energia para sustentar, a forma cai antes de cobrar qualquer vida.
+  if (t.drainPerTurn > 0 && c.currentEnergy < t.drainPerTurn) return revertTransformation(c)
+
+  const comEnergia =
+    t.drainPerTurn > 0 ? { ...c, currentEnergy: c.currentEnergy - t.drainPerTurn } : c
+  if (drenoHp <= 0) return comEnergia
+
+  if (comEnergia.currentHp <= drenoHp) {
+    return { ...revertTransformation(comEnergia), currentHp: 1 }
+  }
+  return { ...comEnergia, currentHp: comEnergia.currentHp - drenoHp }
 }
 
 function readNumber(payload: unknown, key: string): number | undefined {

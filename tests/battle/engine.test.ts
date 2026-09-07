@@ -909,3 +909,58 @@ describe('stamina — reserva defensiva separada', () => {
     expect(isLegalMove(c, golpe)).toBe(true)
   })
 })
+
+describe('dreno de vida da transformação', () => {
+  const forma = (over: Partial<TransformationDef> = {}): TransformationDef =>
+    transformacao({ id: 'portoes', drainPerTurn: 0, drainHpPerTurn: 10, ...over })
+
+  const comForma = (hp: number, t: TransformationDef) => {
+    const s = createInitialState(stats({ hp: 200 }), stats())
+    return {
+      ...s,
+      player: { ...s.player, currentHp: hp, activeTransformationId: t.id },
+    }
+  }
+
+  const rodada = (estado: ReturnType<typeof comForma>, t: TransformationDef) =>
+    resolveRound(estado, ataqueBasico, { ...ctxVazio(), playerTransformations: { [t.id]: t } }, NUNCA_CRITA)
+
+  it('tira vida a cada rodada', () => {
+    const t = forma()
+    const r = rodada(comForma(200, t), t)
+    // 10 do dreno, mais o que o inimigo causar — o dreno tem que ter cobrado.
+    expect(r.state.player.currentHp).toBeLessThanOrEqual(190)
+    expect(r.state.player.activeTransformationId).toBe('portoes')
+  })
+
+  it('NÃO mata: ao chegar no limite, a forma cai e sobra 1 de HP', () => {
+    // Deixar a transformação matar quem a usou é fiel à obra e péssimo de
+    // jogar — perde-se a luta por uma escolha feita cinco rodadas antes.
+    const t = forma({ drainHpPerTurn: 50 })
+    const r = rodada(comForma(30, t), t)
+    expect(r.state.player.activeTransformationId).toBe(null)
+    expect(r.state.player.currentHp).toBeGreaterThanOrEqual(0)
+  })
+
+  it('sem energia para sustentar, a forma cai ANTES de cobrar vida', () => {
+    const t = forma({ drainPerTurn: 40, drainHpPerTurn: 10 })
+    const s = comForma(200, t)
+    const semEnergia = { ...s, player: { ...s.player, currentEnergy: 5 } }
+    const r = rodada(semEnergia, t)
+    expect(r.state.player.activeTransformationId).toBe(null)
+  })
+
+  it('forma sem dreno nenhum não cobra nada', () => {
+    const t = forma({ drainPerTurn: 0, drainHpPerTurn: 0 })
+    const antes = comForma(200, t)
+    const r = rodada(antes, t)
+    expect(r.state.player.activeTransformationId).toBe('portoes')
+  })
+
+  it('transformação antiga, gravada sem o campo, é tratada como sem dreno de vida', () => {
+    const t = forma()
+    delete (t as { drainHpPerTurn?: number }).drainHpPerTurn
+    const r = rodada(comForma(200, t), t)
+    expect(r.state.player.activeTransformationId).toBe('portoes')
+  })
+})

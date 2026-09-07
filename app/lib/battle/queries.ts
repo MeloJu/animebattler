@@ -58,6 +58,7 @@ export function toTransformationDef(t: {
   flatDefenseBonus: number
   flatSpeedBonus: number
   drainPerTurn: number
+  drainHpPerTurn: number
   triggerType: string
   triggerPayload: unknown
 }): TransformationDef {
@@ -74,6 +75,7 @@ export function toTransformationDef(t: {
     flatDefenseBonus: t.flatDefenseBonus,
     flatSpeedBonus: t.flatSpeedBonus,
     drainPerTurn: t.drainPerTurn,
+    drainHpPerTurn: t.drainHpPerTurn,
     triggerType: t.triggerType as TransformationDef['triggerType'],
     triggerPayload: t.triggerPayload,
   }
