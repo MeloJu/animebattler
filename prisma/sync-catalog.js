@@ -669,18 +669,31 @@ async function main() {
 
   const skillIds = await syncEquipmentSkills(bleach.id);
   await syncEquipment(bleach.id, skillIds);
-  await syncStory(bleach.id, storyCatalog);
 
-  // Segundo arco. Se o anime não existir ainda (banco antigo), syncCharacters
-  // o cria mais abaixo — então numa primeira passada o arco é pulado e entra
-  // na seguinte, em vez de derrubar o sync inteiro.
-  const jjk = await prisma.anime.findUnique({ where: { slug: storyJujutsu.chapter.animeSlug } });
-  if (jjk) {
-    await syncStory(jjk.id, storyJujutsu);
-  } else {
-    console.log('  (Jujutsu Kaisen ainda não existe neste banco — o arco entra na próxima passada)');
-  }
+  // PERSONAGENS ANTES DE HISTÓRIA, e a ordem não é estética.
+  //
+  // syncCharacters é quem cria anime, afiliação e personagem novos. Um arco
+  // de história referencia personagem por NOME e o anime por slug, então
+  // sincronizá-lo antes significa procurar coisas que ainda não existem.
+  //
+  // A primeira versão disto tinha o arco de Jujutsu antes de syncCharacters,
+  // com um contorno que pulava o arco quando o anime faltava e prometia
+  // pegá-lo "na próxima passada". No banco local o anime já existia de uma
+  // execução anterior, então passou; em produção o arco inteiro foi pulado em
+  // silêncio, e o jogo subiu com um capítulo só. Contorno em cima de ordem
+  // errada esconde o defeito em vez de resolver.
   await syncCharacters();
+
+  await syncStory(bleach.id, storyCatalog);
+  const jjk = await prisma.anime.findUnique({ where: { slug: storyJujutsu.chapter.animeSlug } });
+  if (!jjk) {
+    throw new Error(
+      `Anime "${storyJujutsu.chapter.animeSlug}" não existe mesmo depois de syncCharacters. ` +
+        'Ele deveria ter sido criado ali — falhar alto aqui é melhor que publicar o jogo sem o arco.'
+    );
+  }
+  await syncStory(jjk.id, storyJujutsu);
+
   await syncKits();
   await syncSummoners();
   await syncCharacterImages();

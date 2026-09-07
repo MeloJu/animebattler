@@ -32,6 +32,12 @@ const stages = [
     outroText:
       'O shikigami se desfaz em fumaça e Megumi assente uma vez, de leve. Vindo dele, isso é elogio.',
     enemyCharacterName: 'Megumi Fushiguro',
+    // É o TREINO da escola, e o Megumi é INVOCADOR: 137 de HP base fazia o
+    // primeiro combate do arco durar mais que o chefe final de Bleach. Depois
+    // que a escada de fundamentos entrou, ele ficou com arsenal de verdade
+    // aqui, e o estágio caiu para 10% de vitória com o Gojo.
+    bossHp: 105,
+    bossEnergy: 110,
     enemyLevel: 1,
     xpReward: 100,
     coinReward: 40,

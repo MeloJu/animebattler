@@ -174,7 +174,61 @@ const metahumano = {
   ],
 }
 
-const ladders = [ki, ninjutsu, quincy, hollow, karakura, metahumano]
+/**
+ * Fundamentos de combate — a escada de quem não tem tradição própria.
+ *
+ * POR QUE EXISTE: as escadas são por afiliação, e quatro afiliações nunca
+ * ganharam uma — Feiticeiros e Maldições (Jujutsu Kaisen), Treinadores
+ * (Pokémon) e Caçadores (Solo Leveling). O efeito foi medido e é grosseiro:
+ * o Gojo tinha 5 habilidades no total e UMA no nível 1, contra 25 do Ichigo
+ * e 6 no nível 1. Personagem novo entrava no jogo praticamente sem arsenal.
+ *
+ * Eu tinha registrado esse buraco quando os três invocadores entraram, e
+ * depois construí o elenco inteiro de Jujutsu com o mesmo defeito sem ligar
+ * uma coisa à outra. Esta escada é a correção.
+ *
+ * SÃO OS UNIVERSAIS: chute, guarda, esquiva, finta, contra-ataque. Nada aqui
+ * pertence a uma obra específica de propósito, porque a intenção é que
+ * qualquer lutador saiba isso. Hoje vai só para as quatro afiliações sem
+ * escada; estendê-la a TODO o elenco é o passo seguinte e precisa de uma
+ * passagem de balanceamento própria, já que somaria 12 habilidades a 60
+ * personagens de uma vez.
+ *
+ * ESCALA MISTA, e é o ponto: os golpes de corpo são categoria TAIJUTSU, que a
+ * regra de skill-scaling.js liga a ATAQUE; os de técnica são OTHER e a escada
+ * os declara em ENERGIA. Assim um ATACANTE rende nos chutes e um CONJURADOR
+ * rende nas técnicas, em vez de a escada favorecer um arquétipo só.
+ *
+ * Dois no nível 1 de propósito: com um só, o turno seguinte ao golgo grande
+ * vira ataque básico — o mesmo critério medido em signatures.js.
+ */
+const fundamentos = {
+  anime: null,
+  affiliation: null,
+  scalingStat: 'ENERGY', // vale para as de categoria OTHER; TAIJUTSU vem por categoria
+  aplicaA: [
+    { anime: 'jujutsu-kaisen', affiliation: 'Feiticeiros' },
+    { anime: 'jujutsu-kaisen', affiliation: 'Maldições' },
+    { anime: 'pokemon', affiliation: 'Treinadores' },
+    { anime: 'solo-leveling', affiliation: 'Caçadores' },
+  ],
+  skills: [
+    { name: 'Chute Baixo', category: 'TAIJUTSU', power: 9, energyCost: 9, cooldown: 1, tags: ['fundamento'], effects: [], level: 1 },
+    { name: 'Guarda Firme', category: 'OTHER', power: 0, energyCost: 10, cooldown: 2, tags: ['fundamento', 'buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 18, duration: 2 }], level: 1 },
+    { name: 'Cotovelada', category: 'TAIJUTSU', power: 14, energyCost: 13, cooldown: 2, tags: ['fundamento'], effects: [], level: 2 },
+    { name: 'Esquiva Lateral', category: 'OTHER', power: 0, energyCost: 12, cooldown: 3, tags: ['fundamento', 'buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'speed', magnitude: 20, duration: 2 }], level: 3 },
+    { name: 'Finta', category: 'OTHER', power: 6, energyCost: 15, cooldown: 2, tags: ['fundamento', 'debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 16, duration: 2 }], level: 4 },
+    { name: 'Concentração', category: 'OTHER', power: 0, energyCost: 14, cooldown: 3, tags: ['fundamento', 'buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 2 }], level: 5 },
+    { name: 'Joelhada Ascendente', category: 'TAIJUTSU', power: 24, energyCost: 22, cooldown: 3, tags: ['fundamento'], effects: [], level: 6 },
+    { name: 'Golpe de Contra', category: 'OTHER', power: 0, energyCost: 20, cooldown: 3, tags: ['fundamento', 'counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 45, duration: 1 }], level: 8 },
+    { name: 'Sequência de Chutes', category: 'TAIJUTSU', power: 28, energyCost: 26, cooldown: 3, tags: ['fundamento'], effects: [], level: 9 },
+    { name: 'Fôlego Renovado', category: 'OTHER', power: 0, energyCost: 22, cooldown: 4, tags: ['fundamento', 'cura'], effects: [{ type: 'HEAL', target: 'SELF', magnitude: 24 }], level: 11 },
+    { name: 'Investida Total', category: 'TAIJUTSU', power: 33, energyCost: 30, cooldown: 4, tags: ['fundamento'], effects: [], level: 13 },
+    { name: 'Golpe Decisivo', category: 'OTHER', power: 36, energyCost: 34, cooldown: 5, tags: ['fundamento'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 18, duration: 2 }], level: 15 },
+  ],
+};
+
+const ladders = [ki, ninjutsu, quincy, hollow, karakura, metahumano, fundamentos]
 
 /** Todas as definições de skill, achatadas — para criar as linhas de Skill. */
 function allSkills() {
