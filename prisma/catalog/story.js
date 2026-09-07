@@ -47,6 +47,12 @@ const stages = [
     outroText:
       'O Hollow se desfaz em partículas de reiatsu. Foi fácil demais. Se todo o Seireitei fosse assim, Rukia já estaria livre.',
     enemyMonsterName: 'Hollow',
+        introDialogue: [
+      { speaker: null, text: "O Sekaimon se fecha atrás de vocês. O ar do Rukongai é mais pesado do que os livros diziam." },
+      { speaker: null, text: "Alguma coisa se arrasta entre as casas tortas. Máscara branca, buraco no peito." },
+      { speaker: "Hollow", text: "GRAAAAH." },
+      { speaker: null, text: "Não é um inimigo do Seireitei. É só a primeira coisa que apareceu." },
+    ],
     enemyLevel: 1,
     xpReward: 100,
     coinReward: 40,
@@ -67,6 +73,12 @@ const stages = [
     // em vez de virar apenas mais lento.
     bossSpeed: 14,
     bossAttack: 28,
+        introDialogue: [
+      { speaker: "Izuru Kira", text: "Não sei quem você é. Sinceramente, tanto faz." },
+      { speaker: "Izuru Kira", text: "Recebi ordem de não deixar ninguém passar. É só isso que me sobrou." },
+      { speaker: null, text: "A Wabisuke pende na mão dele como se pesasse mais que o braço." },
+      { speaker: "Izuru Kira", text: "Cada vez que eu te acertar, você vai ficar mais pesado. Até não conseguir levantar." },
+    ],
     enemyLevel: 2,
     xpReward: 200,
     coinReward: 60,
@@ -78,6 +90,12 @@ const stages = [
     outroText:
       'Renji desaba contra a parede, rindo de raiva e alívio ao mesmo tempo. "Salva ela. Salva ela por mim."',
     enemyCharacterName: 'Renji Abarai',
+        introDialogue: [
+      { speaker: "Renji Abarai", text: "Você veio salvar a Rukia? Você?" },
+      { speaker: null, text: "Zabimaru se estende pela rua inteira, cada segmento raspando a pedra." },
+      { speaker: "Renji Abarai", text: "Eu conheço ela desde antes de você existir. E nem eu consegui tirar ela de lá." },
+      { speaker: "Renji Abarai", text: "Então prova que vale mais que eu. Vem." },
+    ],
     enemyLevel: 3,
     xpReward: 300,
     coinReward: 90,
@@ -92,6 +110,12 @@ const stages = [
         // Kenpachi não usa kidō; a reserva grande era herança do bloco jogável.
     bossHp: 188,
     bossEnergy: 125,
+        introDialogue: [
+      { speaker: null, text: "O reiatsu chega antes dele. É como andar contra o vento com pedra dentro." },
+      { speaker: "Kenpachi Zaraki", text: "Achei. Faz tempo que ninguém aguenta ficar de pé perto de mim." },
+      { speaker: "Kenpachi Zaraki", text: "Não me interessa por que você veio. Só não morre rápido." },
+      { speaker: null, text: "Ele nem sabe o nome da própria espada. Nunca precisou." },
+    ],
     enemyLevel: 5,
     xpReward: 900,
     coinReward: 130,
@@ -106,6 +130,11 @@ const stages = [
         // A reserva de 282 fazia a cura dele escalar a ~35 por uso e o deixava
     // praticamente imortal. Cortar energia corta cura E dano de kidō juntos.
     bossEnergy: 225,
+        introDialogue: [
+      { speaker: "Mayuri Kurotsuchi", text: "Ah. Um espécime que anda sozinho até aqui. Que conveniente." },
+      { speaker: "Mayuri Kurotsuchi", text: "Sabe qual é o problema de lutar comigo? Você não está lutando. Está sendo medido." },
+      { speaker: null, text: "Ashisogi Jizō se abre em três lâminas. O veneno já está no ar antes do primeiro golpe." },
+    ],
     enemyLevel: 7,
     xpReward: 1300,
     coinReward: 180,
@@ -120,6 +149,11 @@ const stages = [
         // Velocidade 35 dava iniciativa e crítico de graça toda rodada.
     bossHp: 195,
     bossSpeed: 27,
+        introDialogue: [
+      { speaker: "Byakuya Kuchiki", text: "A execução da Rukia é decisão do Gotei 13. Eu não discuto decisões." },
+      { speaker: null, text: "Ele solta a espada. Ela não cai — se desfaz em mil lâminas do tamanho de uma pétala." },
+      { speaker: "Byakuya Kuchiki", text: "Você não vai ver os cortes. Ninguém vê." },
+    ],
     enemyLevel: 9,
     xpReward: 1700,
     coinReward: 240,
@@ -133,6 +167,12 @@ const stages = [
     enemyCharacterName: 'Gin Ichimaru',
         // Gin era o caso mais extremo: só igualar a velocidade já virava a luta.
     bossSpeed: 30,
+        introDialogue: [
+      { speaker: "Gin Ichimaru", text: "Oh~ você chegou longe. Parabéns, de verdade." },
+      { speaker: null, text: "Ele sorri sem abrir os olhos. É o tipo de sorriso que não combina com nada em volta." },
+      { speaker: "Gin Ichimaru", text: "Shinsou alcança bem mais longe do que parece. Bem mais." },
+      { speaker: "Gin Ichimaru", text: "Você vai descobrir isso agora, ou daqui a pouco. Tanto faz pra mim." },
+    ],
     enemyLevel: 11,
     xpReward: 2100,
     coinReward: 320,
@@ -147,6 +187,13 @@ const stages = [
         // Aizen tem que ser o mais duro do arco, mas derrotável com preparo.
     bossSpeed: 28,
     bossEnergy: 300,
+        introDialogue: [
+      { speaker: null, text: "O Sōkyoku está em pedaços. E acima de tudo, ele. Sem pressa nenhuma." },
+      { speaker: "Sosuke Aizen", text: "Tudo que você viu até aqui foi porque eu deixei ver." },
+      { speaker: "Sosuke Aizen", text: "Cada capitão que você enfrentou estava exatamente onde eu quis." },
+      { speaker: null, text: "A Kyōka Suigetsu já foi liberada. Você só não sabe quando." },
+      { speaker: "Sosuke Aizen", text: "Ninguém nunca esteve no topo do céu. Nem você, nem eu. Ainda." },
+    ],
     enemyLevel: 14,
     xpReward: 2500,
     coinReward: 500,

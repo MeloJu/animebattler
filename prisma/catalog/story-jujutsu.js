@@ -38,6 +38,12 @@ const stages = [
     // aqui, e o estágio caiu para 10% de vitória com o Gojo.
     bossHp: 105,
     bossEnergy: 110,
+        introDialogue: [
+      { speaker: null, text: "Pátio da Escola Técnica de Jujutsu de Tóquio. Fim de tarde." },
+      { speaker: "Megumi Fushiguro", text: "Não vou pegar leve. Se pegasse, não serviria de treino." },
+      { speaker: null, text: "Ele junta as mãos. A sombra aos pés dele se aprofunda." },
+      { speaker: "Megumi Fushiguro", text: "Nue. Sai." },
+    ],
     enemyLevel: 1,
     xpReward: 100,
     coinReward: 40,
@@ -53,6 +59,11 @@ const stages = [
     // ainda tem duas habilidades. Corta iniciativa, não dano.
     bossSpeed: 12,
     bossEnergy: 80,
+        introDialogue: [
+      { speaker: "Nobara Kugisaki", text: "Ouvi dizer que você passou pelo Megumi. Ele é fácil, ele avisa antes de atacar." },
+      { speaker: null, text: "Ela gira um prego entre os dedos, sem olhar." },
+      { speaker: "Nobara Kugisaki", text: "Eu não aviso. E não vou pedir desculpa depois." },
+    ],
     enemyLevel: 2,
     xpReward: 200,
     coinReward: 60,
@@ -64,6 +75,12 @@ const stages = [
     outroText:
       'O calor cede de uma vez, e o chão de Shibuya volta a ser chão. Jogo recua sem morrer — maldição daquele porte não morre de primeira.',
     enemyCharacterName: 'Jogo',
+        introDialogue: [
+      { speaker: null, text: "A temperatura sobe antes de qualquer coisa aparecer. O asfalto começa a cheirar." },
+      { speaker: "Jogo", text: "Humanos. Vocês nem sabem o que são." },
+      { speaker: "Jogo", text: "Nascem do medo de vocês mesmos e depois fingem que a culpa é nossa." },
+      { speaker: null, text: "A fenda na cabeça dele se abre. O que sai não é fumaça." },
+    ],
     enemyLevel: 3,
     xpReward: 300,
     coinReward: 90,
@@ -80,6 +97,11 @@ const stages = [
     bossHp: 158,
     bossDefense: 14,
     bossEnergy: 85,
+        introDialogue: [
+      { speaker: null, text: "Raízes rompem o piso da estação e sobem pelas paredes." },
+      { speaker: "Hanami", text: "A floresta perdoa. Ela cresce de novo, sempre." },
+      { speaker: "Hanami", text: "Eu não sou a floresta." },
+    ],
     enemyLevel: 5,
     xpReward: 900,
     coinReward: 130,
@@ -95,6 +117,12 @@ const stages = [
     bossHp: 190,
     bossDefense: 11,
     bossEnergy: 200,
+        introDialogue: [
+      { speaker: "Mahito", text: "Você acha que eu toco no corpo? Que fofo." },
+      { speaker: null, text: "Metade do rosto dele é costura. A outra metade sorri." },
+      { speaker: "Mahito", text: "Eu toco no que você ACHA que você é. E aí eu mudo um pouquinho." },
+      { speaker: "Mahito", text: "Fica quieto. Vai ser rápido, ou não." },
+    ],
     enemyLevel: 7,
     xpReward: 1300,
     coinReward: 180,
@@ -109,6 +137,12 @@ const stages = [
     // O Gojo tem que ser duro, mas ele é um teste, não uma parede: na ficção
     // ele quer que o jogador passe.
     bossDefense: 14,
+        introDialogue: [
+      { speaker: null, text: "Ele tira a venda. É a primeira vez que você vê os olhos dele." },
+      { speaker: "Satoru Gojo", text: "Lá embaixo tem coisa que não negocia. Se você não passar de mim, você morre lá." },
+      { speaker: "Satoru Gojo", text: "Prefiro que apanhe aqui, com alguém que vai parar quando você cair." },
+      { speaker: "Satoru Gojo", text: "Vem. Sem medo, senão não vale." },
+    ],
     enemyLevel: 9,
     xpReward: 1700,
     coinReward: 240,
@@ -120,6 +154,12 @@ const stages = [
     outroText:
       'Os espíritos amaldiçoados se dispersam sem dono. O que estava usando aquele rosto já saiu andando — e o Prisma continua selado.',
     enemyCharacterName: 'Suguru Geto',
+        introDialogue: [
+      { speaker: null, text: "O rosto é o de Suguru Geto. A voz que sai dele é muito mais velha." },
+      { speaker: "Suguru Geto", text: "Este corpo? Herança. Peguei quando ele parou de precisar." },
+      { speaker: "Suguru Geto", text: "O plano é meu há mais de mil anos. Você chegou hoje." },
+      { speaker: null, text: "Atrás dele, espíritos amaldiçoados se acumulam até tapar o corredor." },
+    ],
     enemyLevel: 11,
     xpReward: 2100,
     coinReward: 320,
@@ -135,6 +175,12 @@ const stages = [
     bossHp: 250,
     bossDefense: 18,
     bossSpeed: 28,
+        introDialogue: [
+      { speaker: null, text: "Quatro braços. Quatro olhos. E um sorriso que já sabe como isso termina." },
+      { speaker: "Ryomen Sukuna", text: "Se ajoelhe, ou não se ajoelhe. Para mim dá no mesmo." },
+      { speaker: "Ryomen Sukuna", text: "Ninguém aqui está lutando comigo. Vocês estão adiando." },
+      { speaker: null, text: "Ele levanta um dedo. Só um." },
+    ],
     enemyLevel: 14,
     xpReward: 2500,
     coinReward: 500,

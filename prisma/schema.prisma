@@ -487,6 +487,18 @@ model StoryStage {
   introText String
   outroText String
 
+  /// Diálogo encenado antes da luta: um array de { speaker, text }, em que
+  /// speaker nulo é narração. Fica separado de introText de propósito —
+  /// introText é o parágrafo de contexto que continua na tela do estágio, e
+  /// este é a cena que abre quando se clica para batalhar.
+  ///
+  /// Json em vez de tabela própria porque a fala não é consultada nem
+  /// referenciada por nada: ela é lida inteira, sempre junto com o estágio.
+  /// Uma tabela só somaria um join para nunca filtrar por linha.
+  ///
+  /// Nulo significa "sem cena", e a tela cai no comportamento antigo.
+  introDialogue Json?
+
   // Exatamente um dos dois é preenchido — mesma convenção do model Battle,
   // garantida no código da aplicação e não por constraint declarativa.
   enemyCharacter   Character? @relation(fields: [enemyCharacterId], references: [id])
