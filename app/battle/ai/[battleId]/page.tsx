@@ -5,9 +5,10 @@ import { activateTransformation, takeTurn } from '@/app/lib/battle/actions'
 import { getBattleView, getEquippedSkills, getPlayerTransformations } from '@/app/lib/battle/queries'
 import { getRetratosDosFalantes, getStageOutro, parseDialogo } from '@/app/lib/story/queries'
 import { CenaDeDialogo } from '@/app/components/story/CenaDeDialogo'
-import { isLegalMove } from '@/app/lib/battle/engine'
-import { battleErrorMessage, describeEffect } from '@/app/lib/battle/presentation'
+import { battleErrorMessage } from '@/app/lib/battle/presentation'
 import { FighterCard } from '@/app/components/battle/FighterCard'
+import { BotaoDeForma } from '@/app/components/battle/BotaoDeForma'
+import { BotaoDeHabilidade } from '@/app/components/battle/BotaoDeHabilidade'
 import { TurnLogEntry } from '@/app/components/battle/TurnLogEntry'
 import type { BattleState, TurnResult } from '@/app/lib/battle/types'
 
@@ -130,31 +131,18 @@ export default async function BattleArenaPage({
                     Ataque Básico
                   </button>
                 </form>
-                {Object.values(playerSkills).map((skill) => {
-                  const legal = isLegalMove(state.player, skill)
-                  return (
-                    <form key={skill.id} action={takeTurn.bind(null, battleId, skill.id)}>
-                      <button
-                        type="submit"
-                        disabled={!legal}
-                        className={`rounded-md px-3 py-2 text-sm border text-left ${legal ? 'border-border hover:bg-surface-raised' : 'border-border opacity-40 cursor-not-allowed'}`}
-                      >
-                        <div>{skill.name} <span className="opacity-60">({skill.energyCost} EN)</span></div>
-                        {skill.effects.length > 0 && (
-                          <div className="text-xs opacity-60">{skill.effects.map(describeEffect).join(' · ')}</div>
-                        )}
-                      </button>
-                    </form>
-                  )
-                })}
+                {Object.values(playerSkills).map((skill) => (
+                  <form key={skill.id} action={takeTurn.bind(null, battleId, skill.id)}>
+                    <BotaoDeHabilidade skill={skill} combatente={state.player} />
+                  </form>
+                ))}
               </div>
               {availableTransformations.length > 0 && (
-                <div className="pt-2 border-t border-border flex flex-wrap gap-2">
+                <div className="pt-3 border-t border-border space-y-2">
+                  <div className="text-xs uppercase tracking-wide opacity-45">Formas</div>
                   {availableTransformations.map((t) => (
                     <form key={t.id} action={activateTransformation.bind(null, battleId, t.id)}>
-                      <button type="submit" className="rounded-md px-3 py-2 text-sm border border-accent/40 text-accent hover:bg-accent/10">
-                        Transformar: {t.name}
-                      </button>
+                      <BotaoDeForma forma={t} energiaAtual={state.player.currentEnergy} />
                     </form>
                   ))}
                 </div>

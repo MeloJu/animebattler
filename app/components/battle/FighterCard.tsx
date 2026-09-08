@@ -18,7 +18,11 @@ export function FighterCard({
   combatant: CombatantState
 }) {
   return (
-    <div className="card p-4 space-y-3">
+    // Quem está transformado tem a carta INTEIRA marcada, não só uma etiqueta:
+    // a forma muda como a luta se joga, então precisa ser legível de relance.
+    // A animação toca uma vez, na chegada da página — que é exatamente o
+    // momento em que a forma acabou de ser liberada.
+    <div className={`card p-4 space-y-3 ${transformationName ? 'forma-ativa' : ''}`}>
       <div className="relative h-40 w-full rounded-lg overflow-hidden bg-background-alt">
         {imageUrl ? (
           <Image src={imageUrl} alt={name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 320px" />
@@ -32,7 +36,9 @@ export function FighterCard({
       <div className="flex items-center gap-2 flex-wrap">
         <div className="font-semibold">{name}</div>
         {transformationName && (
-          <span className="text-xs rounded-full bg-accent/20 text-accent px-2 py-0.5">{transformationName}</span>
+          <span className="text-xs rounded-full bg-accent/20 text-accent px-2 py-0.5 font-medium">
+            {transformationName}
+          </span>
         )}
       </div>
       <StatBar label="HP" current={combatant.currentHp} max={combatant.maxHp} colorClass="bg-green-500" />

@@ -18,6 +18,7 @@ import {
   custaStamina,
   tagDeClash,
   resolverClash,
+  saborDoDot,
   SEM_BONUS,
 } from '@/app/lib/battle/engine'
 import type {
@@ -1056,5 +1057,68 @@ describe('forma que não gasta a rodada', () => {
     const c = combatant({ currentEnergy: 100 })
     const forma = transformacao({ attackModifier: 0.2, consumesTurn: false, activationCost: 40 })
     expect(applyTransformation(c, forma).currentEnergy).toBe(100)
+  })
+})
+
+describe('natureza do dano contínuo', () => {
+  it('lê fogo, veneno, sangramento e maldição das tags', () => {
+    expect(saborDoDot(['fogo'])).toBe('queimadura')
+    expect(saborDoDot(['veneno'])).toBe('veneno')
+    expect(saborDoDot(['sangramento'])).toBe('sangramento')
+    expect(saborDoDot(['maldicao'])).toBe('maldicao')
+  })
+
+  it('aceita as duas línguas, porque o catálogo tem as duas', () => {
+    // 'fire' e 'fogo', 'poison' e 'veneno', 'bleed' e 'sangramento' convivem
+    // no banco desde antes das tags significarem alguma coisa.
+    expect(saborDoDot(['fire'])).toBe('queimadura')
+    expect(saborDoDot(['poison'])).toBe('veneno')
+    expect(saborDoDot(['bleed'])).toBe('sangramento')
+    expect(saborDoDot(['decay'])).toBe('maldicao')
+  })
+
+  it('sem tag reconhecida, fica indefinido e a tela cai no genérico', () => {
+    expect(saborDoDot([])).toBeUndefined()
+    expect(saborDoDot(['ki', 'beam'])).toBeUndefined()
+  })
+
+  it('o efeito aplicado carrega a natureza da habilidade de origem', () => {
+    const veneno = skill({
+      id: 'v',
+      name: 'Corrosão',
+      power: 0,
+      energyCost: 0,
+      cooldown: 0,
+      tags: ['maldicao', 'veneno'],
+      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 8, duration: 3 }],
+    })
+    const s = createInitialState(stats(), stats())
+    const r = resolveRound(
+      s,
+      { playerAction: { kind: 'ATTACK', skillId: 'v' }, enemyAction: { skillId: null } },
+      { ...ctxVazio(), playerSkills: { v: veneno } },
+      NUNCA_CRITA
+    )
+    const dot = r.state.enemy.statusEffects.find((e) => e.type === 'DOT')
+    expect(dot?.flavor).toBe('veneno')
+  })
+
+  it('efeito que não é DOT não recebe natureza', () => {
+    const escudo = skill({
+      id: 'e',
+      power: 0,
+      energyCost: 0,
+      cooldown: 0,
+      tags: ['fogo'],
+      effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 10, duration: 2 }],
+    })
+    const s = createInitialState(stats(), stats())
+    const r = resolveRound(
+      s,
+      { playerAction: { kind: 'ATTACK', skillId: 'e' }, enemyAction: { skillId: null } },
+      { ...ctxVazio(), playerSkills: { e: escudo } },
+      NUNCA_CRITA
+    )
+    expect(r.state.player.statusEffects.find((x) => x.type === 'SHIELD')?.flavor).toBeUndefined()
   })
 })

@@ -30,7 +30,22 @@ export type StatusEffectInstance = {
   magnitude: number
   remainingRounds: number
   sourceSkillName: string
+  /**
+   * A NATUREZA do dano contínuo — queimadura, veneno, sangramento, maldição.
+   *
+   * Existe um único EffectType DOT servindo às quatro, e é assim de propósito:
+   * mecanicamente elas são a mesma coisa, dano por rodada. O que muda é como
+   * se lê na tela, e sem este campo a instância não tinha como saber: só as
+   * TAGS da habilidade de origem distinguem, e a instância guardava apenas o
+   * nome dela.
+   *
+   * Opcional porque batalhas em andamento foram gravadas antes do campo.
+   */
+  flavor?: DotFlavor
 }
+
+/** Naturezas de dano contínuo que a tela sabe apresentar. */
+export type DotFlavor = 'queimadura' | 'veneno' | 'sangramento' | 'maldicao'
 
 // A combatant's stats are split into "base" (character + skill tree bonuses,
 // fixed for the whole battle) and "current" (base, or transformed if a

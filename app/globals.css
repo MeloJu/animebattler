@@ -291,3 +291,55 @@ body {
   .btn-primary,
   .nav-link::after { transition: none; }
 }
+
+/* ---------- Animações de combate ----------
+   Cada natureza de dano contínuo tem um movimento próprio, e a razão é
+   leitura periférica: dá para saber o que está acontecendo com o lutador sem
+   parar para ler o texto da etiqueta. Antes as quatro usavam o mesmo ícone
+   parado e eram indistinguíveis.
+
+   Todas param sob prefers-reduced-motion — informação que só existe no
+   movimento é informação perdida para quem desliga movimento, então a cor e o
+   ícone carregam o significado sozinhos. */
+
+@keyframes tremular {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.55; }
+}
+
+@keyframes pulsar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes bater {
+  0%, 70%, 100% { opacity: 1; }
+  80% { opacity: 0.45; }
+  90% { opacity: 1; }
+}
+
+@keyframes respirar {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+/* Pulso de quem acabou de liberar uma forma: acontece uma vez, na chegada. */
+@keyframes forma-liberada {
+  0% { box-shadow: 0 0 0 0 var(--color-accent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+
+.forma-ativa {
+  border-color: var(--color-accent);
+  animation: forma-liberada 900ms ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forma-ativa,
+  [class*="animate-[tremular"],
+  [class*="animate-[pulsar"],
+  [class*="animate-[bater"],
+  [class*="animate-[respirar"] {
+    animation: none !important;
+  }
+}

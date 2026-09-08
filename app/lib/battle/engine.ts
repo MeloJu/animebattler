@@ -21,6 +21,7 @@ import type {
   SkillDef,
   SkillEffect,
   Side,
+  DotFlavor,
   Stat,
   StatBonus,
   StatusEffectInstance,
@@ -32,6 +33,24 @@ import type {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
+}
+
+/**
+ * Deduz a natureza de um dano contínuo a partir das tags da habilidade.
+ *
+ * As tags do catálogo são bagunçadas — há 'fire' e 'fogo', 'poison' e
+ * 'veneno', 'bleed' e 'sangramento' —, então a leitura aceita as duas
+ * línguas. Nada disso mudava nada antes; é a segunda vez que as tags, que o
+ * schema chamava de "flavor only", decidem alguma coisa.
+ *
+ * Sem correspondência, fica indefinido e a tela cai no genérico.
+ */
+export function saborDoDot(tags: string[]): DotFlavor | undefined {
+  if (tags.some((t) => t === 'fogo' || t === 'fire' || t === 'burn')) return 'queimadura'
+  if (tags.some((t) => t === 'veneno' || t === 'poison')) return 'veneno'
+  if (tags.some((t) => t === 'sangramento' || t === 'bleed')) return 'sangramento'
+  if (tags.some((t) => t === 'maldicao' || t === 'decay')) return 'maldicao'
+  return undefined
 }
 
 function makeEffectId(): string {
@@ -408,7 +427,8 @@ function applySkillEffects(
   target: CombatantState,
   effects: SkillEffect[],
   skillName: string,
-  scalingStat: ScalingStat
+  scalingStat: ScalingStat,
+  skillTags: string[]
 ): { user: CombatantState; target: CombatantState; applied: AppliedEffect[]; healed: number } {
   // CURA e ESCUDO escalam junto com dano, senão um suporte que investe no
   // próprio atributo continua curando o mesmo tanto do nível 1 ao 40 — que
@@ -442,6 +462,7 @@ function applySkillEffects(
       magnitude: effect.type === 'SHIELD' ? effect.magnitude + bonus : effect.magnitude,
       remainingRounds: effect.duration ?? 1,
       sourceSkillName: skillName,
+      ...(effect.type === 'DOT' ? { flavor: saborDoDot(skillTags) } : {}),
     }
 
     if (effect.target === 'SELF') {
@@ -528,7 +549,7 @@ function performSkillUse(
   // A countered attack didn't land, so effects aimed at the enemy shouldn't apply either —
   // but self-targeted effects (a buff/heal on the caster) still do, since the caster still acted.
   const supportEffects = effects.filter((e) => e.type !== 'LIFESTEAL' && (!countered || e.target === 'SELF'))
-  const supportResult = applySkillEffects(side, newAttacker, newDefender, supportEffects, skill?.name ?? 'Ataque Básico', scalingStat)
+  const supportResult = applySkillEffects(side, newAttacker, newDefender, supportEffects, skill?.name ?? 'Ataque Básico', scalingStat, skill?.tags ?? [])
   newAttacker = supportResult.user
   newDefender = supportResult.target
   healed += supportResult.healed
