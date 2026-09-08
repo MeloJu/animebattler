@@ -148,7 +148,11 @@ const stages = [
     enemyCharacterName: 'Mayuri Kurotsuchi',
         // A reserva de 282 fazia a cura dele escalar a ~35 por uso e o deixava
     // praticamente imortal. Cortar energia corta cura E dano de kidō juntos.
-    bossEnergy: 225,
+    // Reajustado junto com SCALING_REFERENCE.energy (165 -> 123): a reserva
+    // deste chefe escala o dano dele, e o valor antigo foi calibrado contra a
+    // referencia errada. Multiplicado por 123/165 para manter a dificuldade
+    // exatamente onde a busca no simulador tinha deixado.
+    bossEnergy: 168,
         introDialogue: [
       { speaker: "Mayuri Kurotsuchi", text: "Ah. Um espécime que anda sozinho até aqui. Que conveniente." },
       { speaker: "Mayuri Kurotsuchi", text: "Sabe qual é o problema de lutar comigo? Você não está lutando. Está sendo medido." },
@@ -220,7 +224,11 @@ const stages = [
     enemyCharacterName: 'Sosuke Aizen',
         // Aizen tem que ser o mais duro do arco, mas derrotável com preparo.
     bossSpeed: 28,
-    bossEnergy: 300,
+    // Reajustado junto com SCALING_REFERENCE.energy (165 -> 123): a reserva
+    // deste chefe escala o dano dele, e o valor antigo foi calibrado contra a
+    // referencia errada. Multiplicado por 123/165 para manter a dificuldade
+    // exatamente onde a busca no simulador tinha deixado.
+    bossEnergy: 224,
         introDialogue: [
       { speaker: null, text: "O Sōkyoku está em pedaços. E acima de tudo, ele. Sem pressa nenhuma." },
       { speaker: "Sosuke Aizen", text: "Tudo que você viu até aqui foi porque eu deixei ver." },

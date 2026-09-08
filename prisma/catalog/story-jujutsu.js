@@ -37,7 +37,11 @@ const stages = [
     // que a escada de fundamentos entrou, ele ficou com arsenal de verdade
     // aqui, e o estágio caiu para 10% de vitória com o Gojo.
     bossHp: 105,
-    bossEnergy: 110,
+    // Reajustado junto com SCALING_REFERENCE.energy (165 -> 123): a reserva
+    // deste chefe escala o dano dele, e o valor antigo foi calibrado contra a
+    // referencia errada. Multiplicado por 123/165 para manter a dificuldade
+    // exatamente onde a busca no simulador tinha deixado.
+    bossEnergy: 82,
         introDialogue: [
       { speaker: null, text: "Pátio da Escola Técnica de Jujutsu de Tóquio. Fim de tarde." },
       { speaker: "Megumi Fushiguro", text: "Não vou pegar leve. Se pegasse, não serviria de treino." },
@@ -85,6 +89,11 @@ const stages = [
     outroText:
       'O calor cede de uma vez, e o chão de Shibuya volta a ser chão. Jogo recua sem morrer — maldição daquele porte não morre de primeira.',
     enemyCharacterName: 'Jogo',
+    // Jogo e CONJURADOR e nao tinha teto de reserva: com a referencia de
+    // energia corrigida ele passou a somar 16 de bonus por golpe no nivel 3, e
+    // o estagio virou parede (Sukuna 78% -> 3%). O teto o devolve ao ponto em
+    // que estava, sem desfazer a correcao para os outros conjuradores.
+    bossEnergy: 148,
         introDialogue: [
       { speaker: null, text: "A temperatura sobe antes de qualquer coisa aparecer. O asfalto começa a cheirar." },
       { speaker: "Jogo", text: "Humanos. Vocês nem sabem o que são." },
@@ -136,7 +145,11 @@ const stages = [
     // Mesma história do Mayuri no arco de Bleach: reserva enorme inflava tudo.
     bossHp: 190,
     bossDefense: 11,
-    bossEnergy: 200,
+    // Reajustado junto com SCALING_REFERENCE.energy (165 -> 123): a reserva
+    // deste chefe escala o dano dele, e o valor antigo foi calibrado contra a
+    // referencia errada. Multiplicado por 123/165 para manter a dificuldade
+    // exatamente onde a busca no simulador tinha deixado.
+    bossEnergy: 149,
         introDialogue: [
       { speaker: "Mahito", text: "Você acha que eu toco no corpo? Que fofo." },
       { speaker: null, text: "Metade do rosto dele é costura. A outra metade sorri." },
@@ -159,6 +172,11 @@ const stages = [
     outroText:
       '"Nada mal." Ele recoloca a venda. Não é vitória — é permissão. Foi exatamente o que ele quis que fosse.',
     enemyCharacterName: 'Satoru Gojo',
+    // Gojo e CONJURADOR e nao tinha teto de reserva: com a referencia de
+    // energia corrigida ele passou a somar 16 de bonus por golpe no nivel 9, e
+    // o estagio ficou mais duro do que a busca no simulador tinha deixado.
+    // O teto o devolve, sem desfazer a correcao para os outros conjuradores.
+    bossEnergy: 242,
     // O Gojo tem que ser duro, mas ele é um teste, não uma parede: na ficção
     // ele quer que o jogador passe.
     bossDefense: 14,

@@ -54,12 +54,24 @@ export const SCALING_BASE = 10
  * Os valores saem do elenco real. Se a média mudar muito com personagens
  * novos, estes números precisam ser revisados junto — por isso estão aqui,
  * num lugar só, e não espalhados.
+ *
+ * ENERGIA ESTAVA EM 165, e a média real era 123. As outras três batiam com a
+ * média a menos de 2%; só essa não. O efeito era silencioso e grande: as três
+ * classes que escalam por energia — CONJURADOR, INVOCADOR e SUPORTE, metade
+ * do elenco — dividiam por um número 34% maior que o das outras e somavam
+ * ~9,5 de bônus por golpe onde ATACANTE e VELOZ somavam ~13. Não era um
+ * personagem fraco: era a classe inteira pagando um imposto invisível.
+ *
+ * O aviso acima já existia e mesmo assim o número envelheceu, porque conferir
+ * exigia abrir o banco e fazer a conta à mão. Agora a conta é
+ * `npm run balance:referencia`, que compara estes valores com o elenco e
+ * mostra o bônus que cada classe de fato recebe.
  */
 export const SCALING_REFERENCE: Record<ScalingStat, number> = {
   attack: 19.8,
   defense: 12.4,
   speed: 13.9,
-  energy: 165,
+  energy: 123,
 }
 
 export const XP_ON_WIN = 25

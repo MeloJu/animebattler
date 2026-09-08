@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "catalog:sync": "node prisma/sync-catalog.js",
+    "balance:referencia": "node scripts/verifica-referencia.js",
     "catalog:check": "node prisma/sync-catalog.js --dry-run"
   },
   "dependencies": {
