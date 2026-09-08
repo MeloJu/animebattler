@@ -603,6 +603,8 @@ async function syncTransformations() {
       flatSpeedBonus: def.flatSpeedBonus ?? 0,
       drainPerTurn: def.drainPerTurn ?? 0,
       drainHpPerTurn: def.drainHpPerTurn ?? 0,
+      consumesTurn: def.consumesTurn ?? true,
+      activationCost: def.activationCost ?? 0,
       triggerType: def.triggerType ?? 'MANUAL',
       triggerPayload: def.triggerPayload ?? null,
       unlocksSkillId,

@@ -151,6 +151,10 @@ export type TransformationDef = {
   drainPerTurn: number
   /** Vida por rodada. Opcional: transformações antigas não tinham o campo. */
   drainHpPerTurn?: number
+  /** Se ativar gasta a rodada. Ausente vale true — o comportamento antigo. */
+  consumesTurn?: boolean
+  /** Energia cobrada uma vez, na ativação. */
+  activationCost?: number
   triggerType: TransformationTrigger
   triggerPayload: unknown
 }

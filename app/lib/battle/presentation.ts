@@ -43,6 +43,7 @@ const BATTLE_ERROR_MESSAGES: Record<string, string> = {
   invalid_transformation: 'Essa transformação não está disponível pro seu personagem.',
   already_transformed: 'Você já está transformado nessa batalha.',
   conflict: 'Essa rodada já foi resolvida em outra aba — a tela foi atualizada.',
+  insufficient_energy: 'Energia insuficiente para liberar essa forma.',
 }
 
 export function battleErrorMessage(code: string | undefined): string | null {

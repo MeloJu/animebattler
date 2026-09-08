@@ -8,6 +8,7 @@ import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import {
   applyTraits,
+  applyTransformation,
   computeFighterStats,
   createInitialState,
   isLegalMove,
@@ -401,6 +402,54 @@ export async function activateTransformation(battleId: string, transformationId:
   const ctx = await loadActiveBattleContext(battleId)
   if (ctx.state.player.activeTransformationId) redirect(`/battle/ai/${battleId}?error=already_transformed`)
   if (!ctx.playerTransformations[transformationId]) redirect(`/battle/ai/${battleId}?error=invalid_transformation`)
+
+  const forma = ctx.playerTransformations[transformationId]
+
+  // FORMA QUE NÃO GASTA A RODADA: aplica e pronto, sem resolver turno nenhum.
+  // O inimigo não ganha um golpe de graça, e o jogador segue podendo agir na
+  // mesma rodada — que é o ponto do Bankai, liberado no meio da troca.
+  //
+  // O preço é energia, cobrada aqui, uma vez. Sem ele a forma seria ativação
+  // obrigatória na rodada 1 e deixaria de ser decisão.
+  if (forma.consumesTurn === false) {
+    const custo = forma.activationCost ?? 0
+    if (ctx.state.player.currentEnergy < custo) {
+      redirect(`/battle/ai/${battleId}?error=insufficient_energy`)
+    }
+
+    const transformado = applyTransformation(ctx.state.player, forma)
+    const novoEstado: BattleState = {
+      ...ctx.state,
+      player: { ...transformado, currentEnergy: transformado.currentEnergy - custo },
+    }
+
+    // O turno NÃO avança, então a trava otimista compara o mesmo número: se
+    // outra aba resolveu uma rodada nesse meio tempo, esta gravação não passa.
+    const gravou = await prisma.battle.updateMany({
+      where: { id: battleId, turnNumber: ctx.battle.turnNumber },
+      data: { state: novoEstado as unknown as Prisma.InputJsonValue },
+    })
+    if (gravou.count === 0) redirect(`/battle/ai/${battleId}?error=conflict`)
+
+    await prisma.userCharacter.update({
+      where: { id: ctx.userCharacter.id },
+      data: { activeTransformationId: transformationId },
+    })
+    await prisma.userCharacterTransformation.upsert({
+      where: {
+        userCharacterId_transformationId: { userCharacterId: ctx.userCharacter.id, transformationId },
+      },
+      create: {
+        userCharacterId: ctx.userCharacter.id,
+        transformationId,
+        unlockedAtLevel: ctx.userCharacter.level,
+      },
+      update: {},
+    })
+
+    revalidatePath(`/battle/ai/${battleId}`)
+    return
+  }
 
   const playerAction: PlayerAction = { kind: 'TRANSFORM', transformationId }
   const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills))

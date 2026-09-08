@@ -1039,3 +1039,22 @@ describe('choque de golpes', () => {
     expect(r.state.enemy.currentHp).toBe(100)
   })
 })
+
+describe('forma que não gasta a rodada', () => {
+  // O motor não decide nada sobre isso — quem decide é a action, que aplica a
+  // forma sem resolver rodada. O que o motor precisa garantir é que a forma
+  // aplicada é a mesma nos dois caminhos.
+  it('aplicar a forma dá o mesmo resultado, gaste ou não a rodada', () => {
+    const c = combatant({ attack: 20, baseAttack: 20 })
+    const gasta = transformacao({ id: 'ss', attackModifier: 0.5 })
+    const naoGasta = transformacao({ id: 'bankai', attackModifier: 0.5, consumesTurn: false, activationCost: 30 })
+    expect(applyTransformation(c, gasta).attack).toBe(applyTransformation(c, naoGasta).attack)
+  })
+
+  it('o custo de ativação não é cobrado pelo motor — é a action que cobra', () => {
+    // Registrado como teste porque é fácil supor o contrário e cobrar duas vezes.
+    const c = combatant({ currentEnergy: 100 })
+    const forma = transformacao({ attackModifier: 0.2, consumesTurn: false, activationCost: 40 })
+    expect(applyTransformation(c, forma).currentEnergy).toBe(100)
+  })
+})

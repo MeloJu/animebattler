@@ -22,6 +22,24 @@
 // mesmo personagem, e é o que o sync usa para não duplicar.
 
 const transformations = [
+  // ---- Bleach: Bankai, Resurrección e Vollständig ----
+  //
+  // NENHUMA DELAS GASTA A RODADA. Super Saiyan gasta — o Goku para, grita, e
+  // leva porrada enquanto isso. Bankai não: é liberado no meio da troca e o
+  // golpe segue. Por isso consumesTurn é campo e não regra fixa do motor.
+  //
+  // O preço é ENERGIA, cobrada uma vez na ativação. Sem custo nenhum, uma
+  // forma que não gasta a rodada seria ativação obrigatória logo no início e
+  // deixaria de ser decisão — viraria "a partir do nível 12 você é mais
+  // forte", que é aumento de atributo com um clique extra. Com custo, a
+  // pergunta vira QUANDO liberar: agora, e ficar sem energia para o resto da
+  // luta, ou segurar.
+  //
+  // Os modificadores seguem o arquétipo de cada um em vez de um valor único:
+  // a Suì-Fēng ganha ataque enorme e PERDE defesa e velocidade, porque o
+  // Jakuhō Raikōben é um míssil que ela mal consegue carregar; o Komamura
+  // ganha defesa e perde velocidade; o Kenpachi paga com vida.
+
   // ---- Goku ----
   {
     character: 'Goku',
@@ -164,6 +182,443 @@ const transformations = [
     speedModifier: 0.15,
     triggerType: 'LOW_HP',
     triggerPayload: { threshold: 0.3 },
+  },
+  {
+    character: "Ichigo Kurosaki",
+    name: "Bankai: Tensa Zangetsu",
+    levelRequirement: 12,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 34,
+    attackModifier: 0.26,
+    defenseModifier: 0.05,
+    speedModifier: 0.22,
+  },
+  {
+    character: "Rukia Kuchiki",
+    name: "Bankai: Hakka no Togame",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 38,
+    attackModifier: 0.24,
+    defenseModifier: 0.08,
+    speedModifier: 0.14,
+    energyModifier: 0.05,
+    drainPerTurn: 4,
+  },
+  {
+    character: "Byakuya Kuchiki",
+    name: "Bankai: Senbonzakura Kageyoshi",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.28,
+    defenseModifier: 0.04,
+    speedModifier: 0.18,
+  },
+  {
+    character: "Renji Abarai",
+    name: "Bankai: Hihiō Zabimaru",
+    levelRequirement: 12,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 33,
+    attackModifier: 0.27,
+    defenseModifier: 0.1,
+    speedModifier: 0.06,
+  },
+  {
+    character: "Toshiro Hitsugaya",
+    name: "Bankai: Daiguren Hyōrinmaru",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 35,
+    attackModifier: 0.22,
+    defenseModifier: 0.12,
+    speedModifier: 0.2,
+    drainPerTurn: 3,
+  },
+  {
+    character: "Kenpachi Zaraki",
+    name: "Bankai: Nozarashi",
+    levelRequirement: 16,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 40,
+    attackModifier: 0.38,
+    defenseModifier: -0.08,
+    speedModifier: 0.1,
+    drainHpPerTurn: 3,
+  },
+  {
+    character: "Mayuri Kurotsuchi",
+    name: "Bankai: Konjiki Ashisogi Jizō",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 37,
+    attackModifier: 0.24,
+    defenseModifier: 0.06,
+    speedModifier: 0.08,
+    energyModifier: 0.1,
+  },
+  {
+    character: "Retsu Unohana",
+    name: "Bankai: Minazuki",
+    levelRequirement: 15,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 38,
+    attackModifier: 0.26,
+    defenseModifier: 0.1,
+    speedModifier: 0.08,
+    drainHpPerTurn: 2,
+  },
+  {
+    character: "Yamamoto Genryūsai",
+    name: "Bankai: Zanka no Tachi",
+    levelRequirement: 17,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 42,
+    attackModifier: 0.34,
+    defenseModifier: 0.06,
+    speedModifier: 0.08,
+    drainPerTurn: 5,
+    drainHpPerTurn: 3,
+  },
+  {
+    character: "Shunsui Kyōraku",
+    name: "Bankai: Katen Kyōkotsu",
+    levelRequirement: 16,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 39,
+    attackModifier: 0.25,
+    defenseModifier: 0.05,
+    speedModifier: 0.12,
+    energyModifier: 0.08,
+    drainHpPerTurn: 2,
+  },
+  {
+    character: "Suì-Fēng",
+    name: "Bankai: Jakuhō Raikōben",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 40,
+    attackModifier: 0.4,
+    defenseModifier: -0.1,
+    speedModifier: -0.06,
+  },
+  {
+    character: "Sajin Komamura",
+    name: "Bankai: Kokujō Tengen Myō'ō",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.24,
+    defenseModifier: 0.18,
+    speedModifier: -0.04,
+  },
+  {
+    character: "Gin Ichimaru",
+    name: "Bankai: Kamishini no Yari",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.3,
+    defenseModifier: 0.02,
+    speedModifier: 0.2,
+  },
+  {
+    character: "Kisuke Urahara",
+    name: "Bankai: Kannonbiraki Benihime",
+    levelRequirement: 15,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 38,
+    attackModifier: 0.24,
+    defenseModifier: 0.08,
+    speedModifier: 0.12,
+    energyModifier: 0.08,
+  },
+  {
+    character: "Kaname Tosen",
+    name: "Bankai: Enma Kōrogi",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 35,
+    attackModifier: 0.22,
+    defenseModifier: 0.06,
+    speedModifier: 0.22,
+  },
+  {
+    character: "Izuru Kira",
+    name: "Bankai: Shinken Hakkyōken",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 34,
+    attackModifier: 0.26,
+    defenseModifier: 0.06,
+    speedModifier: 0.1,
+  },
+  {
+    character: "Momo Hinamori",
+    name: "Bankai: Tobiume Kaika",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.24,
+    defenseModifier: 0.04,
+    speedModifier: 0.1,
+    energyModifier: 0.1,
+  },
+  {
+    character: "Rangiku Matsumoto",
+    name: "Bankai: Haineko Kaijin",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.24,
+    defenseModifier: 0.06,
+    speedModifier: 0.12,
+    energyModifier: 0.06,
+  },
+  {
+    character: "Jūshirō Ukitake",
+    name: "Bankai: Sōgyo no Kotowari",
+    levelRequirement: 15,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 37,
+    attackModifier: 0.22,
+    defenseModifier: 0.14,
+    speedModifier: 0.08,
+    energyModifier: 0.06,
+  },
+  {
+    character: "Ulquiorra Cifer",
+    name: "Resurrección: Murciélago",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 35,
+    attackModifier: 0.3,
+    defenseModifier: 0.12,
+    speedModifier: 0.14,
+  },
+  {
+    character: "Grimmjow Jaegerjaquez",
+    name: "Resurrección: Pantera",
+    levelRequirement: 12,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 33,
+    attackModifier: 0.32,
+    defenseModifier: 0.04,
+    speedModifier: 0.18,
+  },
+  {
+    character: "Tia Harribel",
+    name: "Resurrección: Tiburón",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 35,
+    attackModifier: 0.24,
+    defenseModifier: 0.16,
+    speedModifier: 0.1,
+  },
+  {
+    character: "Coyote Starrk",
+    name: "Resurrección: Los Lobos",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.26,
+    defenseModifier: 0.06,
+    speedModifier: 0.2,
+  },
+  {
+    character: "Baraggan Luisenbarn",
+    name: "Resurrección: Arrogante",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 38,
+    attackModifier: 0.26,
+    defenseModifier: 0.2,
+    speedModifier: -0.08,
+  },
+  {
+    character: "Nnoitra Gilga",
+    name: "Resurrección: Santa Teresa",
+    levelRequirement: 12,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 33,
+    attackModifier: 0.34,
+    defenseModifier: 0.1,
+    speedModifier: 0.04,
+  },
+  {
+    character: "Zommari Rureaux",
+    name: "Resurrección: Brujería",
+    levelRequirement: 12,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 33,
+    attackModifier: 0.22,
+    defenseModifier: 0.08,
+    speedModifier: 0.24,
+  },
+  {
+    character: "Aaroniero Arruruerie",
+    name: "Resurrección: Glotonería",
+    levelRequirement: 12,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 34,
+    attackModifier: 0.24,
+    defenseModifier: 0.16,
+    speedModifier: 0.02,
+  },
+  {
+    character: "Yammy Llargo",
+    name: "Resurrección: Ira",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.3,
+    defenseModifier: 0.22,
+    speedModifier: -0.1,
+  },
+  {
+    character: "Szayelaporro Granz",
+    name: "Resurrección: Fornicarás",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 35,
+    attackModifier: 0.22,
+    defenseModifier: 0.08,
+    speedModifier: 0.1,
+    energyModifier: 0.12,
+  },
+  {
+    character: "Uryu Ishida",
+    name: "Vollständig: Antthesis",
+    levelRequirement: 14,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 36,
+    attackModifier: 0.26,
+    defenseModifier: 0.14,
+    speedModifier: 0.16,
+  },
+  {
+    character: "Bazz-B",
+    name: "Vollständig: The Heat",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 35,
+    attackModifier: 0.32,
+    defenseModifier: 0.04,
+    speedModifier: 0.14,
+    drainHpPerTurn: 2,
+  },
+  {
+    character: "As Nödt",
+    name: "Vollständig: The Fear",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 35,
+    attackModifier: 0.24,
+    defenseModifier: 0.08,
+    speedModifier: 0.22,
+  },
+  {
+    character: "Yhwach",
+    name: "O Almighty",
+    levelRequirement: 18,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 44,
+    attackModifier: 0.36,
+    defenseModifier: 0.16,
+    speedModifier: 0.16,
+    energyModifier: 0.1,
+  },
+  {
+    character: "Ryuken Ishida",
+    name: "Quincy: Letzt Stil",
+    levelRequirement: 13,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 34,
+    attackModifier: 0.28,
+    defenseModifier: 0.06,
+    speedModifier: 0.12,
+  },
+  {
+    character: "Ichigo Kurosaki",
+    name: "Máscara Hollow",
+    levelRequirement: 6,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 20,
+    attackModifier: 0.2,
+    speedModifier: 0.16,
+    drainPerTurn: 4,
+  },
+  {
+    character: "Chad",
+    name: "Brazo Derecha del Gigante",
+    levelRequirement: 10,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 26,
+    attackModifier: 0.26,
+    defenseModifier: 0.14,
+    speedModifier: -0.04,
+  },
+  {
+    character: "Yoruichi Shihoin",
+    name: "Shunkō",
+    levelRequirement: 12,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 30,
+    attackModifier: 0.2,
+    defenseModifier: 0.04,
+    speedModifier: 0.3,
+    drainPerTurn: 3,
+  },
+  {
+    character: "Sosuke Aizen",
+    name: "Hōgyoku: Fusão",
+    levelRequirement: 16,
+    // Liberada no meio da troca: não gasta a rodada, mas cobra energia.
+    consumesTurn: false,
+    activationCost: 40,
+    attackModifier: 0.3,
+    defenseModifier: 0.18,
+    speedModifier: 0.12,
+    energyModifier: 0.1,
   },
 ];
 

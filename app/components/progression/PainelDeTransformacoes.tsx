@@ -55,7 +55,14 @@ export function PainelDeTransformacoes({
               </span>
             </div>
 
-            <div className="text-xs opacity-70 mt-1">{GATILHO[t.triggerType]}</div>
+            <div className="text-xs opacity-70 mt-1">
+              {GATILHO[t.triggerType]}
+              {/* Se gasta ou não a rodada é a informação que mais muda como se
+                  joga a forma: uma que não gasta pode ser liberada no meio da
+                  troca, outra custa um turno inteiro apanhando. */}
+              {t.consumesTurn ? ' · gasta a rodada' : ' · não gasta a rodada'}
+              {t.activationCost > 0 && ` · custa ${t.activationCost} de energia`}
+            </div>
 
             {modificadores.length > 0 && (
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-1.5 tabular-nums">

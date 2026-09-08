@@ -78,6 +78,22 @@ model Transformation {
   /// vida faz o personagem MORRER. É o custo dos Oito Portões e do Mangekyō,
   /// que na obra cobram o corpo e não o chakra.
   drainHpPerTurn   Int                   @default(0)
+
+  /// Se ativar esta forma gasta a rodada.
+  ///
+  /// Super Saiyan gasta: o Goku para, grita, e leva porrada enquanto isso.
+  /// Bankai não — ele é liberado no meio da troca e o golpe segue. Por isso é
+  /// campo e não regra fixa.
+  consumesTurn     Boolean               @default(true)
+
+  /// Energia cobrada NA ATIVAÇÃO, uma vez.
+  ///
+  /// Existe por causa das formas que não gastam a rodada: sem custo nenhum,
+  /// elas seriam ativação obrigatória na rodada 1 e deixariam de ser decisão
+  /// — viraria "no nível 20 você é mais forte", que é aumento de atributo com
+  /// um clique extra. Com custo, a pergunta passa a ser QUANDO liberar: agora,
+  /// e ficar sem energia para o resto da luta, ou depois.
+  activationCost   Int                   @default(0)
   unlocksSkill     Skill?                @relation("TransformationUnlockSkill", fields: [unlocksSkillId], references: [id])
   unlocksSkillId   String?
   triggerType      TransformationTrigger @default(MANUAL)
