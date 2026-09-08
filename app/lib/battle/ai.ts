@@ -64,14 +64,50 @@ export function escolherLoadoutPadrao(skills: SkillDef[], slots: number): SkillD
  *    losing out to Basic Attack.
  * 4. Otherwise, Basic Attack (null).
  */
-export function pickAiSkill(self: CombatantState, availableSkills: SkillDef[]): string | null {
+export function pickAiSkill(
+  self: CombatantState,
+  availableSkills: SkillDef[],
+  /**
+   * O oponente. Só é consultado para uma decisão — não abrir um domínio que
+   * vai perder o choque —, e é opcional porque sem ele a IA apenas deixa de
+   * fazer essa checagem.
+   */
+  oponente?: CombatantState
+): string | null {
   const legal = availableSkills.filter((s) => isLegalMove(self, s))
   if (legal.length === 0) return null
+
 
   const hpRatio = self.maxHp > 0 ? self.currentHp / self.maxHp : 0
   if (hpRatio < LOW_HP_HEAL_THRESHOLD) {
     const heal = legal.find((s) => s.effects.some((e) => e.type === 'HEAL'))
     if (heal) return heal.id
+  }
+
+  // DOMÍNIO, antes da regra de maior poder — senão a IA nunca abriria um.
+  //
+  // O domínio bate MENOS que os outros golpes de nível 14, porque o valor dele
+  // está no estado: três rodadas de dano amplificado que atravessa escudo e
+  // counter. A regra gulosa abaixo escolhe por poder, então um chefe com
+  // Expansão de Domínio escolheria qualquer outra coisa, sempre — a mecânica
+  // existiria e nunca apareceria em jogo contra a IA.
+  //
+  // Abrir cedo é quase sempre certo, porque a amplificação vale para tudo que
+  // vier depois; a única checagem é não reabrir por cima do próprio domínio,
+  // que jogaria fora as rodadas restantes. Contra um domínio inimigo já aberto
+  // ela também abre: deixar o outro de pé é pior que disputar, mesmo perdendo.
+  if (!self.statusEffects.some((e) => e.type === 'DOMAIN')) {
+    const dominio = legal.find((s) => s.effects.some((e) => e.type === 'DOMAIN'))
+    const dominioInimigo = oponente?.statusEffects.find((e) => e.type === 'DOMAIN' && e.remainingRounds > 0)
+    const minhaForca = dominio?.effects.find((e) => e.type === 'DOMAIN')?.magnitude ?? 0
+
+    // Abrir um domínio mais fraco contra um já aberto é a pior jogada do jogo:
+    // custa a energia, a rodada, e ainda entrega um atordoamento. Aqui a IA
+    // recusa a disputa e luta normalmente, guardando o domínio para quando o
+    // do outro cair. Empate ela aceita — anular os dois tira a amplificação do
+    // oponente, que é um bom negócio para quem estava sem domínio.
+    const disputaPerdida = dominioInimigo !== undefined && minhaForca < dominioInimigo.magnitude
+    if (dominio && !disputaPerdida) return dominio.id
   }
 
   const damageSkills = legal.filter((s) => s.power > 0).sort((a, b) => b.power - a.power || a.energyCost - b.energyCost)

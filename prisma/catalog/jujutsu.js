@@ -17,6 +17,26 @@
 // Domínio (Expansão de Domínio) é sempre o golpe de nível 14: é o ápice da
 // técnica de cada um na obra, e o mais caro do kit.
 
+// O DOMÍNIO É UM ESTADO, NÃO UM GOLPE.
+//
+// As cinco Expansões eram poder alto com recarga alta, e nada mais — a tag
+// `dominio` existia sem fazer efeito. Cada uma agora abre um estado de três
+// rodadas em que os golpes do dono atravessam counter e escudo (o acerto
+// garantido da obra), pago em energia toda rodada.
+//
+// O poder direto caiu de ~50 para ~30 justamente porque o valor mudou de
+// lugar: quem abre não compra um número grande, compra três rodadas em que a
+// defesa do outro não vale. Contra um oponente que não se defende, o domínio
+// vale menos que o golpe antigo — e isso é a intenção, não um efeito
+// colateral: ele é a resposta a quem se esconde atrás de defesa.
+//
+// A MAGNITUDE É A MANUTENÇÃO POR RODADA, e é também a força do domínio no
+// choque contra outro: o mais caro de sustentar é o mais refinado. A ordem
+// segue a obra — Gojo (22) acima de Sukuna (20), depois Mahito (16), Jogo
+// (15) e Megumi (13), cujo Jardim Sombrio é incompleto justamente na obra.
+// Abrir contra um domínio já aberto resolve os dois na hora: o perdedor desaba
+// atordoado, e empate derruba os dois.
+
 const gojo = {
   character: 'Satoru Gojo',
   skills: [
@@ -63,11 +83,11 @@ const gojo = {
     {
       name: 'Expansão de Domínio: Vazio Infinito',
       category: 'OTHER',
-      power: 50,
+      power: 30,
       energyCost: 40,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 1, duration: 1 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 22, duration: 3 }, { type: 'STUN', target: 'ENEMY', magnitude: 1, duration: 1 }],
       level: 14,
     },
   ],
@@ -175,11 +195,11 @@ const megumi = {
     {
       name: 'Expansão de Domínio: Jardim Sombrio',
       category: 'OTHER',
-      power: 48,
+      power: 28,
       energyCost: 39,
       cooldown: 6,
       tags: ['shikigami', 'dominio', 'ultimate'],
-      effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 20, duration: 2 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 13, duration: 3 }, { type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 20, duration: 2 }],
       level: 14,
     },
   ],
@@ -287,11 +307,11 @@ const sukuna = {
     {
       name: 'Expansão de Domínio: Santuário Malévolo',
       category: 'OTHER',
-      power: 54,
+      power: 32,
       energyCost: 40,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 24, duration: 3 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 20, duration: 3 }, { type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 24, duration: 3 }],
       level: 14,
     },
   ],
@@ -343,11 +363,11 @@ const mahito = {
     {
       name: 'Expansão de Domínio: Bairro Autoencarnado',
       category: 'OTHER',
-      power: 49,
+      power: 29,
       energyCost: 39,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 11, duration: 3 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 16, duration: 3 }, { type: 'DOT', target: 'ENEMY', magnitude: 11, duration: 3 }],
       level: 14,
     },
   ],
@@ -399,11 +419,11 @@ const jogo = {
     {
       name: 'Expansão de Domínio: Vulcão Fechado',
       category: 'OTHER',
-      power: 50,
+      power: 30,
       energyCost: 39,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 12, duration: 3 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 15, duration: 3 }, { type: 'DOT', target: 'ENEMY', magnitude: 12, duration: 3 }],
       level: 14,
     },
   ],

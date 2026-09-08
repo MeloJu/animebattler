@@ -35,6 +35,36 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
       </>
     )
   }
+  if (turn.kind === 'DOMAIN_OPEN') {
+    return (
+      <>
+        <span className="font-medium">{actorName}</span> expandiu{' '}
+        <span className="font-medium">{turn.skillName}</span>. Dentro do domínio, os golpes dele acertam.
+      </>
+    )
+  }
+  if (turn.kind === 'DOMAIN_CLASH') {
+    if (turn.skillName === 'Domínios anulados') {
+      return (
+        <>
+          Os dois domínios se encontram e <span className="font-medium">colapsam juntos</span>.
+        </>
+      )
+    }
+    return (
+      <>
+        Domínio contra domínio: o de <span className="font-medium">{actorName}</span> prevalece, e o outro desaba.
+      </>
+    )
+  }
+  if (turn.kind === 'DOMAIN_FALL') {
+    return (
+      <>
+        <span className="font-medium">{turn.skillName}</span> se fechou —{' '}
+        <span className="font-medium">{actorName}</span> não tinha energia para sustentar.
+      </>
+    )
+  }
   if (turn.kind === 'STUNNED') {
     return (
       <>
@@ -58,7 +88,14 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
         <>, mas foi contra-atacado{typeof turn.reflectedDamage === 'number' ? ` e sofreu ${turn.reflectedDamage} de dano refletido` : ''}</>
       )}
       {!turn.countered && typeof turn.damage === 'number' && turn.damage > 0 && (
-        <> e causou {turn.damage} de dano{turn.isCrit ? ' (CRÍTICO)' : ''}</>
+        <>
+          {' '}
+          e causou {turn.damage} de dano{turn.isCrit ? ' (CRÍTICO)' : ''}
+          {/* Sem isto, um golpe que atravessa escudo é indistinguível de um
+              golpe contra alguém sem escudo — some justo a informação que
+              justifica ter aberto o domínio. */}
+          {turn.acertoGarantido && ', ignorando a defesa'}
+        </>
       )}
       {typeof turn.healed === 'number' && turn.healed > 0 && <> e curou {turn.healed} de HP</>}
       {turn.effectsApplied && turn.effectsApplied.length > 0 && (

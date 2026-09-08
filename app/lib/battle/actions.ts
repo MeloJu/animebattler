@@ -387,7 +387,7 @@ export async function takeTurn(battleId: string, skillId: string | null): Promis
   if (!isLegalMove(ctx.state.player, chosenSkill)) redirect(`/battle/ai/${battleId}?error=illegal_move`)
 
   const playerAction: PlayerAction = { kind: 'ATTACK', skillId }
-  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills))
+  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
@@ -452,7 +452,7 @@ export async function activateTransformation(battleId: string, transformationId:
   }
 
   const playerAction: PlayerAction = { kind: 'TRANSFORM', transformationId }
-  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills))
+  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,

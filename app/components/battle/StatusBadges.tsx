@@ -59,6 +59,21 @@ export function StatusBadges({ effects }: { effects: StatusEffectInstance[] }) {
           )
         }
 
+        // O domínio não é um debuff a mais: é um estado que muda as regras
+        // enquanto dura. Misturado aos outros badges ele passaria batido — daí
+        // a borda e o nome próprio da técnica em vez do rótulo genérico.
+        if (e.type === 'DOMAIN') {
+          return (
+            <span
+              key={e.id}
+              title={`${e.sourceSkillName} · os golpes atravessam escudo e counter · ${e.magnitude} de energia por rodada`}
+              className="text-xs rounded-full px-2 py-0.5 font-medium border border-purple-500/60 bg-purple-500/15 text-purple-700 dark:text-purple-300 animate-[respirar_2.4s_ease-in-out_infinite]"
+            >
+              🌌 {e.sourceSkillName} ({e.remainingRounds})
+            </span>
+          )
+        }
+
         return (
           <span key={e.id} title={e.sourceSkillName} className="text-xs rounded-full bg-background-alt px-2 py-0.5">
             {describeEffect(e)} ({e.remainingRounds})

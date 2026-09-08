@@ -64,8 +64,8 @@ export function simulateBattle(jogador: Combatente, inimigo: Combatente, seed: n
 
   let rodadas = 0
   while (state.outcome === null && rodadas < MAX_ROUNDS) {
-    const escolhaJogador = pickAiSkill(state.player, jogador.skills)
-    const escolhaInimigo = pickAiSkill(state.enemy, inimigo.skills)
+    const escolhaJogador = pickAiSkill(state.player, jogador.skills, state.enemy)
+    const escolhaInimigo = pickAiSkill(state.enemy, inimigo.skills, state.player)
 
     const r = resolveRound(
       state,

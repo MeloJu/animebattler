@@ -74,6 +74,24 @@ export const SCALING_REFERENCE: Record<ScalingStat, number> = {
   energy: 123,
 }
 
+/**
+ * Quanto o dano do dono cresce enquanto o domínio dele está aberto.
+ *
+ * A primeira versão do domínio dava só o acerto garantido — atravessar escudo
+ * e counter. Medindo, isso o deixou ESTREITO DEMAIS: contra um oponente que
+ * não se defende ele não valia nada, e como o poder direto tinha caído de ~50
+ * para ~30 para pagar pelo estado, abrir o domínio contra alguém desprotegido
+ * era estritamente pior que bater. O Sukuna chefe do estágio 8 ficou mais
+ * fraco depois da mudança, não mais forte.
+ *
+ * O erro foi de leitura da obra: dentro do próprio domínio a técnica não só
+ * acerta, ela é amplificada — o espaço é do dono. Com +20%, três rodadas
+ * pagam de volta o poder que a habilidade perdeu, e o domínio passa a valer a
+ * pena SEMPRE, com o acerto garantido como o extra que decide as lutas contra
+ * quem se esconde atrás de defesa.
+ */
+export const DOMAIN_DAMAGE_BONUS = 0.2
+
 export const XP_ON_WIN = 25
 export const XP_ON_LOSS = 5
 

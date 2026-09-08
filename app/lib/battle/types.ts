@@ -9,7 +9,20 @@ export type Stat = 'attack' | 'defense' | 'speed'
  * BUFF/DEBUFF e é lida do tamanho da reserva, não do valor atual.
  */
 export type ScalingStat = 'attack' | 'defense' | 'speed' | 'energy'
-export type EffectType = 'BUFF' | 'DEBUFF' | 'DOT' | 'STUN' | 'COUNTER' | 'SHIELD' | 'HEAL' | 'LIFESTEAL'
+/**
+ * DOMINIO e o unico efeito que nao e um numero aplicado ao alvo: e um ESTADO
+ * do lancador que muda as regras enquanto dura. Ver dominioAberto em engine.ts.
+ */
+export type EffectType =
+  | 'BUFF'
+  | 'DEBUFF'
+  | 'DOT'
+  | 'STUN'
+  | 'COUNTER'
+  | 'SHIELD'
+  | 'HEAL'
+  | 'LIFESTEAL'
+  | 'DOMAIN'
 
 // Mechanical definition attached to a Skill (Skill.effects in the DB). A
 // skill can carry several of these alongside its normal power-based damage
@@ -104,7 +117,7 @@ export type AppliedEffect = {
 export type TurnResult = {
   version: 1
   side: Side
-  kind: 'ATTACK' | 'TRANSFORM' | 'SUPPORT' | 'STUNNED' | 'DOT_TICK' | 'CLASH'
+  kind: 'ATTACK' | 'TRANSFORM' | 'SUPPORT' | 'STUNNED' | 'DOT_TICK' | 'CLASH' | 'DOMAIN_OPEN' | 'DOMAIN_CLASH' | 'DOMAIN_FALL'
   /** CLASH: a natureza do choque ('beam', 'espada', 'fisico'). */
   clashTag?: string
   skillId: string | null // null = Basic Attack (synthesized, not a DB row)
@@ -112,6 +125,8 @@ export type TurnResult = {
   transformationId?: string
   damage?: number
   isCrit?: boolean
+  /** ATTACK: o golpe passou por counter/escudo porque o dono tinha dominio aberto. */
+  acertoGarantido?: boolean
   countered?: boolean // true if this attack was negated + reflected by the defender's COUNTER
   reflectedDamage?: number // damage dealt back to the attacker when countered
   healed?: number // self-heal amount (HEAL or LIFESTEAL)

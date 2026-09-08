@@ -13,6 +13,7 @@ const EFFECT_ICON: Record<EffectType, string> = {
   SHIELD: '🛡️',
   HEAL: '💚',
   LIFESTEAL: '🩸',
+  DOMAIN: '🌌',
 }
 
 export function describeEffect(e: EffectLike): string {
@@ -33,6 +34,11 @@ export function describeEffect(e: EffectLike): string {
       return `${EFFECT_ICON.HEAL} Cura ${e.magnitude}`
     case 'LIFESTEAL':
       return `${EFFECT_ICON.LIFESTEAL} Vampirismo ${e.magnitude}%`
+    // A magnitude do domínio é a manutenção por rodada, não dano: dizer só o
+    // número seria enganoso, então o texto diz as duas coisas que importam —
+    // que o golpe passa por defesa e quanto custa manter aberto.
+    case 'DOMAIN':
+      return `${EFFECT_ICON.DOMAIN} Domínio · acerto garantido · ${e.magnitude} EN/rodada`
   }
 }
 

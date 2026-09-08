@@ -144,3 +144,51 @@ describe('escolherLoadoutPadrao', () => {
     expect(escolherLoadoutPadrao([s('a', 10, 10)], 0)).toEqual([])
   })
 })
+
+describe('pickAiSkill e o domínio', () => {
+  const dominio = skill({
+    id: 'dominio',
+    name: 'Expansão de Domínio',
+    power: 30,
+    effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 20, duration: 3 }],
+  })
+  const golpao = skill({ id: 'golpao', power: 45 })
+
+  it('abre o domínio mesmo com um golpe mais forte disponível', () => {
+    // A regra gulosa por poder escolheria 'golpao' e o domínio nunca apareceria
+    // em jogo — o estado vale mais que a diferença de poder de uma rodada.
+    expect(pickAiSkill(eu(), [dominio, golpao])).toBe('dominio')
+  })
+
+  it('com o próprio domínio já aberto, não reabre — reabrir jogaria fora as rodadas restantes', () => {
+    const comDominioAberto = eu({
+      statusEffects: [{ id: 'meu', type: 'DOMAIN', magnitude: 20, remainingRounds: 2, sourceSkillName: 'x' }],
+    })
+    expect(pickAiSkill(comDominioAberto, [dominio, golpao])).toBe('golpao')
+  })
+
+  it('sem energia para o domínio, segue com o que dá para pagar', () => {
+    const caro = skill({ ...dominio, id: 'dominio', energyCost: 90 })
+    expect(pickAiSkill(eu({ currentEnergy: 10 }), [caro, golpao])).toBe('golpao')
+  })
+
+  const comDominioInimigo = (forca: number) =>
+    eu({ statusEffects: [{ id: 'dele', type: 'DOMAIN', magnitude: forca, remainingRounds: 2, sourceSkillName: 'x' }] })
+
+  it('recusa a disputa contra um domínio mais forte — perder o choque custa a rodada e um atordoamento', () => {
+    expect(pickAiSkill(eu(), [dominio, golpao], comDominioInimigo(30))).toBe('golpao')
+  })
+
+  it('aceita a disputa contra um domínio mais fraco', () => {
+    expect(pickAiSkill(eu(), [dominio, golpao], comDominioInimigo(10))).toBe('dominio')
+  })
+
+  it('aceita o empate: anular os dois tira a amplificação de quem já estava com o domínio aberto', () => {
+    expect(pickAiSkill(eu(), [dominio, golpao], comDominioInimigo(20))).toBe('dominio')
+  })
+
+  it('curar continua tendo prioridade sobre abrir o domínio com a vida baixa', () => {
+    const cura = skill({ id: 'cura', power: 0, effects: [{ type: 'HEAL', target: 'SELF', magnitude: 30 }] })
+    expect(pickAiSkill(eu({ currentHp: 20, maxHp: 100 }), [dominio, cura])).toBe('cura')
+  })
+})

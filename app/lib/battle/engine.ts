@@ -7,6 +7,7 @@ import {
   ENERGY_REGEN_PCT,
   STAMINA_REGEN_PCT,
   LEVEL_SCALING,
+  DOMAIN_DAMAGE_BONUS,
   SCALING_BASE,
   SCALING_REFERENCE,
 } from './constants'
@@ -361,7 +362,9 @@ function computeDamage(
   const def = getCombatStat(defender, 'defense')
   const atkSpeed = getCombatStat(attacker, 'speed')
   const defSpeed = getCombatStat(defender, 'speed')
-  const raw = power + scaledBonus(attacker, scalingStat)
+  // Dentro do próprio domínio a técnica é amplificada — ver DOMAIN_DAMAGE_BONUS.
+  const amplificacao = dominioAberto(attacker) ? 1 + DOMAIN_DAMAGE_BONUS : 1
+  const raw = (power + scaledBonus(attacker, scalingStat)) * amplificacao
   const mitigated = raw * (100 / (100 + def))
   const critChance = clamp(
     CRIT_BASE_CHANCE + Math.max(0, atkSpeed - defSpeed) * CRIT_SPEED_COEFFICIENT,
@@ -375,6 +378,37 @@ function computeDamage(
 }
 
 /** Applies damage to a defender, absorbing into an active SHIELD first. Returns the actual HP lost. */
+/**
+ * O DOMÍNIO, e por que ele não é só uma habilidade forte.
+ *
+ * As cinco Expansões de Domínio eram, mecanicamente, indistinguíveis de
+ * qualquer outro ultimate: poder alto, custo alto, recarga 6. A tag `dominio`
+ * existia e não fazia nada. Na ficção o domínio não é um golpe — é um espaço
+ * fechado onde a técnica de quem abriu ACERTA, e é isso que ele passa a ser
+ * aqui.
+ *
+ * Enquanto um combatente tem domínio aberto:
+ *
+ * 1. ACERTO GARANTIDO. Os golpes dele atravessam counter e escudo. É a única
+ *    coisa no jogo que faz isso, e é o que dá ao domínio um lugar próprio:
+ *    contra um oponente escondido atrás de defesa, nenhum número de poder
+ *    resolve — abrir o domínio resolve.
+ *
+ * 2. MANUTENÇÃO. Cobra energia toda rodada (a `magnitude` da instância). Sem
+ *    energia, o domínio cai sozinho. É o que impede "abriu, ganhou": o dono
+ *    tem uma janela, não um estado permanente.
+ *
+ * 3. CHOQUE DE DOMÍNIOS. Abrir o seu contra um já aberto resolve os dois na
+ *    hora. Ganha o de manutenção mais cara — o domínio mais caro de sustentar
+ *    é o mais refinado — e o perdedor desaba atordoado. Empate derruba os
+ *    dois. Note que isto NÃO é o choque de golpes de resolverClash, que exige
+ *    os dois lançarem no mesmo turno e por isso quase nunca dispara: aqui
+ *    basta um domínio estar aberto quando o outro abre, que é situação comum.
+ */
+function dominioAberto(c: CombatantState): StatusEffectInstance | undefined {
+  return c.statusEffects.find((e) => e.type === 'DOMAIN' && e.remainingRounds > 0)
+}
+
 function applyDamageWithShield(target: CombatantState, amount: number): { target: CombatantState; actualDamage: number } {
   const hpBefore = target.currentHp
   const shieldIdx = target.statusEffects.findIndex((e) => e.type === 'SHIELD' && e.remainingRounds > 0)
@@ -429,7 +463,7 @@ function applySkillEffects(
   skillName: string,
   scalingStat: ScalingStat,
   skillTags: string[]
-): { user: CombatantState; target: CombatantState; applied: AppliedEffect[]; healed: number } {
+): { user: CombatantState; target: CombatantState; applied: AppliedEffect[]; healed: number; eventos: TurnResult[] } {
   // CURA e ESCUDO escalam junto com dano, senão um suporte que investe no
   // próprio atributo continua curando o mesmo tanto do nível 1 ao 40 — que
   // era exatamente o caso antes: magnitude era número fixo.
@@ -441,7 +475,9 @@ function applySkillEffects(
   let newUser = user
   let newTarget = target
   const applied: AppliedEffect[] = []
+  const eventos: TurnResult[] = []
   let healed = 0
+  const ladoOposto: Side = side === 'PLAYER' ? 'ENEMY' : 'PLAYER'
 
   for (const effect of effects) {
     const targetSide: Side = effect.target === 'SELF' ? side : side === 'PLAYER' ? 'ENEMY' : 'PLAYER'
@@ -452,6 +488,55 @@ function applySkillEffects(
       newUser = { ...newUser, currentHp: newUser.currentHp + amount }
       healed += amount
       applied.push({ type: 'HEAL', target: side, magnitude: total })
+      continue
+    }
+
+    // DOMÍNIO: estado do lançador, e a única aplicação que pode ser recusada
+    // — o domínio do oponente disputa com o seu. Ver dominioAberto.
+    if (effect.type === 'DOMAIN') {
+      const meu: StatusEffectInstance = {
+        id: makeEffectId(),
+        type: 'DOMAIN',
+        magnitude: effect.magnitude,
+        remainingRounds: effect.duration ?? 3,
+        sourceSkillName: skillName,
+      }
+      const dele = dominioAberto(newTarget)
+
+      if (dele) {
+        const atordoar = (c: CombatantState): CombatantState => ({
+          ...c,
+          statusEffects: [
+            ...c.statusEffects.filter((e) => e.type !== 'DOMAIN'),
+            { id: makeEffectId(), type: 'STUN', magnitude: 1, remainingRounds: 1, sourceSkillName: skillName },
+          ],
+        })
+        const vencedor = meu.magnitude > dele.magnitude ? side : dele.magnitude > meu.magnitude ? ladoOposto : null
+
+        if (vencedor === side) {
+          newTarget = atordoar(newTarget)
+          newUser = { ...newUser, statusEffects: [...newUser.statusEffects.filter((e) => e.type !== 'DOMAIN'), meu] }
+        } else if (vencedor === ladoOposto) {
+          newUser = atordoar(newUser)
+        } else {
+          // Domínios equivalentes se anulam e derrubam os dois donos.
+          newUser = atordoar(newUser)
+          newTarget = atordoar(newTarget)
+        }
+
+        eventos.push({
+          version: 1,
+          side: vencedor ?? side,
+          kind: 'DOMAIN_CLASH',
+          skillId: null,
+          skillName: vencedor === null ? 'Domínios anulados' : skillName,
+        })
+        continue
+      }
+
+      newUser = { ...newUser, statusEffects: [...newUser.statusEffects.filter((e) => e.type !== 'DOMAIN'), meu] }
+      eventos.push({ version: 1, side, kind: 'DOMAIN_OPEN', skillId: null, skillName })
+      applied.push({ type: 'DOMAIN', target: side, magnitude: meu.magnitude, duration: meu.remainingRounds })
       continue
     }
 
@@ -481,7 +566,13 @@ function applySkillEffects(
     applied.push({ type: effect.type, target: targetSide, stat: effect.stat, magnitude: instance.magnitude, duration: effect.duration })
   }
 
-  return { user: newUser, target: newTarget, applied, healed }
+  return { user: newUser, target: newTarget, applied, healed, eventos }
+}
+
+/** Dano que ignora escudo — ver dominioAberto. */
+function aplicarDanoDireto(target: CombatantState, amount: number): { target: CombatantState; actualDamage: number } {
+  const currentHp = Math.max(0, target.currentHp - amount)
+  return { target: { ...target, currentHp }, actualDamage: target.currentHp - currentHp }
 }
 
 function performSkillUse(
@@ -490,7 +581,7 @@ function performSkillUse(
   defender: CombatantState,
   skill: SkillDef | null,
   rand: () => number
-): { attacker: CombatantState; defender: CombatantState; turnResult: TurnResult } {
+): { attacker: CombatantState; defender: CombatantState; turnResult: TurnResult; eventos: TurnResult[] } {
   const power = skill ? skill.power : BASIC_ATTACK_POWER
   const energyCost = skill ? energyCostFor(attacker, skill.energyCost) : 0
   const effects = skill ? skill.effects : []
@@ -517,9 +608,14 @@ function performSkillUse(
   let targetHpAfter: number | undefined
   let healed = 0
 
+  // Dentro do próprio domínio a técnica acerta: counter e escudo não valem.
+  const acertoGarantido = dominioAberto(newAttacker) !== undefined
+
   if (power > 0) {
     targetHpBefore = newDefender.currentHp
-    const counterIdx = newDefender.statusEffects.findIndex((e) => e.type === 'COUNTER' && e.remainingRounds > 0)
+    const counterIdx = acertoGarantido
+      ? -1
+      : newDefender.statusEffects.findIndex((e) => e.type === 'COUNTER' && e.remainingRounds > 0)
     const computed = computeDamage(newAttacker, newDefender, power, scalingStat, rand)
 
     if (counterIdx !== -1) {
@@ -531,7 +627,9 @@ function performSkillUse(
       damage = 0
       targetHpAfter = newDefender.currentHp
     } else {
-      const applied = applyDamageWithShield(newDefender, computed.damage)
+      const applied = acertoGarantido
+        ? aplicarDanoDireto(newDefender, computed.damage)
+        : applyDamageWithShield(newDefender, computed.damage)
       newDefender = applied.target
       damage = computed.damage
       isCrit = computed.isCrit
@@ -562,6 +660,7 @@ function performSkillUse(
     skillName: skill?.name ?? 'Ataque Básico',
     damage,
     isCrit,
+    acertoGarantido: acertoGarantido && power > 0 ? true : undefined,
     countered: countered || undefined,
     reflectedDamage,
     healed: healed > 0 ? healed : undefined,
@@ -571,7 +670,7 @@ function performSkillUse(
     effectsApplied: supportResult.applied.length > 0 ? supportResult.applied : undefined,
   }
 
-  return { attacker: newAttacker, defender: newDefender, turnResult }
+  return { attacker: newAttacker, defender: newDefender, turnResult, eventos: supportResult.eventos }
 }
 
 function regenEnergy(c: CombatantState): CombatantState {
@@ -583,6 +682,26 @@ function regenEnergy(c: CombatantState): CombatantState {
     currentEnergy: Math.min(c.maxEnergy, c.currentEnergy + regen),
     currentStamina: stamina,
   }
+}
+
+/**
+ * Cobra a manutenção do domínio aberto, e o derruba se não houver com que pagar.
+ *
+ * É o que separa o domínio de um buff permanente: quem abre tem uma janela
+ * paga em energia, não um estado de graça. Roda depois da regeneração, para
+ * que a regeneração possa custear a rodada.
+ */
+function manterDominio(side: Side, c: CombatantState): { combatant: CombatantState; results: TurnResult[] } {
+  const dominio = dominioAberto(c)
+  if (!dominio) return { combatant: c, results: [] }
+
+  if (c.currentEnergy < dominio.magnitude) {
+    return {
+      combatant: { ...c, statusEffects: c.statusEffects.filter((e) => e !== dominio) },
+      results: [{ version: 1, side, kind: 'DOMAIN_FALL', skillId: null, skillName: dominio.sourceSkillName }],
+    }
+  }
+  return { combatant: { ...c, currentEnergy: c.currentEnergy - dominio.magnitude }, results: [] }
 }
 
 function tickCooldowns(c: CombatantState): CombatantState {
@@ -831,6 +950,13 @@ export function resolveRound(
   // 1. Start of round: energy regen, cooldown tick, DOT tick + status-duration tick (both sides)
   player = tickCooldowns(regenEnergy(player))
   enemy = tickCooldowns(regenEnergy(enemy))
+  const dominioJogador = manterDominio('PLAYER', player)
+  player = dominioJogador.combatant
+  turnResults.push(...dominioJogador.results)
+  const dominioInimigo = manterDominio('ENEMY', enemy)
+  enemy = dominioInimigo.combatant
+  turnResults.push(...dominioInimigo.results)
+
   const playerUpkeep = tickStatusEffects('PLAYER', player)
   player = playerUpkeep.combatant
   turnResults.push(...playerUpkeep.results)
@@ -918,7 +1044,7 @@ export function resolveRound(
       const result = performSkillUse('PLAYER', player, enemy, skill, rand)
       player = result.attacker
       enemy = result.defender
-      turnResults.push(result.turnResult)
+      turnResults.push(result.turnResult, ...result.eventos)
 
       // Being countered costs the player HP too (reflected damage) — check the same trigger.
       const selfDamageTaken = hpBefore - player.currentHp
@@ -939,7 +1065,7 @@ export function resolveRound(
       const result = performSkillUse('ENEMY', enemy, player, skill, rand)
       enemy = result.attacker
       player = result.defender
-      turnResults.push(result.turnResult)
+      turnResults.push(result.turnResult, ...result.eventos)
 
       if (player.currentHp > 0) {
         const damageAuto = maybeAutoTransform(player, ctx.playerTransformations, ['ON_DAMAGE_TAKEN'], result.turnResult.damage ?? 0)
