@@ -28,6 +28,13 @@ COPY . .
 # runtime, vinda do .env da VM.
 ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 ENV NEXT_TELEMETRY_DISABLED=1
+# O commit precisa existir TAMBEM aqui, e nao so no runner: o Next pode
+# substituir `process.env.GIT_SHA` por valor literal durante o build, e nesse
+# caso a variavel do estagio final chegaria tarde demais. Fica depois do
+# `npm ci` do estagio deps para nao invalidar o cache das dependencias — a
+# camada de build ja muda a cada commit de qualquer forma.
+ARG GIT_SHA=desconhecido
+ENV GIT_SHA=$GIT_SHA
 RUN npm run build
 # O cache do bundler mora dentro de .next e não tem uso nenhum em runtime —
 # são centenas de MB a menos na imagem final.

@@ -166,21 +166,6 @@ jobs:
               sleep 5
             done
 
-            # Confere que o container respondendo é REALMENTE o commit que este
-            # job publicou. O healthcheck acima só prova que algo saudável está
-            # de pé — se a VM tivesse puxado uma imagem velha do cache, ou se o
-            # compose tivesse mantido o container anterior, ele passaria igual.
-            #
-            # Esta era a lacuna que fazia "a mudança não apareceu" ser uma
-            # pergunta sem resposta: deploy pendente, cache do navegador e bug
-            # de verdade se pareciam.
-            no_ar=$(docker compose -f docker-compose.prod.yml exec -T app wget -qO- http://localhost:3000/api/health | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-            if [ "$no_ar" != "$IMAGE_TAG" ]; then
-              echo "✖ versão no ar ($no_ar) não é a publicada ($IMAGE_TAG)"
-              exit 1
-            fi
-            echo "✔ versão confirmada no ar: $no_ar"
-
             # Catálogo entra DEPOIS do app estar healthy, e não antes: ele fala
             # com o banco pelo container do app, que só existe quando o
             # `prisma migrate deploy` do CMD já terminou. Rodar antes pegaria o
@@ -195,6 +180,34 @@ jobs:
             # seguidas imprime "catálogo já está em dia" na segunda.
             echo "Sincronizando catálogo..."
             docker compose -f docker-compose.prod.yml exec -T app npm run catalog:sync
+
+            # A VERIFICAÇÃO É A ÚLTIMA COISA, e a ordem foi aprendida errando:
+            # ela ficava antes do catalog:sync, então quando falhava impedia a
+            # sincronização de rodar — deixando código novo com conteúdo velho,
+            # que é exatamente o problema que aquele passo existe para evitar.
+            #
+            # Verificar é asserção, não etapa: tudo o que o deploy precisa fazer
+            # acontece primeiro, e só então se confere se deu certo.
+            # Confere que o container respondendo é REALMENTE o commit que este
+            # job publicou. O healthcheck acima só prova que algo saudável está
+            # de pé — se a VM tivesse puxado uma imagem velha do cache, ou se o
+            # compose tivesse mantido o container anterior, ele passaria igual.
+            #
+            # Esta era a lacuna que fazia "a mudança não apareceu" ser uma
+            # pergunta sem resposta: deploy pendente, cache do navegador e bug
+            # de verdade se pareciam.
+            #
+            # 127.0.0.1 e NÃO `localhost`, pela mesma razão já documentada no
+            # healthcheck do docker-compose.prod.yml: no Alpine/musl o
+            # `localhost` resolve para ::1 primeiro e o Next escuta só em IPv4,
+            # então o wget leva "connection refused" com a aplicação de pé. A
+            # primeira versão deste passo caiu exatamente nessa armadilha.
+            no_ar=$(docker compose -f docker-compose.prod.yml exec -T app wget -qO- http://127.0.0.1:3000/api/health | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+            if [ "$no_ar" != "$IMAGE_TAG" ]; then
+              echo "✖ versão no ar ($no_ar) não é a publicada ($IMAGE_TAG)"
+              exit 1
+            fi
+            echo "✔ versão confirmada no ar: $no_ar"
 
             # Imagens antigas acumulam a cada deploy e enchem o disco da VM.
             docker image prune -f
