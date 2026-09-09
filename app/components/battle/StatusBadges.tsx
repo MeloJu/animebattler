@@ -61,7 +61,7 @@ export function StatusBadges({ effects }: { effects: StatusEffectInstance[] }) {
           return (
             <span
               key={e.id}
-              title={`${e.sourceSkillName} · os golpes atravessam escudo e counter · ${e.magnitude} de energia por rodada`}
+              title={`${e.sourceSkillName} · os golpes atravessam escudo e counter · ${e.magnitude} de energia e stamina por rodada`}
               className="text-xs rounded-full px-2 py-0.5 font-medium border border-purple-500/60 bg-purple-500/15 text-purple-700 dark:text-purple-300 animate-[respirar_2.4s_ease-in-out_infinite]"
             >
               🌌 {e.sourceSkillName} ({e.remainingRounds})

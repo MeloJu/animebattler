@@ -724,6 +724,13 @@ function applySkillEffects(
           skillId: null,
           skillName: vencedor === null ? 'Domínios anulados' : skillName,
         })
+
+        // O DOMÍNIO SÓ ABRIU SE VENCEU O CHOQUE. Perdendo ou empatando, os
+        // efeitos que vinham junto — debuff no adversário, o "up" de defesa em
+        // si mesmo — não têm o que aplicar: a técnica nunca chegou a existir.
+        // `break` e não `continue`, porque precisa parar de processar o RESTO
+        // do array de efeitos desta habilidade, não só pular este.
+        if (vencedor !== side) break
         continue
       }
 
@@ -1057,13 +1064,33 @@ function manterDominio(side: Side, c: CombatantState): { combatant: CombatantSta
   const dominio = dominioAberto(c)
   if (!dominio) return { combatant: c, results: [] }
 
-  if (c.currentEnergy < dominio.magnitude) {
+  // AS DUAS RESERVAS, não só energia. Um domínio aberto não é só cursed
+  // energy sustentada — é a presença inteira de quem abriu expandida sobre o
+  // espaço, e falta de fôlego (stamina) derruba tanto quanto falta de
+  // energia. Falhando em qualquer uma das duas, o domínio cai.
+  const semEnergia = c.currentEnergy < dominio.magnitude
+  const semStamina = (c.currentStamina ?? 0) < dominio.magnitude
+  if (semEnergia || semStamina) {
     return {
-      combatant: { ...c, statusEffects: c.statusEffects.filter((e) => e !== dominio) },
+      combatant: {
+        ...c,
+        // O "up" que o domínio concede cai junto: ele é a espinha do estado,
+        // não um buff avulso que sobrevive à queda do espaço que o sustenta.
+        statusEffects: c.statusEffects.filter(
+          (e) => e !== dominio && !(e.type === 'BUFF' && e.sourceSkillName === dominio.sourceSkillName)
+        ),
+      },
       results: [{ version: 1, side, kind: 'DOMAIN_FALL', skillId: null, skillName: dominio.sourceSkillName }],
     }
   }
-  return { combatant: { ...c, currentEnergy: c.currentEnergy - dominio.magnitude }, results: [] }
+  return {
+    combatant: {
+      ...c,
+      currentEnergy: c.currentEnergy - dominio.magnitude,
+      currentStamina: Math.max(0, (c.currentStamina ?? 0) - dominio.magnitude),
+    },
+    results: [],
+  }
 }
 
 function tickCooldowns(c: CombatantState): CombatantState {

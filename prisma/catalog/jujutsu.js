@@ -17,25 +17,44 @@
 // Domínio (Expansão de Domínio) é sempre o golpe de nível 14: é o ápice da
 // técnica de cada um na obra, e o mais caro do kit.
 
-// O DOMÍNIO É UM ESTADO, NÃO UM GOLPE.
+// O DOMÍNIO É UM ESTADO, NÃO UM GOLPE — E É A TRANSFORMAÇÃO DELES.
 //
 // As cinco Expansões eram poder alto com recarga alta, e nada mais — a tag
 // `dominio` existia sem fazer efeito. Cada uma agora abre um estado de três
 // rodadas em que os golpes do dono atravessam counter e escudo (o acerto
-// garantido da obra), pago em energia toda rodada.
+// garantido da obra) e são amplificados (ver DOMAIN_DAMAGE_BONUS), pago em
+// ENERGIA E STAMINA toda rodada — as duas reservas, porque sustentar um
+// domínio não é só cursed energy: é a presença inteira de quem abriu
+// expandida sobre o espaço, e falta de fôlego derruba tanto quanto falta de
+// energia.
+//
+// NENHUM PERSONAGEM DE JUJUTSU TEM TRANSFORMAÇÃO, e a decisão foi não
+// construir uma — o domínio já é o estado de poder à parte de cada um, só que
+// como HABILIDADE em vez de como registro em outra tabela. Ele ganhou o que
+// faltava para cumprir esse papel: um "up" de verdade. Cada domínio também
+// concede um BUFF de defesa em si mesmo, na MESMA magnitude da manutenção —
+// o número que custa por rodada é o mesmo que protege por rodada, então
+// quanto mais caro o domínio, mais seguro ficar dentro dele.
 //
 // O poder direto caiu de ~50 para ~30 justamente porque o valor mudou de
 // lugar: quem abre não compra um número grande, compra três rodadas em que a
-// defesa do outro não vale. Contra um oponente que não se defende, o domínio
-// vale menos que o golpe antigo — e isso é a intenção, não um efeito
-// colateral: ele é a resposta a quem se esconde atrás de defesa.
+// defesa do outro não vale, a própria fica mais sólida, e os golpes saem
+// ampliados. Contra um oponente que não se defende, o domínio vale menos que
+// o golpe antigo — e isso é a intenção, não um efeito colateral: ele é a
+// resposta a quem se esconde atrás de defesa.
 //
-// A MAGNITUDE É A MANUTENÇÃO POR RODADA, e é também a força do domínio no
-// choque contra outro: o mais caro de sustentar é o mais refinado. A ordem
-// segue a obra — Gojo (22) acima de Sukuna (20), depois Mahito (16), Jogo
-// (15) e Megumi (13), cujo Jardim Sombrio é incompleto justamente na obra.
+// A MAGNITUDE É A MANUTENÇÃO POR RODADA — de energia E de stamina — e é
+// também a força do domínio no choque contra outro E o tanto de defesa que
+// ele concede: o mais caro de sustentar é o mais refinado, e o mais seguro
+// para quem está dentro. A ordem segue a obra — Gojo (22) acima de Sukuna
+// (20), depois Mahito (16), Jogo (15) e Megumi (13), cujo Jardim Sombrio é
+// incompleto justamente na obra.
+//
 // Abrir contra um domínio já aberto resolve os dois na hora: o perdedor desaba
-// atordoado, e empate derruba os dois.
+// atordoado, e empate derruba os dois. PERDENDO OU EMPATANDO O CHOQUE, o
+// domínio nunca abriu — o debuff que cada um carrega e o buff de defesa não
+// se aplicam; só o atordoamento acontece. Antes disto ser corrigido, o debuff
+// (e agora o buff) vazava mesmo quando a técnica não chegava a existir.
 
 const gojo = {
   character: 'Satoru Gojo',
@@ -87,7 +106,7 @@ const gojo = {
       energyCost: 40,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 22, duration: 3 }, { type: 'STUN', target: 'ENEMY', magnitude: 1, duration: 1 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 22, duration: 3 }, { type: 'STUN', target: 'ENEMY', magnitude: 1, duration: 1 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 22, duration: 3 }],
       level: 14,
     },
   ],
@@ -199,7 +218,7 @@ const megumi = {
       energyCost: 39,
       cooldown: 6,
       tags: ['shikigami', 'dominio', 'ultimate'],
-      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 13, duration: 3 }, { type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 20, duration: 2 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 13, duration: 3 }, { type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 20, duration: 2 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 13, duration: 3 }],
       level: 14,
     },
   ],
@@ -311,7 +330,7 @@ const sukuna = {
       energyCost: 40,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 20, duration: 3 }, { type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 24, duration: 3 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 20, duration: 3 }, { type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 24, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 20, duration: 3 }],
       level: 14,
     },
   ],
@@ -367,7 +386,7 @@ const mahito = {
       energyCost: 39,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 16, duration: 3 }, { type: 'DOT', target: 'ENEMY', magnitude: 11, duration: 3 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 16, duration: 3 }, { type: 'DOT', target: 'ENEMY', magnitude: 11, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 16, duration: 3 }],
       level: 14,
     },
   ],
@@ -423,7 +442,7 @@ const jogo = {
       energyCost: 39,
       cooldown: 6,
       tags: ['maldicao', 'dominio', 'ultimate'],
-      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 15, duration: 3 }, { type: 'DOT', target: 'ENEMY', magnitude: 12, duration: 3 }],
+      effects: [{ type: 'DOMAIN', target: 'SELF', magnitude: 15, duration: 3 }, { type: 'DOT', target: 'ENEMY', magnitude: 12, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 }],
       level: 14,
     },
   ],

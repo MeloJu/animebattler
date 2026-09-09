@@ -63,7 +63,7 @@ export function describeEffect(e: EffectLike): string {
     // número seria enganoso, então o texto diz as duas coisas que importam —
     // que o golpe passa por defesa e quanto custa manter aberto.
     case 'DOMAIN':
-      return `${EFFECT_ICON.DOMAIN} Domínio · acerto garantido · ${e.magnitude} EN/rodada`
+      return `${EFFECT_ICON.DOMAIN} Domínio · acerto garantido · ${e.magnitude} EN e ST/rodada`
     case 'REVIVE':
       return `${EFFECT_ICON.REVIVE} Traz um aliado caído de volta com ${e.magnitude}% da vida`
   }
