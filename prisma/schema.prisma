@@ -552,7 +552,18 @@ model Turn {
   id        String    @id @default(cuid())
   battle    Battle    @relation(fields: [battleId], references: [id])
   battleId  String
+  /// Ordem GLOBAL da acao dentro da batalha. Nao e a rodada: uma rodada
+  /// produz de duas a cinco linhas aqui.
   number    Int
+  /// A rodada a que esta acao pertence, para o historico poder agrupar.
+  ///
+  /// Sem ela o log era uma lista corrida em que nao dava para ver onde uma
+  /// rodada acabava e a outra comecava — o jogador via cinco frases seguidas
+  /// sem saber quais delas foram consequencia do clique que ele acabou de dar.
+  ///
+  /// 0 significa "gravado antes desta coluna existir": batalhas antigas
+  /// aparecem sem agrupamento, em vez de todas juntas numa rodada falsa.
+  round     Int       @default(0)
   actor     ActorSide
   skill     Skill?    @relation(fields: [skillId], references: [id])
   skillId   String?

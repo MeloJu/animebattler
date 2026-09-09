@@ -159,6 +159,9 @@ async function persistRound(
         data: {
           battleId,
           number: actionNumber++,
+          // A rodada que ACABOU de ser resolvida, não a próxima: o battle já
+          // foi atualizado para nextTurnNumber acima.
+          round: expectedTurnNumber,
           actor: result.side,
           skillId: result.skillId,
           result: result as unknown as Prisma.InputJsonValue,

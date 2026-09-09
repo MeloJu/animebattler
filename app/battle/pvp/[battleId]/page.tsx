@@ -7,7 +7,7 @@ import { getEquippedSkills } from '@/app/lib/battle/queries'
 import { isLegalMove } from '@/app/lib/battle/engine'
 import { battleErrorMessage, descreverEfeitosDaHabilidade } from '@/app/lib/battle/presentation'
 import { FighterCard } from '@/app/components/battle/FighterCard'
-import { TurnLogEntry } from '@/app/components/battle/TurnLogEntry'
+import { HistoricoDeBatalha } from '@/app/components/battle/HistoricoDeBatalha'
 import { LiveBattleSync } from '@/app/components/pvp/LiveBattleSync'
 import type { TurnResult } from '@/app/lib/battle/types'
 
@@ -112,23 +112,13 @@ export default async function PvpArenaPage({
             </div>
           )}
 
-          <div className="card p-4">
-            <h2 className="heading text-sm mb-2">Histórico</h2>
-            <ul className="space-y-1 text-sm max-h-72 overflow-y-auto">
-              {turns.length === 0 && <li className="text-muted">Nenhuma ação ainda.</li>}
-              {turns.map((turn) => (
-                <li key={turn.id} className="text-muted">
-                  {/* O log é gravado na perspectiva do motor (host = player);
-                      os nomes são passados na mesma ordem pra bater. */}
-                  <TurnLogEntry
-                    turn={turn.result as unknown as TurnResult}
-                    playerName={view.isHost ? me.userCharacter.nickname : foe.userCharacter.nickname}
-                    enemyName={view.isHost ? foe.userCharacter.nickname : me.userCharacter.nickname}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* O log é gravado na perspectiva do motor (host = player); os nomes
+              são passados na mesma ordem pra bater. */}
+          <HistoricoDeBatalha
+            turns={turns.map((t) => ({ id: t.id, round: t.round, result: t.result as unknown as TurnResult }))}
+            playerName={view.isHost ? me.userCharacter.nickname : foe.userCharacter.nickname}
+            enemyName={view.isHost ? foe.userCharacter.nickname : me.userCharacter.nickname}
+          />
 
           {isActive && !me.submitted && (
             <div className="card p-4 space-y-3">

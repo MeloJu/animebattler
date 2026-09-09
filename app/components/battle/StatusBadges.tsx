@@ -24,10 +24,13 @@ const ANIMACAO: Record<DotFlavor, string> = {
 const CLASSE_GENERICA = 'bg-background-alt'
 
 export function StatusBadges({ effects }: { effects: StatusEffectInstance[] }) {
-  if (effects.length === 0) return null
-
+  // NÃO devolve null quando vazio, e o espaço é reservado de propósito: sem
+  // isto o card cresce no instante em que o primeiro efeito aparece, e empurra
+  // para baixo tudo o que vem depois — inclusive a barra de ações, cujo botão
+  // some de debaixo do cursor no meio da luta. Uma faixa vazia de uma linha
+  // custa 28 pixels e compra uma tela que não se mexe.
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1 min-h-7 content-start">
       {effects.map((e) => {
         const dot =
           e.type === 'DOT'

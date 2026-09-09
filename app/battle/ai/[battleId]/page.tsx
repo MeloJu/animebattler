@@ -9,7 +9,7 @@ import { battleErrorMessage } from '@/app/lib/battle/presentation'
 import { FighterCard } from '@/app/components/battle/FighterCard'
 import { BotaoDeForma } from '@/app/components/battle/BotaoDeForma'
 import { BotaoDeHabilidade } from '@/app/components/battle/BotaoDeHabilidade'
-import { TurnLogEntry } from '@/app/components/battle/TurnLogEntry'
+import { HistoricoDeBatalha } from '@/app/components/battle/HistoricoDeBatalha'
 import { BotaoDeBloqueio } from '@/app/components/battle/BotaoDeBloqueio'
 import { custoDeErguerGuarda } from '@/app/lib/battle/engine'
 import type { BattleState, TurnResult } from '@/app/lib/battle/types'
@@ -132,20 +132,11 @@ export default async function BattleArenaPage({
           )}
         </div>
 
-        <div className="card p-4">
-          <h2 className="font-semibold mb-2">Histórico</h2>
-          {/* Mais baixo do que era: agora é a altura do histórico que decide a
-              que distância da dobra a barra de ações começa. O log é
-              referência, não é onde a rodada se decide. */}
-          <ul className="space-y-1 text-sm max-h-80 overflow-y-auto">
-            {turns.length === 0 && <li className="opacity-60">Nenhuma ação ainda.</li>}
-            {turns.map((turn) => (
-              <li key={turn.id} className="opacity-80">
-                <TurnLogEntry turn={turn.result as unknown as TurnResult} playerName={userCharacter.nickname} enemyName={enemy.name} />
-              </li>
-            ))}
-          </ul>
-        </div>
+        <HistoricoDeBatalha
+          turns={turns.map((t) => ({ id: t.id, round: t.round, result: t.result as unknown as TurnResult }))}
+          playerName={userCharacter.nickname}
+          enemyName={enemy.name}
+        />
 
         <FighterCard name={enemy.name} imageUrl={enemy.imageUrl} combatant={state.enemy} />
       </div>

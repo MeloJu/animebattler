@@ -246,7 +246,14 @@ async function maybeResolveRound(battleId: string): Promise<void> {
     let n = existing + 1
     for (const r of turnResults) {
       await tx.turn.create({
-        data: { battleId, number: n++, actor: r.side, skillId: r.skillId, result: r as unknown as Prisma.InputJsonValue },
+        data: {
+          battleId,
+          number: n++,
+          round: battle.turnNumber,
+          actor: r.side,
+          skillId: r.skillId,
+          result: r as unknown as Prisma.InputJsonValue,
+        },
       })
     }
 
