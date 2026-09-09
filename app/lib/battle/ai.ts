@@ -53,21 +53,66 @@ export function danoEsperado(skill: SkillDef): number {
  * É determinístico de propósito: o estado da batalha é gravado como snapshot
  * na criação, então a mesma entrada tem que dar sempre o mesmo loadout.
  */
+/**
+ * Quanto uma habilidade PROTEGE quem a usa, para desempatar habilidades de
+ * dano esperado igual — o caso comum sendo várias de poder 0 competindo pelo
+ * mesmo slot.
+ *
+ * POR QUE ISTO EXISTE: o desempate era só "a mais barata vence", e isso trata
+ * energia como se fosse o único eixo de valor. Não é — cura e escudo mantêm
+ * quem os usa vivo, e um debuff de 6% de velocidade no adversário não faz
+ * nada sozinho, sem um ataque no mesmo loadout para aproveitar a vantagem.
+ *
+ * MEDIDO NA UNOHANA: no nível 2 ela tem seis habilidades elegíveis para
+ * quatro slots. Pelo custo puro, o loadout escolhia Bakudō #1: Sai (debuff de
+ * velocidade, e9) e Calm Composure (buff de defesa, e16) — E DEIXAVA DE FORA
+ * Healing Touch (cura, e20) e Minazuki: Mist Balm (escudo, e18), suas duas
+ * ferramentas de sobrevivência. Ela chegava no estágio 2 sem cura e sem
+ * escudo, e perdia 0% das vezes. Rangiku e Ukitake têm o mesmo problema
+ * escondido: perdem a própria defesa para o `guarda firme` de sempre, e não
+ * sentem porque têm golpe suficiente para não precisar do slot.
+ *
+ * A ordem escolhida — cura/escudo/counter primeiro, buff depois, debuff por
+ * último — segue o que cada efeito faz por SI MESMO: os três primeiros
+ * mantêm o lançador na luta sozinhos; buff em si mesmo rende só com o resto
+ * do kit; debuff no adversário não rende NADA sozinho.
+ */
+function valorDeProtecao(skill: SkillDef): number {
+  const tipos = new Set(skill.effects.map((e) => e.type))
+  if (tipos.has('HEAL') || tipos.has('SHIELD') || tipos.has('COUNTER')) return 2
+  if (tipos.has('BUFF')) return 1
+  return 0
+}
+
 export function escolherLoadoutPadrao(skills: SkillDef[], slots: number): SkillDef[] {
   if (slots <= 0) return []
   if (skills.length <= slots) return skills
 
   // Desempate por id mantém a ordem estável quando poder e custo empatam.
+  // valorDeProtecao entra ENTRE dano esperado e custo: primeiro quem bate
+  // mais forte, depois quem protege melhor, só então quem é mais barato.
   const porPoder = [...skills].sort(
-    (a, b) => danoEsperado(b) - danoEsperado(a) || a.energyCost - b.energyCost || a.id.localeCompare(b.id)
+    (a, b) =>
+      danoEsperado(b) - danoEsperado(a) ||
+      valorDeProtecao(b) - valorDeProtecao(a) ||
+      a.energyCost - b.energyCost ||
+      a.id.localeCompare(b.id)
   )
   const escolhidas = porPoder.slice(0, slots)
 
-  const maisBarata = [...skills].sort(
-    (a, b) => a.energyCost - b.energyCost || danoEsperado(b) - danoEsperado(a) || a.id.localeCompare(b.id)
-  )[0]
-  if (!escolhidas.some((s) => s.id === maisBarata.id)) {
-    escolhidas[escolhidas.length - 1] = maisBarata
+  // SÓ ENTRE HABILIDADES DE ATAQUE, e isso não é um recorte novo — é o que o
+  // comentário desta garantia sempre disse: "senão o turno pós-cooldown vira
+  // ataque básico" é sobre ter uma OFENSIVA barata disponível, nunca foi sobre
+  // ter uma utilitária barata. Antes de restringir, a garantia varria toda
+  // habilidade por custo, e podia empurrar para fora um buff ou uma cura
+  // razoável em troca de um debuff quase inofensivo só por ele custar menos —
+  // o mesmo defeito de "mais barato vence" que valorDeProtecao corrige acima,
+  // só que escapando por esta segunda porta.
+  const maisBarataOfensiva = [...skills]
+    .filter((sk) => sk.power > 0)
+    .sort((a, b) => a.energyCost - b.energyCost || danoEsperado(b) - danoEsperado(a) || a.id.localeCompare(b.id))[0]
+  if (maisBarataOfensiva && !escolhidas.some((s) => s.id === maisBarataOfensiva.id)) {
+    escolhidas[escolhidas.length - 1] = maisBarataOfensiva
   }
   return escolhidas
 }

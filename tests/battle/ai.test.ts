@@ -143,6 +143,60 @@ describe('escolherLoadoutPadrao', () => {
   it('sem slot nenhum, devolve vazio', () => {
     expect(escolherLoadoutPadrao([s('a', 10, 10)], 0)).toEqual([])
   })
+
+  // A Unohana chegava no estágio 2 da história sem cura nem escudo: entre
+  // habilidades de poder 0, o desempate era só "a mais barata vence", e uma
+  // habilidade que protege quem a usa perdia para um debuff quase inofensivo
+  // só por custar mais energia. 0% de vitória, medido.
+  describe('entre habilidades de poder igual, protege antes de ser barato', () => {
+    const cura = skill({ id: 'cura', power: 0, energyCost: 20, effects: [{ type: 'HEAL', target: 'SELF', magnitude: 25 }] })
+    const escudo = skill({ id: 'escudo', power: 0, energyCost: 18, effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 32 }] })
+    const bufe = skill({
+      id: 'buff',
+      power: 0,
+      energyCost: 16,
+      effects: [{ type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 20 }],
+    })
+    const debuffBarato = skill({
+      id: 'debuff',
+      power: 0,
+      energyCost: 10,
+      effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'speed', magnitude: 6 }],
+    })
+    const golpe = skill({ id: 'golpe', power: 7, energyCost: 9 })
+
+    it('cura vence um debuff mais barato — é o caso real da Unohana no nível 2', () => {
+      const r = escolherLoadoutPadrao([golpe, cura, bufe, debuffBarato], 2).map((x) => x.id)
+      expect(r).toEqual(['golpe', 'cura'])
+    })
+
+    it('escudo também vence o debuff barato', () => {
+      const r = escolherLoadoutPadrao([golpe, escudo, debuffBarato], 2).map((x) => x.id)
+      expect(r).toContain('escudo')
+      expect(r).not.toContain('debuff')
+    })
+
+    it('entre cura e escudo, os dois protegem igual: desempata por custo', () => {
+      const r = escolherLoadoutPadrao([cura, escudo], 1).map((x) => x.id)
+      expect(r).toEqual(['escudo']) // escudo custa 18, cura custa 20
+    })
+
+    it('buff em si mesmo vence o debuff, mas perde para cura e escudo', () => {
+      const r = escolherLoadoutPadrao([cura, escudo, bufe, debuffBarato], 3).map((x) => x.id)
+      expect(r).toEqual(['escudo', 'cura', 'buff'])
+    })
+
+    it('sem nenhuma protetora disputando, o mais barato ainda desempata', () => {
+      const outroDebuff = skill({
+        id: 'debuff2',
+        power: 0,
+        energyCost: 20,
+        effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 10 }],
+      })
+      const r = escolherLoadoutPadrao([debuffBarato, outroDebuff], 1).map((x) => x.id)
+      expect(r).toEqual(['debuff'])
+    })
+  })
 })
 
 describe('pickAiSkill e o domínio', () => {
