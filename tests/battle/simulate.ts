@@ -1,4 +1,4 @@
-import { createInitialState, resolveRound } from '@/app/lib/battle/engine'
+import { createInitialState, heroi, resolveRound, vilao } from '@/app/lib/battle/engine'
 import { deveBloquear, pickAiSkill } from '@/app/lib/battle/ai'
 import { MAX_ROUNDS } from '@/app/lib/battle/constants'
 import type { BaseStats, Outcome, SkillDef } from '@/app/lib/battle/types'
@@ -64,10 +64,10 @@ export function simulateBattle(jogador: Combatente, inimigo: Combatente, seed: n
 
   let rodadas = 0
   while (state.outcome === null && rodadas < MAX_ROUNDS) {
-    const jogadorBloqueia = deveBloquear(state.player, jogador.skills)
-    const inimigoBloqueia = deveBloquear(state.enemy, inimigo.skills)
-    const escolhaJogador = pickAiSkill(state.player, jogador.skills, state.enemy)
-    const escolhaInimigo = pickAiSkill(state.enemy, inimigo.skills, state.player)
+    const jogadorBloqueia = deveBloquear(heroi(state), jogador.skills)
+    const inimigoBloqueia = deveBloquear(vilao(state), inimigo.skills)
+    const escolhaJogador = pickAiSkill(heroi(state), jogador.skills, vilao(state))
+    const escolhaInimigo = pickAiSkill(vilao(state), inimigo.skills, heroi(state))
 
     const r = resolveRound(
       state,
@@ -85,12 +85,12 @@ export function simulateBattle(jogador: Combatente, inimigo: Combatente, seed: n
   // Mesmo desempate por HP que persistRound aplica ao estourar MAX_ROUNDS.
   let outcome = state.outcome
   if (outcome === null) {
-    const pj = state.player.currentHp / state.player.maxHp
-    const pi = state.enemy.currentHp / state.enemy.maxHp
+    const pj = heroi(state).currentHp / heroi(state).maxHp
+    const pi = vilao(state).currentHp / vilao(state).maxHp
     outcome = Math.abs(pj - pi) < 0.001 ? 'DRAW' : pj > pi ? 'PLAYER_WIN' : 'ENEMY_WIN'
   }
 
-  return { outcome, rodadas, hpJogador: state.player.currentHp, hpInimigo: state.enemy.currentHp }
+  return { outcome, rodadas, hpJogador: heroi(state).currentHp, hpInimigo: vilao(state).currentHp }
 }
 
 /** Fração de vitórias do jogador em `amostras` batalhas de sementes distintas. */

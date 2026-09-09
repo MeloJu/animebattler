@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vitest'
 import {
   applyBossOverrides,
   applyTraits,
+  comHeroi,
   createInitialState,
   evasaoContra,
-  resolverAcerto,
+  heroi,
   resolveRound,
+  resolverAcerto,
+  vilao,
 } from '@/app/lib/battle/engine'
 import { ACERTO_MINIMO, ATRIBUTO_NEUTRO, EVASAO_MAXIMA } from '@/app/lib/battle/constants'
 import { custoDoTreino, descontoDeInteligencia, treinosQueCabem } from '@/app/lib/progression/treino'
@@ -43,7 +46,7 @@ const skill = (over: Partial<SkillDef> = {}): SkillDef => ({
 })
 
 const lutador = (over: Partial<CombatantState> = {}): CombatantState => ({
-  ...createInitialState(stats(), stats()).player,
+  ...heroi(createInitialState(stats(), stats())),
   ...over,
 })
 
@@ -124,7 +127,7 @@ describe('o golpe errado, na rodada', () => {
     const r = golpe(stats(), stats(), impreciso, () => 0.99)
     const ataque = r.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!
     expect(ataque.errou).toBe(true)
-    expect(r.state.enemy.currentHp).toBe(200)
+    expect(vilao(r.state).currentHp).toBe(200)
   })
 
   it('não entrega efeito no alvo, pelo mesmo motivo do counter: não encostou', () => {
@@ -133,7 +136,7 @@ describe('o golpe errado, na rodada', () => {
       effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 9, duration: 3 }],
     })
     const r = golpe(stats(), stats(), comVeneno, () => 0.99)
-    expect(r.state.enemy.statusEffects).toHaveLength(0)
+    expect(vilao(r.state).statusEffects).toHaveLength(0)
   })
 
   it('mas o efeito em si mesmo continua valendo — o lançador agiu', () => {
@@ -142,26 +145,22 @@ describe('o golpe errado, na rodada', () => {
       effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 2 }],
     })
     const r = golpe(stats(), stats(), comBuff, () => 0.99)
-    expect(r.state.player.statusEffects.some((e) => e.type === 'BUFF')).toBe(true)
+    expect(heroi(r.state).statusEffects.some((e) => e.type === 'BUFF')).toBe(true)
   })
 
   it('custa a energia e a recarga do mesmo jeito — errar é o risco, não um desconto', () => {
     const r = golpe(stats(), stats(), skill({ precision: 1, cooldown: 3 }), () => 0.99)
-    expect(r.state.player.currentEnergy).toBeLessThan(200)
-    expect(r.state.player.cooldowns['sk-1']).toBe(3)
+    expect(heroi(r.state).currentEnergy).toBeLessThan(200)
+    expect(heroi(r.state).cooldowns['sk-1']).toBe(3)
   })
 
   it('o acerto garantido do domínio vence a esquiva também', () => {
     const s = createInitialState(stats(), stats({ }))
-    const comDominio = {
-      ...s,
-      player: {
-        ...s.player,
+    const comDominio = comHeroi(s, {
         statusEffects: [
           { id: 'd', type: 'DOMAIN' as const, magnitude: 5, remainingRounds: 3, sourceSkillName: 'Vazio' },
         ],
-      },
-    }
+    })
     const r = resolveRound(
       comDominio,
       { playerAction: { kind: 'ATTACK', skillId: impreciso.id }, enemyAction: { skillId: null } },
@@ -170,13 +169,13 @@ describe('o golpe errado, na rodada', () => {
     )
     const ataque = r.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!
     expect(ataque.errou).toBeUndefined()
-    expect(r.state.enemy.currentHp).toBeLessThan(200)
+    expect(vilao(r.state).currentHp).toBeLessThan(200)
   })
 
   it('habilidade sem precisão declarada nunca erra — o catálogo inteiro segue igual', () => {
     const r = golpe(stats(), stats(), skill(), () => 0.999999)
     expect(r.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!.errou).toBeUndefined()
-    expect(r.state.enemy.currentHp).toBeLessThan(200)
+    expect(vilao(r.state).currentHp).toBeLessThan(200)
   })
 })
 

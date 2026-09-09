@@ -6,13 +6,22 @@ import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { computeFighterStats, createInitialState, isLegalMove, resolveRound, sumStatBonuses } from '@/app/lib/battle/engine'
+import {
+  computeFighterStats,
+  createInitialState,
+  heroi,
+  isLegalMove,
+  migrarEstado,
+  resolveRound,
+  sumStatBonuses,
+  vilao,
+} from '@/app/lib/battle/engine'
 import { getEquippedSkills, getTreeBonus } from '@/app/lib/battle/queries'
 import { getEquipmentBonus } from '@/app/lib/equipment/queries'
 import { applyExperience } from '@/app/lib/battle/leveling'
 import { MAX_ROUNDS, PVP_LEVEL_RANGE, XP_ON_LOSS, XP_ON_WIN } from '@/app/lib/battle/constants'
 import { publishPvpEvent } from './events'
-import type { BattleState, PlayerAction, TurnResult } from '@/app/lib/battle/types'
+import type { BattleState, PlayerAction, TurnResult, BattleStateGravado} from '@/app/lib/battle/types'
 
 /**
  * Entra na fila e, se já houver alguém esperando, pareia na hora.
@@ -159,8 +168,8 @@ export async function submitPvpAction(battleId: string, skillId: string | null):
   if (!battle) redirect('/battle/pvp?error=not_found')
 
   const isHost = battle.userId === user.id
-  const state = battle.state as unknown as BattleState
-  const myCombatant = isHost ? state.player : state.enemy
+  const state = migrarEstado(battle.state as unknown as BattleStateGravado)
+  const myCombatant = isHost ? heroi(state) : vilao(state)
   const myCharacterId = isHost ? battle.playerCharacterId : battle.opponentCharacterId!
 
   const mySkills = await getEquippedSkills(myCharacterId)
@@ -203,7 +212,7 @@ async function maybeResolveRound(battleId: string): Promise<void> {
     getEquippedSkills(battle.opponentCharacterId!),
   ])
 
-  const state = battle.state as unknown as BattleState
+  const state = migrarEstado(battle.state as unknown as BattleStateGravado)
   const hostAction = battle.pendingHostAction as unknown as PlayerAction
   const guestAction = battle.pendingOpponentAction as unknown as { skillId: string | null }
 
@@ -274,8 +283,8 @@ async function maybeResolveRound(battleId: string): Promise<void> {
 }
 
 function decideByHp(state: BattleState) {
-  const p = state.player.maxHp > 0 ? state.player.currentHp / state.player.maxHp : 0
-  const e = state.enemy.maxHp > 0 ? state.enemy.currentHp / state.enemy.maxHp : 0
+  const p = heroi(state).maxHp > 0 ? heroi(state).currentHp / heroi(state).maxHp : 0
+  const e = vilao(state).maxHp > 0 ? vilao(state).currentHp / vilao(state).maxHp : 0
   if (Math.abs(p - e) < 0.001) return 'DRAW' as const
   return p > e ? ('PLAYER_WIN' as const) : ('ENEMY_WIN' as const)
 }
@@ -319,7 +328,7 @@ export async function forfeitPvpBattle(battleId: string): Promise<void> {
   if (!battle) redirect('/battle/pvp')
 
   const isHost = battle.userId === user.id
-  const state = battle.state as unknown as BattleState
+  const state = migrarEstado(battle.state as unknown as BattleStateGravado)
   const finalState: BattleState = { ...state, outcome: isHost ? 'ENEMY_WIN' : 'PLAYER_WIN' }
 
   await prisma.$transaction(async (tx) => {

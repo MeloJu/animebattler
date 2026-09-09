@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createInitialState, resolveRound } from '@/app/lib/battle/engine'
+import { comHeroi, comVilao, createInitialState, heroi, resolveRound, vilao } from '@/app/lib/battle/engine'
 import type { BaseStats, CombatantState, SkillDef, StatusEffectInstance } from '@/app/lib/battle/types'
 
 /**
@@ -77,8 +77,8 @@ describe('abertura do domínio', () => {
     const s = createInitialState(stats(), stats())
     const r = jogadorUsa(s, dominio('d-1', 'Vazio Infinito', 22))
 
-    expect(dominioAtivo(r.state.player)).toMatchObject({ magnitude: 22, remainingRounds: 3 })
-    expect(dominioAtivo(r.state.enemy)).toBeUndefined()
+    expect(dominioAtivo(heroi(r.state))).toMatchObject({ magnitude: 22, remainingRounds: 3 })
+    expect(dominioAtivo(vilao(r.state))).toBeUndefined()
     expect(r.turnResults.some((t) => t.kind === 'DOMAIN_OPEN' && t.side === 'PLAYER')).toBe(true)
   })
 
@@ -87,49 +87,37 @@ describe('abertura do domínio', () => {
     const primeiro = jogadorUsa(s, dominio('d-1', 'Vazio Infinito', 22))
     const segundo = jogadorUsa(primeiro.state, dominio('d-2', 'Outro Domínio', 15))
 
-    expect(segundo.state.player.statusEffects.filter((e) => e.type === 'DOMAIN')).toHaveLength(1)
-    expect(dominioAtivo(segundo.state.player)!.magnitude).toBe(15)
+    expect(heroi(segundo.state).statusEffects.filter((e) => e.type === 'DOMAIN')).toHaveLength(1)
+    expect(dominioAtivo(heroi(segundo.state))!.magnitude).toBe(15)
   })
 })
 
 describe('acerto garantido', () => {
   it('o golpe atravessa o escudo do oponente', () => {
     const base = createInitialState(stats(), stats())
-    const comEscudo = {
-      ...base,
-      enemy: { ...base.enemy, statusEffects: [efeitoDe('SHIELD', { magnitude: 500 })] },
-    }
+    const comEscudo = comVilao(base, { statusEffects: [efeitoDe('SHIELD', { magnitude: 500 })] })
 
     const semDominio = jogadorUsa(comEscudo, skill())
-    expect(semDominio.state.enemy.currentHp).toBe(200)
+    expect(vilao(semDominio.state).currentHp).toBe(200)
 
-    const comDominio = {
-      ...comEscudo,
-      player: { ...comEscudo.player, statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] },
-    }
+    const comDominio = comHeroi(comEscudo, { statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] })
     const r = jogadorUsa(comDominio, skill())
-    expect(r.state.enemy.currentHp).toBeLessThan(200)
+    expect(vilao(r.state).currentHp).toBeLessThan(200)
     expect(r.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!.acertoGarantido).toBe(true)
   })
 
   it('o golpe não é refletido pelo counter do oponente', () => {
     const base = createInitialState(stats(), stats())
-    const comCounter = {
-      ...base,
-      enemy: { ...base.enemy, statusEffects: [efeitoDe('COUNTER', { magnitude: 100 })] },
-    }
+    const comCounter = comVilao(base, { statusEffects: [efeitoDe('COUNTER', { magnitude: 100 })] })
 
     const semDominio = jogadorUsa(comCounter, skill())
     expect(semDominio.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!.countered).toBe(true)
-    expect(semDominio.state.player.currentHp).toBeLessThan(200)
+    expect(heroi(semDominio.state).currentHp).toBeLessThan(200)
 
-    const comDominio = {
-      ...comCounter,
-      player: { ...comCounter.player, statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] },
-    }
+    const comDominio = comHeroi(comCounter, { statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] })
     const r = jogadorUsa(comDominio, skill())
     expect(r.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!.countered).toBeUndefined()
-    expect(r.state.enemy.currentHp).toBeLessThan(200)
+    expect(vilao(r.state).currentHp).toBeLessThan(200)
   })
 
   it('amplifica o dano em 20% mesmo contra um oponente sem defesa', () => {
@@ -140,7 +128,7 @@ describe('acerto garantido', () => {
     const base = createInitialState(stats(), stats())
     const semDominio = jogadorUsa(base, skill())
     const comDominio = jogadorUsa(
-      { ...base, player: { ...base.player, statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] } },
+      comHeroi(base, { statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] }),
       skill()
     )
     const dSem = semDominio.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!.damage!
@@ -155,25 +143,19 @@ describe('acerto garantido', () => {
 describe('manutenção', () => {
   it('cobra energia por rodada de quem mantém aberto', () => {
     const base = createInitialState(stats(), stats())
-    const comDominio = {
-      ...base,
-      player: { ...base.player, currentEnergy: 100, statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] },
-    }
+    const comDominio = comHeroi(base, { currentEnergy: 100, statusEffects: [efeitoDe('DOMAIN', { magnitude: 20 })] })
     const r = jogadorUsa(comDominio, skill({ energyCost: 0 }))
 
     // 100 + 16 de regeneração (8% de 200) − 20 de manutenção.
-    expect(r.state.player.currentEnergy).toBe(96)
+    expect(heroi(r.state).currentEnergy).toBe(96)
   })
 
   it('o domínio cai quando não há energia para sustentar', () => {
     const base = createInitialState(stats(), stats())
-    const semGas = {
-      ...base,
-      player: { ...base.player, currentEnergy: 0, statusEffects: [efeitoDe('DOMAIN', { magnitude: 90 })] },
-    }
+    const semGas = comHeroi(base, { currentEnergy: 0, statusEffects: [efeitoDe('DOMAIN', { magnitude: 90 })] })
     const r = jogadorUsa(semGas, skill({ energyCost: 0 }))
 
-    expect(dominioAtivo(r.state.player)).toBeUndefined()
+    expect(dominioAtivo(heroi(r.state))).toBeUndefined()
     expect(r.turnResults.some((t) => t.kind === 'DOMAIN_FALL' && t.side === 'PLAYER')).toBe(true)
   })
 
@@ -181,43 +163,40 @@ describe('manutenção', () => {
     const base = createInitialState(stats(), stats())
     let s = jogadorUsa(base, dominio('d-1', 'Vazio Infinito', 5)).state
     for (let i = 0; i < 3; i++) s = jogadorUsa(s, skill({ energyCost: 0 })).state
-    expect(dominioAtivo(s.player)).toBeUndefined()
+    expect(dominioAtivo(heroi(s))).toBeUndefined()
   })
 })
 
 describe('choque de domínios', () => {
   const abrirNoInimigo = (manutencao: number) => {
     const base = createInitialState(stats(), stats())
-    return {
-      ...base,
-      enemy: { ...base.enemy, statusEffects: [efeitoDe('DOMAIN', { magnitude: manutencao })] },
-    }
+    return comVilao(base, { statusEffects: [efeitoDe('DOMAIN', { magnitude: manutencao })] })
   }
 
   it('o domínio de manutenção mais cara vence e atordoa o outro', () => {
     const r = jogadorUsa(abrirNoInimigo(13), dominio('d-1', 'Vazio Infinito', 22))
 
-    expect(dominioAtivo(r.state.player)!.magnitude).toBe(22)
-    expect(dominioAtivo(r.state.enemy)).toBeUndefined()
-    expect(r.state.enemy.statusEffects.some((e) => e.type === 'STUN')).toBe(true)
+    expect(dominioAtivo(heroi(r.state))!.magnitude).toBe(22)
+    expect(dominioAtivo(vilao(r.state))).toBeUndefined()
+    expect(vilao(r.state).statusEffects.some((e) => e.type === 'STUN')).toBe(true)
     expect(r.turnResults.some((t) => t.kind === 'DOMAIN_CLASH' && t.side === 'PLAYER')).toBe(true)
   })
 
   it('abrir um domínio mais fraco custa a rodada: o seu nem chega a abrir', () => {
     const r = jogadorUsa(abrirNoInimigo(22), dominio('d-1', 'Jardim Sombrio', 13))
 
-    expect(dominioAtivo(r.state.player)).toBeUndefined()
-    expect(dominioAtivo(r.state.enemy)!.magnitude).toBe(22)
-    expect(r.state.player.statusEffects.some((e) => e.type === 'STUN')).toBe(true)
+    expect(dominioAtivo(heroi(r.state))).toBeUndefined()
+    expect(dominioAtivo(vilao(r.state))!.magnitude).toBe(22)
+    expect(heroi(r.state).statusEffects.some((e) => e.type === 'STUN')).toBe(true)
   })
 
   it('domínios equivalentes se anulam e derrubam os dois donos', () => {
     const r = jogadorUsa(abrirNoInimigo(20), dominio('d-1', 'Santuário Malévolo', 20))
 
-    expect(dominioAtivo(r.state.player)).toBeUndefined()
-    expect(dominioAtivo(r.state.enemy)).toBeUndefined()
-    expect(r.state.player.statusEffects.some((e) => e.type === 'STUN')).toBe(true)
-    expect(r.state.enemy.statusEffects.some((e) => e.type === 'STUN')).toBe(true)
+    expect(dominioAtivo(heroi(r.state))).toBeUndefined()
+    expect(dominioAtivo(vilao(r.state))).toBeUndefined()
+    expect(heroi(r.state).statusEffects.some((e) => e.type === 'STUN')).toBe(true)
+    expect(vilao(r.state).statusEffects.some((e) => e.type === 'STUN')).toBe(true)
     expect(r.turnResults.some((t) => t.kind === 'DOMAIN_CLASH' && t.skillName === 'Domínios anulados')).toBe(true)
   })
 })

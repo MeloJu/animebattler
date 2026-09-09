@@ -1,5 +1,6 @@
+import { heroi, migrarEstado, vilao } from '@/app/lib/battle/engine'
 import { prisma } from '@/app/lib/prisma'
-import type { BattleState } from '@/app/lib/battle/types'
+import type { BattleStateGravado } from '@/app/lib/battle/types'
 
 /** Quem está na fila agora (para a tela do lobby). */
 export async function getQueueStatus(userId: string) {
@@ -56,7 +57,7 @@ export async function getPvpBattleView(battleId: string, userId: string) {
   if (!battle || !battle.opponentCharacter || !battle.opponentUser) return null
 
   const isHost = battle.userId === userId
-  const state = battle.state as unknown as BattleState
+  const state = migrarEstado(battle.state as unknown as BattleStateGravado)
 
   return {
     battle,
@@ -66,13 +67,13 @@ export async function getPvpBattleView(battleId: string, userId: string) {
       userId: isHost ? battle.userId : battle.opponentUserId!,
       username: isHost ? battle.user.username : battle.opponentUser.username,
       userCharacter: isHost ? battle.playerCharacter : battle.opponentCharacter,
-      combatant: isHost ? state.player : state.enemy,
+      combatant: isHost ? heroi(state) : vilao(state),
       submitted: isHost ? battle.pendingHostAction !== null : battle.pendingOpponentAction !== null,
     },
     foe: {
       username: isHost ? battle.opponentUser.username : battle.user.username,
       userCharacter: isHost ? battle.opponentCharacter : battle.playerCharacter,
-      combatant: isHost ? state.enemy : state.player,
+      combatant: isHost ? vilao(state) : heroi(state),
       submitted: isHost ? battle.pendingOpponentAction !== null : battle.pendingHostAction !== null,
     },
     state,

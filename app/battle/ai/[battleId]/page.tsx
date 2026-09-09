@@ -11,7 +11,7 @@ import { BotaoDeForma } from '@/app/components/battle/BotaoDeForma'
 import { BotaoDeHabilidade } from '@/app/components/battle/BotaoDeHabilidade'
 import { HistoricoDeBatalha } from '@/app/components/battle/HistoricoDeBatalha'
 import { BotaoDeBloqueio } from '@/app/components/battle/BotaoDeBloqueio'
-import { custoDeErguerGuarda } from '@/app/lib/battle/engine'
+import { custoDeErguerGuarda, heroi, vilao } from '@/app/lib/battle/engine'
 import type { BattleState, TurnResult } from '@/app/lib/battle/types'
 
 export default async function BattleArenaPage({
@@ -58,8 +58,13 @@ export default async function BattleArenaPage({
   )
 
   const availableTransformations = Object.values(playerTransformations).filter(
-    (t) => t.triggerType === 'MANUAL' && !state.player.activeTransformationId
+    (t) => t.triggerType === 'MANUAL' && !heroi(state).activeTransformationId
   )
+
+  const idDaFormaAtiva = heroi(state).activeTransformationId
+
+  const formaAtivaDoJogador = idDaFormaAtiva ? playerTransformations[idDaFormaAtiva] : undefined
+
 
   return (
     <main className="mx-auto max-w-6xl p-6 space-y-6">
@@ -116,8 +121,8 @@ export default async function BattleArenaPage({
             name={userCharacter.nickname}
             imageUrl={userCharacter.character.imageUrl}
             levelBadge={userCharacter.level}
-            transformationName={state.player.activeTransformationId ? playerTransformations[state.player.activeTransformationId]?.name : undefined}
-            combatant={state.player}
+            transformationName={formaAtivaDoJogador?.name}
+            combatant={heroi(state)}
           />
 
           {isActive && availableTransformations.length > 0 && (
@@ -125,7 +130,7 @@ export default async function BattleArenaPage({
               <h2 className="text-xs uppercase tracking-wide opacity-45">Formas</h2>
               {availableTransformations.map((t) => (
                 <form key={t.id} action={activateTransformation.bind(null, battleId, t.id)}>
-                  <BotaoDeForma forma={t} energiaAtual={state.player.currentEnergy} />
+                  <BotaoDeForma forma={t} energiaAtual={heroi(state).currentEnergy} />
                 </form>
               ))}
             </div>
@@ -138,7 +143,7 @@ export default async function BattleArenaPage({
           enemyName={enemy.name}
         />
 
-        <FighterCard name={enemy.name} imageUrl={enemy.imageUrl} combatant={state.enemy} />
+        <FighterCard name={enemy.name} imageUrl={enemy.imageUrl} combatant={vilao(state)} />
       </div>
 
       {/* AS AÇÕES OCUPAM A LARGURA INTEIRA, e não a coluna do meio.
@@ -166,11 +171,11 @@ export default async function BattleArenaPage({
             </form>
             {Object.values(playerSkills).map((skill) => (
               <form key={skill.id} action={takeTurn.bind(null, battleId, skill.id)} className="h-full">
-                <BotaoDeHabilidade skill={skill} combatente={state.player} />
+                <BotaoDeHabilidade skill={skill} combatente={heroi(state)} />
               </form>
             ))}
             <form action={blockTurn.bind(null, battleId)} className="h-full">
-              <BotaoDeBloqueio combatente={state.player} custo={custoDeErguerGuarda(state.player)} />
+              <BotaoDeBloqueio combatente={heroi(state)} custo={custoDeErguerGuarda(heroi(state))} />
             </form>
           </div>
         </div>

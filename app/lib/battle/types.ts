@@ -74,6 +74,16 @@ export type DotFlavor =
 // these fields — they're read live off statusEffects via getCombatStat()
 // so expiry never requires "undoing" arithmetic.
 export type CombatantState = {
+  /**
+   * Identidade dentro da batalha, para acao e alvo poderem apontar para um
+   * combatente especifico quando ha mais de um por lado.
+   *
+   * Opcionais porque batalha em andamento foi gravada antes deles existirem —
+   * num 1x1 o lado ja identifica sozinho quem e quem, entao a ausencia nao
+   * atrapalha nada.
+   */
+  id?: string
+  nome?: string
   currentHp: number
   maxHp: number
   baseMaxHp: number
@@ -112,12 +122,46 @@ export type CombatantState = {
   statusEffects: StatusEffectInstance[]
 }
 
+/**
+ * O estado de uma batalha: DOIS TIMES, nao dois combatentes.
+ *
+ * A forma antiga era `{ player, enemy }`, e ela decidia sozinha que toda luta
+ * do jogo tem exatamente duas pessoas. Raid, invocacao e combate em time
+ * esbarravam todos na mesma parede, e nenhum deles cabia sem mudar isto
+ * primeiro.
+ *
+ * O INDICE 0 DE CADA LADO E O PRINCIPAL: `aliados[0]` e o personagem do
+ * jogador, `inimigos[0]` e quem a tela mostra como o adversario. Um 1x1 e o
+ * caso degenerado de um array de um elemento, entao a mecanica inteira
+ * continua valendo sem ramo especial.
+ *
+ * O lado a que alguem pertence e IMPLICITO no array em que ele esta. Marcar
+ * cada combatente com um campo `side` seria a mesma informacao guardada duas
+ * vezes, com a chance de as duas discordarem.
+ */
 export type BattleState = {
+  version: 2
+  aliados: CombatantState[]
+  inimigos: CombatantState[]
+  outcome: Outcome
+}
+
+/**
+ * A forma anterior, ainda gravada nas batalhas em andamento.
+ *
+ * Nao e codigo morto: o estado vive como snapshot JSON na coluna `state` da
+ * tabela Battle, entao toda luta comecada antes desta mudanca continua neste
+ * formato ate terminar. Ver migrarEstado.
+ */
+export type BattleStateV1 = {
   version: 1
   player: CombatantState
   enemy: CombatantState
   outcome: Outcome
 }
+
+/** O que sai do banco: pode ser qualquer uma das duas formas. */
+export type BattleStateGravado = BattleState | BattleStateV1
 
 export type AppliedEffect = {
   type: EffectType

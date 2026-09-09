@@ -1,25 +1,29 @@
 import { describe, it, expect } from 'vitest'
 import {
-  computeBaseStats,
-  createInitialState,
-  scaleForLevel,
-  hasBattleValue,
-  isLegalMove,
-  getCombatStat,
-  isStunned,
-  applyTransformation,
-  resolveRound,
-  sumStatBonuses,
-  computeFighterStats,
+  SEM_BONUS,
   applyBossOverrides,
   applyTraits,
-  energyCostFor,
-  traitEnergyCostModifier,
+  applyTransformation,
+  comHeroi,
+  computeBaseStats,
+  computeFighterStats,
+  createInitialState,
   custaStamina,
-  tagDeClash,
+  energyCostFor,
+  getCombatStat,
+  hasBattleValue,
+  heroi,
+  isLegalMove,
+  isStunned,
+  migrarEstado,
+  resolveRound,
   resolverClash,
   saborDoDot,
-  SEM_BONUS,
+  scaleForLevel,
+  sumStatBonuses,
+  tagDeClash,
+  traitEnergyCostModifier,
+  vilao,
 } from '@/app/lib/battle/engine'
 import type {
   AppliedEffect,
@@ -48,7 +52,7 @@ const stats = (over: Partial<BaseStats> = {}): BaseStats => ({
 })
 
 function combatant(over: Partial<CombatantState> = {}): CombatantState {
-  const base = createInitialState(stats(), stats()).player
+  const base = heroi(createInitialState(stats(), stats()))
   return { ...base, ...over }
 }
 
@@ -121,19 +125,19 @@ describe('computeBaseStats', () => {
 describe('createInitialState', () => {
   it('começa com HP e energia cheios, sem transformação nem efeitos', () => {
     const s = createInitialState(stats(), stats({ hp: 200 }))
-    expect(s.player.currentHp).toBe(100)
-    expect(s.player.maxHp).toBe(100)
-    expect(s.player.currentEnergy).toBe(100)
-    expect(s.player.activeTransformationId).toBeNull()
-    expect(s.player.statusEffects).toEqual([])
-    expect(s.enemy.maxHp).toBe(200)
+    expect(heroi(s).currentHp).toBe(100)
+    expect(heroi(s).maxHp).toBe(100)
+    expect(heroi(s).currentEnergy).toBe(100)
+    expect(heroi(s).activeTransformationId).toBeNull()
+    expect(heroi(s).statusEffects).toEqual([])
+    expect(vilao(s).maxHp).toBe(200)
     expect(s.outcome).toBeNull()
   })
 
   it('guarda os valores base separados dos atuais (pra reverter transformação)', () => {
     const s = createInitialState(stats({ attack: 42 }), stats())
-    expect(s.player.attack).toBe(42)
-    expect(s.player.baseAttack).toBe(42)
+    expect(heroi(s).attack).toBe(42)
+    expect(heroi(s).baseAttack).toBe(42)
   })
 })
 
@@ -293,7 +297,7 @@ describe('resolveRound — dano e energia', () => {
   it('ataque básico tira HP do inimigo', () => {
     const s = createInitialState(stats(), stats())
     const { state, turnResults } = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(state.enemy.currentHp).toBeLessThan(100)
+    expect(vilao(state).currentHp).toBeLessThan(100)
     expect(turnResults.some((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')).toBe(true)
   })
 
@@ -331,53 +335,53 @@ describe('resolveRound — dano e energia', () => {
       NUNCA_CRITA
     )
     // energia regenera 8% (8) no início da rodada e depois paga 25
-    expect(r.state.player.currentEnergy).toBe(100 - 25)
-    expect(r.state.player.cooldowns['sk-1']).toBe(3)
+    expect(heroi(r.state).currentEnergy).toBe(100 - 25)
+    expect(heroi(r.state).cooldowns['sk-1']).toBe(3)
   })
 
   it('energia regenera 8% do máximo no início da rodada', () => {
     const s = createInitialState(stats(), stats())
-    s.player.currentEnergy = 50
+    heroi(s).currentEnergy = 50
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(r.state.player.currentEnergy).toBe(58)
+    expect(heroi(r.state).currentEnergy).toBe(58)
   })
 
   it('energia regenerada não passa do máximo', () => {
     const s = createInitialState(stats(), stats())
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(r.state.player.currentEnergy).toBe(100)
+    expect(heroi(r.state).currentEnergy).toBe(100)
   })
 })
 
 describe('resolveRound — efeitos de status', () => {
   it('SHIELD absorve o dano antes do HP', () => {
     const s = createInitialState(stats(), stats())
-    s.enemy.statusEffects = [efeito({ type: 'SHIELD', magnitude: 1000, remainingRounds: 5 })]
+    vilao(s).statusEffects = [efeito({ type: 'SHIELD', magnitude: 1000, remainingRounds: 5 })]
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(r.state.enemy.currentHp).toBe(100)
+    expect(vilao(r.state).currentHp).toBe(100)
   })
 
   it('COUNTER anula o ataque e reflete parte do dano no atacante', () => {
     const s = createInitialState(stats(), stats())
-    s.enemy.statusEffects = [efeito({ type: 'COUNTER', magnitude: 50, remainingRounds: 5 })]
+    vilao(s).statusEffects = [efeito({ type: 'COUNTER', magnitude: 50, remainingRounds: 5 })]
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
     const golpe = r.turnResults.find((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')!
     expect(golpe.countered).toBe(true)
     expect(golpe.damage).toBe(0)
     expect(golpe.reflectedDamage).toBeGreaterThan(0)
-    expect(r.state.player.currentHp).toBeLessThan(100)
+    expect(heroi(r.state).currentHp).toBeLessThan(100)
   })
 
   it('COUNTER é consumido depois de refletir uma vez', () => {
     const s = createInitialState(stats(), stats())
-    s.enemy.statusEffects = [efeito({ type: 'COUNTER', magnitude: 50, remainingRounds: 5 })]
+    vilao(s).statusEffects = [efeito({ type: 'COUNTER', magnitude: 50, remainingRounds: 5 })]
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(r.state.enemy.statusEffects.filter((e) => e.type === 'COUNTER')).toHaveLength(0)
+    expect(vilao(r.state).statusEffects.filter((e) => e.type === 'COUNTER')).toHaveLength(0)
   })
 
   it('DOT tira HP no início da rodada e gera um resultado próprio', () => {
     const s = createInitialState(stats(), stats())
-    s.enemy.statusEffects = [efeito({ type: 'DOT', magnitude: 15, remainingRounds: 3, sourceSkillName: 'Veneno' })]
+    vilao(s).statusEffects = [efeito({ type: 'DOT', magnitude: 15, remainingRounds: 3, sourceSkillName: 'Veneno' })]
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
     const tick = r.turnResults.find((t) => t.kind === 'DOT_TICK')
     expect(tick).toBeDefined()
@@ -387,22 +391,22 @@ describe('resolveRound — efeitos de status', () => {
 
   it('quem está atordoado perde o turno', () => {
     const s = createInitialState(stats(), stats())
-    s.enemy.statusEffects = [efeito({ type: 'STUN', remainingRounds: 3 })]
+    vilao(s).statusEffects = [efeito({ type: 'STUN', remainingRounds: 3 })]
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
     expect(r.turnResults.some((t) => t.side === 'ENEMY' && t.kind === 'STUNNED')).toBe(true)
-    expect(r.state.player.currentHp).toBe(100) // inimigo não atacou
+    expect(heroi(r.state).currentHp).toBe(100) // inimigo não atacou
   })
 
   it('efeitos perdem uma rodada de duração e somem ao zerar', () => {
     const s = createInitialState(stats(), stats())
-    s.enemy.statusEffects = [efeito({ type: 'BUFF', stat: 'attack', magnitude: 10, remainingRounds: 1 })]
+    vilao(s).statusEffects = [efeito({ type: 'BUFF', stat: 'attack', magnitude: 10, remainingRounds: 1 })]
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(r.state.enemy.statusEffects).toHaveLength(0)
+    expect(vilao(r.state).statusEffects).toHaveLength(0)
   })
 
   it('HEAL não cura acima do HP máximo', () => {
     const s = createInitialState(stats(), stats())
-    s.player.currentHp = 95
+    heroi(s).currentHp = 95
     const cura: SkillEffect = { type: 'HEAL', target: 'SELF', magnitude: 999 }
     const r = resolveRound(
       s,
@@ -410,12 +414,12 @@ describe('resolveRound — efeitos de status', () => {
       { ...ctxVazio(), playerSkills: { cura: skill({ id: 'cura', power: 0, effects: [cura] }) } },
       NUNCA_CRITA
     )
-    expect(r.state.player.currentHp).toBeLessThanOrEqual(100)
+    expect(heroi(r.state).currentHp).toBeLessThanOrEqual(100)
   })
 
   it('LIFESTEAL cura o atacante em % do dano causado', () => {
     const s = createInitialState(stats(), stats())
-    s.player.currentHp = 50
+    heroi(s).currentHp = 50
     const roubo: SkillEffect = { type: 'LIFESTEAL', target: 'SELF', magnitude: 100 }
     const r = resolveRound(
       s,
@@ -423,7 +427,7 @@ describe('resolveRound — efeitos de status', () => {
       { ...ctxVazio(), playerSkills: { vamp: skill({ id: 'vamp', power: 30, effects: [roubo] }) } },
       NUNCA_CRITA
     )
-    expect(r.state.player.currentHp).toBeGreaterThan(50 - 30)
+    expect(heroi(r.state).currentHp).toBeGreaterThan(50 - 30)
   })
 })
 
@@ -450,27 +454,27 @@ describe('resolveRound — ordem, transformação e desfecho', () => {
       { ...ctxVazio(), playerTransformations: { ssj: t } },
       NUNCA_CRITA
     )
-    expect(r.state.player.activeTransformationId).toBe('ssj')
+    expect(heroi(r.state).activeTransformationId).toBe('ssj')
     expect(r.turnResults.some((x) => x.kind === 'TRANSFORM')).toBe(true)
     expect(r.turnResults.some((x) => x.side === 'PLAYER' && x.kind === 'ATTACK')).toBe(false)
   })
 
   it('transformação com LOW_HP dispara sozinha quando o HP está baixo', () => {
     const s = createInitialState(stats(), stats())
-    s.player.currentHp = 20 // 20% <= 30% padrão
+    heroi(s).currentHp = 20 // 20% <= 30% padrão
     const t = transformacao({ id: 'rage', triggerType: 'LOW_HP', triggerPayload: { threshold: 0.3 } })
     const r = resolveRound(s, ataqueBasico, { ...ctxVazio(), playerTransformations: { rage: t } }, NUNCA_CRITA)
-    expect(r.state.player.activeTransformationId).toBe('rage')
+    expect(heroi(r.state).activeTransformationId).toBe('rage')
   })
 
   it('transformação com drain reverte quando falta energia pra sustentar', () => {
     const s = createInitialState(stats(), stats())
-    s.player.currentEnergy = 0
-    s.player.activeTransformationId = 'caro'
+    heroi(s).currentEnergy = 0
+    heroi(s).activeTransformationId = 'caro'
     const t = transformacao({ id: 'caro', drainPerTurn: 50, attackModifier: 1 })
     const r = resolveRound(s, ataqueBasico, { ...ctxVazio(), playerTransformations: { caro: t } }, NUNCA_CRITA)
-    expect(r.state.player.activeTransformationId).toBeNull()
-    expect(r.state.player.attack).toBe(r.state.player.baseAttack)
+    expect(heroi(r.state).activeTransformationId).toBeNull()
+    expect(heroi(r.state).attack).toBe(heroi(r.state).baseAttack)
   })
 
   it('zerar o HP do inimigo resulta em PLAYER_WIN', () => {
@@ -482,7 +486,7 @@ describe('resolveRound — ordem, transformação e desfecho', () => {
   it('HP nunca fica negativo', () => {
     const s = createInitialState(stats({ attack: 9999 }), stats({ hp: 1, defense: 0 }))
     const r = resolveRound(s, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(r.state.enemy.currentHp).toBe(0)
+    expect(vilao(r.state).currentHp).toBe(0)
   })
 
   it('batalha já encerrada não é sobrescrita por uma rodada sem morte', () => {
@@ -615,10 +619,7 @@ describe('escala por atributo', () => {
   it('escala da reserva MÁXIMA, não da atual — gastar energia não enfraquece', () => {
     const sk = skill({ id: 'kido', power: 20, energyCost: 0, effects: [], scalingStat: 'energy' })
     const cheio = createInitialState(stats({ energy: 200 }), stats())
-    const gasto = {
-      ...cheio,
-      player: { ...cheio.player, currentEnergy: 10 },
-    }
+    const gasto = comHeroi(cheio, { currentEnergy: 10 })
     expect(usa(gasto, sk).damage!).toBe(usa(cheio, sk).damage!)
   })
 
@@ -631,7 +632,7 @@ describe('escala por atributo', () => {
     })
     const ferido = (energia: number) => {
       const s = createInitialState(stats({ energy: energia }), stats())
-      return { ...s, player: { ...s.player, currentHp: 1 } }
+      return comHeroi(s, { currentHp: 1 })
     }
     expect(usa(ferido(300), sk).healed!).toBeGreaterThan(usa(ferido(50), sk).healed!)
   })
@@ -688,15 +689,15 @@ describe('reaplicar efeito renova, não empilha', () => {
     let s = createInitialState(stats(), stats())
     s = usa(s, veneno).state
     s = usa(s, veneno).state
-    expect(s.enemy.statusEffects.filter((e) => e.type === 'DOT')).toHaveLength(1)
+    expect(vilao(s).statusEffects.filter((e) => e.type === 'DOT')).toHaveLength(1)
   })
 
   it('renovar devolve a duração cheia', () => {
     let s = createInitialState(stats(), stats())
     s = usa(s, veneno).state
-    const depoisDeUma = s.enemy.statusEffects.find((e) => e.type === 'DOT')!.remainingRounds
+    const depoisDeUma = vilao(s).statusEffects.find((e) => e.type === 'DOT')!.remainingRounds
     s = usa(s, veneno).state
-    expect(s.enemy.statusEffects.find((e) => e.type === 'DOT')!.remainingRounds).toBeGreaterThanOrEqual(
+    expect(vilao(s).statusEffects.find((e) => e.type === 'DOT')!.remainingRounds).toBeGreaterThanOrEqual(
       depoisDeUma
     )
   })
@@ -713,7 +714,7 @@ describe('reaplicar efeito renova, não empilha', () => {
     let s = createInitialState(stats(), stats())
     s = usa(s, veneno).state
     s = usa(s, outro).state
-    expect(s.enemy.statusEffects.filter((e) => e.type === 'DOT')).toHaveLength(2)
+    expect(vilao(s).statusEffects.filter((e) => e.type === 'DOT')).toHaveLength(2)
   })
 
   it('uma habilidade com buff de dois atributos mantém os dois', () => {
@@ -731,7 +732,7 @@ describe('reaplicar efeito renova, não empilha', () => {
     let s = createInitialState(stats(), stats())
     s = usa(s, duplo).state
     s = usa(s, duplo).state
-    const buffs = s.player.statusEffects.filter((e) => e.type === 'BUFF')
+    const buffs = heroi(s).statusEffects.filter((e) => e.type === 'BUFF')
     expect(buffs).toHaveLength(2)
     expect(buffs.map((b) => b.stat).sort()).toEqual(['attack', 'defense'])
   })
@@ -739,13 +740,13 @@ describe('reaplicar efeito renova, não empilha', () => {
   it('o dano por rodada do veneno não cresce ao relançar', () => {
     let s = createInitialState(stats(), stats())
     s = usa(s, veneno).state
-    const hp1 = s.enemy.currentHp
+    const hp1 = vilao(s).currentHp
     s = usa(s, veneno).state
-    const tick1 = hp1 - s.enemy.currentHp
+    const tick1 = hp1 - vilao(s).currentHp
     s = usa(s, veneno).state
-    const tick2 = s.enemy.currentHp
+    const tick2 = vilao(s).currentHp
     s = usa(s, veneno).state
-    expect(tick2 - s.enemy.currentHp).toBe(tick1)
+    expect(tick2 - vilao(s).currentHp).toBe(tick1)
   })
 })
 
@@ -910,18 +911,15 @@ describe('stamina — reserva defensiva separada', () => {
       NUNCA_CRITA
     )
     // A energia só varia pela regeneração da rodada, nunca pelo custo.
-    expect(r.state.player.currentEnergy).toBeGreaterThanOrEqual(100)
-    expect(r.state.player.currentStamina!).toBeLessThan(100)
+    expect(heroi(r.state).currentEnergy).toBeGreaterThanOrEqual(100)
+    expect(heroi(r.state).currentStamina!).toBeLessThan(100)
   })
 
   it('stamina regenera mais devagar que energia — é o que impede defesa infinita', () => {
     const s = createInitialState(stats({ energy: 100, stamina: 100 }), stats())
-    const gasto = {
-      ...s,
-      player: { ...s.player, currentEnergy: 0, currentStamina: 0 },
-    }
+    const gasto = comHeroi(s, { currentEnergy: 0, currentStamina: 0 })
     const r = resolveRound(gasto, ataqueBasico, ctxVazio(), NUNCA_CRITA)
-    expect(r.state.player.currentStamina!).toBeLessThan(r.state.player.currentEnergy)
+    expect(heroi(r.state).currentStamina!).toBeLessThan(heroi(r.state).currentEnergy)
   })
 
   it('batalha antiga, sem o campo, trata stamina como zero em vez de quebrar', () => {
@@ -939,10 +937,7 @@ describe('dreno de vida da transformação', () => {
 
   const comForma = (hp: number, t: TransformationDef) => {
     const s = createInitialState(stats({ hp: 200 }), stats())
-    return {
-      ...s,
-      player: { ...s.player, currentHp: hp, activeTransformationId: t.id },
-    }
+    return comHeroi(s, { currentHp: hp, activeTransformationId: t.id })
   }
 
   const rodada = (estado: ReturnType<typeof comForma>, t: TransformationDef) =>
@@ -952,8 +947,8 @@ describe('dreno de vida da transformação', () => {
     const t = forma()
     const r = rodada(comForma(200, t), t)
     // 10 do dreno, mais o que o inimigo causar — o dreno tem que ter cobrado.
-    expect(r.state.player.currentHp).toBeLessThanOrEqual(190)
-    expect(r.state.player.activeTransformationId).toBe('portoes')
+    expect(heroi(r.state).currentHp).toBeLessThanOrEqual(190)
+    expect(heroi(r.state).activeTransformationId).toBe('portoes')
   })
 
   it('NÃO mata: ao chegar no limite, a forma cai e sobra 1 de HP', () => {
@@ -961,30 +956,30 @@ describe('dreno de vida da transformação', () => {
     // jogar — perde-se a luta por uma escolha feita cinco rodadas antes.
     const t = forma({ drainHpPerTurn: 50 })
     const r = rodada(comForma(30, t), t)
-    expect(r.state.player.activeTransformationId).toBe(null)
-    expect(r.state.player.currentHp).toBeGreaterThanOrEqual(0)
+    expect(heroi(r.state).activeTransformationId).toBe(null)
+    expect(heroi(r.state).currentHp).toBeGreaterThanOrEqual(0)
   })
 
   it('sem energia para sustentar, a forma cai ANTES de cobrar vida', () => {
     const t = forma({ drainPerTurn: 40, drainHpPerTurn: 10 })
     const s = comForma(200, t)
-    const semEnergia = { ...s, player: { ...s.player, currentEnergy: 5 } }
+    const semEnergia = comHeroi(s, { currentEnergy: 5 })
     const r = rodada(semEnergia, t)
-    expect(r.state.player.activeTransformationId).toBe(null)
+    expect(heroi(r.state).activeTransformationId).toBe(null)
   })
 
   it('forma sem dreno nenhum não cobra nada', () => {
     const t = forma({ drainPerTurn: 0, drainHpPerTurn: 0 })
     const antes = comForma(200, t)
     const r = rodada(antes, t)
-    expect(r.state.player.activeTransformationId).toBe('portoes')
+    expect(heroi(r.state).activeTransformationId).toBe('portoes')
   })
 
   it('transformação antiga, gravada sem o campo, é tratada como sem dreno de vida', () => {
     const t = forma()
     delete (t as { drainHpPerTurn?: number }).drainHpPerTurn
     const r = rodada(comForma(200, t), t)
-    expect(r.state.player.activeTransformationId).toBe('portoes')
+    expect(heroi(r.state).activeTransformationId).toBe('portoes')
   })
 })
 
@@ -1041,7 +1036,7 @@ describe('choque de golpes', () => {
     expect(r.turnResults.some((t) => t.kind === 'CLASH')).toBe(true)
     // O inimigo perdeu: não deve haver ataque dele na rodada.
     expect(r.turnResults.some((t) => t.side === 'ENEMY' && t.kind === 'ATTACK')).toBe(false)
-    expect(r.state.enemy.currentHp).toBeLessThan(100)
+    expect(vilao(r.state).currentHp).toBeLessThan(100)
   })
 
   it('empate no choque gasta a rodada dos dois', () => {
@@ -1055,8 +1050,8 @@ describe('choque de golpes', () => {
       NUNCA_CRITA
     )
     expect(r.turnResults.filter((t) => t.kind === 'ATTACK')).toHaveLength(0)
-    expect(r.state.player.currentHp).toBe(100)
-    expect(r.state.enemy.currentHp).toBe(100)
+    expect(heroi(r.state).currentHp).toBe(100)
+    expect(vilao(r.state).currentHp).toBe(100)
   })
 })
 
@@ -1145,7 +1140,7 @@ describe('natureza do dano contínuo', () => {
       { ...ctxVazio(), playerSkills: { v: veneno } },
       NUNCA_CRITA
     )
-    const dot = r.state.enemy.statusEffects.find((e) => e.type === 'DOT')
+    const dot = vilao(r.state).statusEffects.find((e) => e.type === 'DOT')
     expect(dot?.flavor).toBe('veneno')
   })
 
@@ -1165,6 +1160,43 @@ describe('natureza do dano contínuo', () => {
       { ...ctxVazio(), playerSkills: { e: escudo } },
       NUNCA_CRITA
     )
-    expect(r.state.player.statusEffects.find((x) => x.type === 'SHIELD')?.flavor).toBeUndefined()
+    expect(heroi(r.state).statusEffects.find((x) => x.type === 'SHIELD')?.flavor).toBeUndefined()
+  })
+})
+
+describe('migração do estado gravado', () => {
+  // Batalha em andamento vive como snapshot JSON na coluna `state`. Toda luta
+  // começada antes de o estado virar time está gravada na forma antiga, e
+  // continua assim até terminar — se a migração falhar, o jogador perde a
+  // partida em curso por causa de um refactor.
+  const v1 = {
+    version: 1 as const,
+    player: combatant({ currentHp: 42 }),
+    enemy: combatant({ currentHp: 17 }),
+    outcome: null,
+  }
+
+  it('lê a forma antiga e devolve times de um', () => {
+    const m = migrarEstado(v1)
+    expect(m.version).toBe(2)
+    expect(m.aliados).toHaveLength(1)
+    expect(m.inimigos).toHaveLength(1)
+    expect(heroi(m).currentHp).toBe(42)
+    expect(vilao(m).currentHp).toBe(17)
+  })
+
+  it('preserva o desfecho já decidido', () => {
+    expect(migrarEstado({ ...v1, outcome: 'PLAYER_WIN' }).outcome).toBe('PLAYER_WIN')
+  })
+
+  it('é idempotente: a forma nova passa intacta', () => {
+    const novo = createInitialState(stats(), stats())
+    expect(migrarEstado(novo)).toBe(novo)
+  })
+
+  it('uma rodada resolvida a partir da forma antiga já sai na forma nova', () => {
+    const r = resolveRound(migrarEstado(v1), ataqueBasico, ctxVazio(), NUNCA_CRITA)
+    expect(r.state.version).toBe(2)
+    expect(r.state.aliados).toHaveLength(1)
   })
 })

@@ -39,6 +39,7 @@ import type {
   TransformationDef,
   TransformationTrigger,
   TurnResult,
+  BattleStateGravado,
 } from './types'
 
 function clamp(value: number, min: number, max: number): number {
@@ -310,10 +311,66 @@ export function createInitialState(
   passivos?: { player?: number; enemy?: number }
 ): BattleState {
   return {
-    version: 1,
-    player: makeCombatant(player, passivos?.player ?? 0),
-    enemy: makeCombatant(enemy, passivos?.enemy ?? 0),
+    version: 2,
+    aliados: [makeCombatant(player, passivos?.player ?? 0)],
+    inimigos: [makeCombatant(enemy, passivos?.enemy ?? 0)],
     outcome: null,
+  }
+}
+
+/**
+ * O principal de cada lado — o índice 0.
+ *
+ * Existem porque a maior parte do jogo continua sendo 1x1, e escrever
+ * `state.aliados[0]` em toda tela e todo teste diria "pegue o primeiro de uma
+ * lista" quando o que se quer dizer é "o personagem do jogador". O nome curto
+ * é o ponto: ele marca a intenção, e marca também os lugares que ainda
+ * assumem um combatente por lado, para quando o time de verdade chegar.
+ */
+export function heroi(state: BattleState): CombatantState {
+  return state.aliados[0]
+}
+
+export function vilao(state: BattleState): CombatantState {
+  return state.inimigos[0]
+}
+
+/**
+ * Devolve o estado com o principal de um lado modificado.
+ *
+ * O par de heroi()/vilao() para ESCRITA. Sem eles, todo lugar que quer mexer
+ * no combatente principal precisa escrever
+ * `{ ...state, aliados: [{ ...state.aliados[0], ... }, ...state.aliados.slice(1)] }`,
+ * que é ruidoso o suficiente para alguém eventualmente esquecer o `slice(1)`
+ * e apagar o resto do time sem perceber.
+ */
+export function comHeroi(state: BattleState, patch: Partial<CombatantState>): BattleState {
+  return { ...state, aliados: [{ ...state.aliados[0], ...patch }, ...state.aliados.slice(1)] }
+}
+
+export function comVilao(state: BattleState, patch: Partial<CombatantState>): BattleState {
+  return { ...state, inimigos: [{ ...state.inimigos[0], ...patch }, ...state.inimigos.slice(1)] }
+}
+
+/**
+ * Traz um estado gravado para a forma atual.
+ *
+ * NÃO É CÓDIGO DEFENSIVO: toda batalha começada antes desta mudança está
+ * gravada como `{ player, enemy }` no JSON da coluna `state`, e continua assim
+ * até terminar. Sem esta função elas quebrariam no meio da luta — o jogador
+ * perderia a partida em andamento por causa de um refactor, que é o tipo de
+ * dano que nenhuma melhoria de arquitetura justifica.
+ *
+ * Aplicada na FRONTEIRA (ao ler do banco), não espalhada: do ponto de leitura
+ * para dentro, só existe uma forma de estado.
+ */
+export function migrarEstado(gravado: BattleStateGravado): BattleState {
+  if (gravado.version === 2) return gravado
+  return {
+    version: 2,
+    aliados: [gravado.player],
+    inimigos: [gravado.enemy],
+    outcome: gravado.outcome,
   }
 }
 
@@ -1220,8 +1277,13 @@ export function resolveRound(
   },
   rand: () => number = Math.random
 ): { state: BattleState; turnResults: TurnResult[] } {
-  let player = { ...state.player }
-  let enemy = { ...state.enemy }
+  // COMMIT A: a forma do estado ja e de time, mas a rodada ainda resolve so o
+  // principal de cada lado. Separar as duas mudancas e deliberado — assim
+  // este passo e provadamente inerte (as taxas de vitoria tem que sair
+  // identicas, digito por digito), e qualquer diferenca de comportamento que
+  // aparecer depois so pode ter vindo do laco para N, que vem em seguida.
+  let player = { ...heroi(state) }
+  let enemy = { ...vilao(state) }
   const turnResults: TurnResult[] = []
 
   // 1. Start of round: energy regen, cooldown tick, DOT tick + status-duration tick (both sides)
@@ -1393,5 +1455,15 @@ export function resolveRound(
   else if (enemy.currentHp <= 0) outcome = 'PLAYER_WIN'
   else if (player.currentHp <= 0) outcome = 'ENEMY_WIN'
 
-  return { state: { ...state, player, enemy, outcome }, turnResults }
+  return {
+    state: {
+      ...state,
+      // Substitui o principal e preserva o resto do time — que hoje esta
+      // sempre vazio, e nao estara quando o laco para N chegar.
+      aliados: [player, ...state.aliados.slice(1)],
+      inimigos: [enemy, ...state.inimigos.slice(1)],
+      outcome,
+    },
+    turnResults,
+  }
 }

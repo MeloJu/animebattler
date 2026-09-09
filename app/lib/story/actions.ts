@@ -3,9 +3,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
-import { applyBossOverrides, computeBaseStats, scaleForLevel,
-  SEM_BONUS,
-} from '@/app/lib/battle/engine'
+import { SEM_BONUS, applyBossOverrides, computeBaseStats, scaleForLevel } from '@/app/lib/battle/engine'
 import { createBattleAndRedirect } from '@/app/lib/battle/actions'
 import { getSelectedCharacter } from '@/app/lib/progression/queries'
 import { getStageForUser } from './queries'

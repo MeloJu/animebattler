@@ -7,16 +7,20 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/app/lib/prisma'
 import { requireUser } from '@/app/lib/session'
 import {
+  SEM_BONUS,
   applyTraits,
   applyTransformation,
+  comHeroi,
   computeFighterStats,
   createInitialState,
+  heroi,
   isLegalMove,
+  migrarEstado,
   podeBloquear,
   resolveRound,
   sumStatBonuses,
   traitEnergyCostModifier,
-  SEM_BONUS,
+  vilao,
 } from './engine'
 import { deveBloquear, pickAiSkill } from './ai'
 import { recompensaComTeto, vitoriasContraIaHoje } from './recompensa'
@@ -26,7 +30,7 @@ import { getEquipmentBonus } from '@/app/lib/equipment/queries'
 import { autoFillLoadout } from '@/app/lib/progression/actions'
 import { recordStoryProgress } from '@/app/lib/story/actions'
 import { MAX_ROUNDS, NPC_WINS_ON_WIN } from './constants'
-import type { BaseStats, BattleState, Outcome, PlayerAction, TurnResult } from './types'
+import type { BaseStats, BattleState, Outcome, PlayerAction, TurnResult, BattleStateGravado} from './types'
 
 type BattleRow = Awaited<ReturnType<typeof prisma.battle.findFirst>>
 
@@ -79,13 +83,13 @@ async function loadActiveBattleContext(battleId: string) {
     isFirstStoryClear,
     playerSkills,
     playerTransformations,
-    state: battle.state as unknown as BattleState,
+    state: migrarEstado(battle.state as unknown as BattleStateGravado),
   }
 }
 
 function decideDrawOrHpTiebreak(state: BattleState): Outcome {
-  const playerRatio = state.player.maxHp > 0 ? state.player.currentHp / state.player.maxHp : 0
-  const enemyRatio = state.enemy.maxHp > 0 ? state.enemy.currentHp / state.enemy.maxHp : 0
+  const playerRatio = heroi(state).maxHp > 0 ? heroi(state).currentHp / heroi(state).maxHp : 0
+  const enemyRatio = vilao(state).maxHp > 0 ? vilao(state).currentHp / vilao(state).maxHp : 0
   if (Math.abs(playerRatio - enemyRatio) < 0.001) return 'DRAW'
   return playerRatio > enemyRatio ? 'PLAYER_WIN' : 'ENEMY_WIN'
 }
@@ -388,11 +392,11 @@ export async function takeTurn(battleId: string, skillId: string | null): Promis
   const ctx = await loadActiveBattleContext(battleId)
   const chosenSkill = skillId ? ctx.playerSkills[skillId] ?? null : null
   if (skillId && !chosenSkill) redirect(`/battle/ai/${battleId}?error=invalid_skill`)
-  if (!isLegalMove(ctx.state.player, chosenSkill)) redirect(`/battle/ai/${battleId}?error=illegal_move`)
+  if (!isLegalMove(heroi(ctx.state), chosenSkill)) redirect(`/battle/ai/${battleId}?error=illegal_move`)
 
   const playerAction: PlayerAction = { kind: 'ATTACK', skillId }
-  const inimigoBloqueia = deveBloquear(ctx.state.enemy, Object.values(ctx.enemySkills))
-  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
+  const inimigoBloqueia = deveBloquear(vilao(ctx.state), Object.values(ctx.enemySkills))
+  const enemySkillId = pickAiSkill(vilao(ctx.state), Object.values(ctx.enemySkills), heroi(ctx.state))
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
@@ -412,10 +416,10 @@ export async function takeTurn(battleId: string, skillId: string | null): Promis
  */
 export async function blockTurn(battleId: string): Promise<void> {
   const ctx = await loadActiveBattleContext(battleId)
-  if (!podeBloquear(ctx.state.player)) redirect(`/battle/ai/${battleId}?error=no_stamina`)
+  if (!podeBloquear(heroi(ctx.state))) redirect(`/battle/ai/${battleId}?error=no_stamina`)
 
-  const inimigoBloqueia = deveBloquear(ctx.state.enemy, Object.values(ctx.enemySkills))
-  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
+  const inimigoBloqueia = deveBloquear(vilao(ctx.state), Object.values(ctx.enemySkills))
+  const enemySkillId = pickAiSkill(vilao(ctx.state), Object.values(ctx.enemySkills), heroi(ctx.state))
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
@@ -428,7 +432,7 @@ export async function blockTurn(battleId: string): Promise<void> {
 
 export async function activateTransformation(battleId: string, transformationId: string): Promise<void> {
   const ctx = await loadActiveBattleContext(battleId)
-  if (ctx.state.player.activeTransformationId) redirect(`/battle/ai/${battleId}?error=already_transformed`)
+  if (heroi(ctx.state).activeTransformationId) redirect(`/battle/ai/${battleId}?error=already_transformed`)
   if (!ctx.playerTransformations[transformationId]) redirect(`/battle/ai/${battleId}?error=invalid_transformation`)
 
   const forma = ctx.playerTransformations[transformationId]
@@ -441,15 +445,15 @@ export async function activateTransformation(battleId: string, transformationId:
   // obrigatória na rodada 1 e deixaria de ser decisão.
   if (forma.consumesTurn === false) {
     const custo = forma.activationCost ?? 0
-    if (ctx.state.player.currentEnergy < custo) {
+    if (heroi(ctx.state).currentEnergy < custo) {
       redirect(`/battle/ai/${battleId}?error=insufficient_energy`)
     }
 
-    const transformado = applyTransformation(ctx.state.player, forma)
-    const novoEstado: BattleState = {
-      ...ctx.state,
-      player: { ...transformado, currentEnergy: transformado.currentEnergy - custo },
-    }
+    const transformado = applyTransformation(heroi(ctx.state), forma)
+    const novoEstado: BattleState = comHeroi(ctx.state, {
+      ...transformado,
+      currentEnergy: transformado.currentEnergy - custo,
+    })
 
     // O turno NÃO avança, então a trava otimista compara o mesmo número: se
     // outra aba resolveu uma rodada nesse meio tempo, esta gravação não passa.
@@ -480,8 +484,8 @@ export async function activateTransformation(battleId: string, transformationId:
   }
 
   const playerAction: PlayerAction = { kind: 'TRANSFORM', transformationId }
-  const inimigoBloqueia = deveBloquear(ctx.state.enemy, Object.values(ctx.enemySkills))
-  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
+  const inimigoBloqueia = deveBloquear(vilao(ctx.state), Object.values(ctx.enemySkills))
+  const enemySkillId = pickAiSkill(vilao(ctx.state), Object.values(ctx.enemySkills), heroi(ctx.state))
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,

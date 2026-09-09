@@ -1,7 +1,5 @@
 import { prisma } from '@/app/lib/prisma'
-import { computeBaseStats, hasBattleValue,
-  SEM_BONUS,
-} from './engine'
+import { SEM_BONUS, computeBaseStats, hasBattleValue } from './engine'
 import { getEquipmentGrantedSkills } from '@/app/lib/equipment/queries'
 import { NORMAL_BATTLE_XP_MULTIPLIER } from './constants'
 import { escolherLoadoutPadrao } from './ai'

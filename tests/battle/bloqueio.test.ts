@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { createInitialState, custoDeErguerGuarda, podeBloquear, resolveRound } from '@/app/lib/battle/engine'
+import {
+  comHeroi,
+  createInitialState,
+  custoDeErguerGuarda,
+  heroi,
+  podeBloquear,
+  resolveRound,
+} from '@/app/lib/battle/engine'
 import { deveBloquear } from '@/app/lib/battle/ai'
 import { BLOQUEIO_REDUCAO } from '@/app/lib/battle/constants'
 import type { BaseStats, SkillDef } from '@/app/lib/battle/types'
@@ -63,8 +70,8 @@ describe('a guarda aparando', () => {
     const semGuarda = rodada(stats(), stats(), skill(), false)
     const comGuarda = rodada(stats(), stats(), skill(), true)
 
-    const danoSem = 300 - semGuarda.state.player.currentHp
-    const danoCom = 300 - comGuarda.state.player.currentHp
+    const danoSem = 300 - heroi(semGuarda.state).currentHp
+    const danoCom = 300 - heroi(comGuarda.state).currentHp
 
     expect(danoCom).toBe(danoSem - Math.round(danoSem * BLOQUEIO_REDUCAO))
     expect(comGuarda.turnResults.find((t) => t.side === 'ENEMY' && t.kind === 'ATTACK')!.bloqueado).toBe(true)
@@ -74,7 +81,7 @@ describe('a guarda aparando', () => {
     const semGuarda = rodada(stats(), stats(), skill(), false)
     const comGuarda = rodada(stats(), stats(), skill(), true)
 
-    const danoSem = 300 - semGuarda.state.player.currentHp
+    const danoSem = 300 - heroi(semGuarda.state).currentHp
     const impedido = Math.round(danoSem * BLOQUEIO_REDUCAO)
     const ataque = comGuarda.turnResults.find((t) => t.side === 'ENEMY' && t.kind === 'ATTACK')!
 
@@ -91,7 +98,7 @@ describe('a guarda aparando', () => {
       { playerSkills: {}, enemySkills: {}, playerTransformations: {} },
       NUNCA_CRITA
     )
-    expect(r.state.player.currentStamina!).toBeLessThan(200)
+    expect(heroi(r.state).currentStamina!).toBeLessThan(200)
     expect(r.turnResults.filter((t) => t.kind === 'BLOCK')).toHaveLength(2)
   })
 
@@ -104,7 +111,7 @@ describe('a guarda aparando', () => {
       { playerSkills: {}, enemySkills: { [golpe.id]: golpe }, playerTransformations: {} },
       NUNCA_CRITA
     )
-    expect(r.state.player.currentHp).toBe(300)
+    expect(heroi(r.state).currentHp).toBe(300)
     expect(r.turnResults.some((t) => t.kind === 'ATTACK')).toBe(false)
   })
 })
@@ -117,16 +124,16 @@ describe('quebra de guarda', () => {
     const semGuarda = rodada(stats(), stats(), skill(), false)
     const quebrando = rodada(fragil, stats(), skill(), true)
 
-    const danoSem = 300 - semGuarda.state.player.currentHp
-    const danoQuebrando = 300 - quebrando.state.player.currentHp
+    const danoSem = 300 - heroi(semGuarda.state).currentHp
+    const danoQuebrando = 300 - heroi(quebrando.state).currentHp
     expect(danoQuebrando).toBe(danoSem)
     expect(quebrando.turnResults.find((t) => t.side === 'ENEMY' && t.kind === 'ATTACK')!.bloqueado).toBeUndefined()
   })
 
   it('zera a stamina e atordoa quem bloqueou', () => {
     const r = rodada(fragil, stats(), skill(), true)
-    expect(r.state.player.currentStamina).toBe(0)
-    expect(r.state.player.statusEffects.some((e) => e.type === 'STUN')).toBe(true)
+    expect(heroi(r.state).currentStamina).toBe(0)
+    expect(heroi(r.state).statusEffects.some((e) => e.type === 'STUN')).toBe(true)
     expect(r.turnResults.some((t) => t.kind === 'GUARD_BREAK' && t.side === 'PLAYER')).toBe(true)
   })
 
@@ -137,9 +144,9 @@ describe('quebra de guarda', () => {
     const golpePequeno = skill({ id: 'sk-2', power: 6 })
 
     const comReservaMedia = stats({ stamina: 30 })
-    expect(rodada(comReservaMedia, stats(), golpePequeno, true).state.player.statusEffects).toHaveLength(0)
+    expect(heroi(rodada(comReservaMedia, stats(), golpePequeno, true).state).statusEffects).toHaveLength(0)
     expect(
-      rodada(comReservaMedia, stats(), golpeGrande, true).state.player.statusEffects.some((e) => e.type === 'STUN')
+      heroi(rodada(comReservaMedia, stats(), golpeGrande, true).state).statusEffects.some((e) => e.type === 'STUN')
     ).toBe(true)
   })
 
@@ -149,8 +156,8 @@ describe('quebra de guarda', () => {
     // justamente para que encastelar tenha fim — ver BLOQUEIO_CUSTO_BASE —,
     // então uma reserva pequena com máximo alto é o caso que de fato falha.
     const s = createInitialState(stats({ stamina: 200 }), stats())
-    const seco = { ...s, player: { ...s.player, currentStamina: 0 } }
-    expect(podeBloquear(seco.player)).toBe(false)
+    const seco = comHeroi(s, { currentStamina: 0 })
+    expect(podeBloquear(heroi(seco))).toBe(false)
 
     const golpe = skill()
     const r = resolveRound(
@@ -162,20 +169,16 @@ describe('quebra de guarda', () => {
     expect(r.turnResults.some((t) => t.kind === 'BLOCK')).toBe(false)
     // Sem guarda, o golpe entra inteiro — mas não há quebra nem atordoamento,
     // porque não houve guarda para quebrar.
-    expect(r.state.player.statusEffects.some((e) => e.type === 'STUN')).toBe(false)
+    expect(heroi(r.state).statusEffects.some((e) => e.type === 'STUN')).toBe(false)
   })
 
   it('atordoado não consegue bloquear — perder a rodada é a punição inteira', () => {
     const s = createInitialState(stats(), stats())
-    const atordoado = {
-      ...s,
-      player: {
-        ...s.player,
+    const atordoado = comHeroi(s, {
         statusEffects: [
           { id: 'st', type: 'STUN' as const, magnitude: 1, remainingRounds: 2, sourceSkillName: 'x' },
         ],
-      },
-    }
+    })
     const golpe = skill()
     const r = resolveRound(
       atordoado,
@@ -184,25 +187,25 @@ describe('quebra de guarda', () => {
       NUNCA_CRITA
     )
     expect(r.turnResults.some((t) => t.kind === 'BLOCK')).toBe(false)
-    expect(r.state.player.currentStamina).toBe(200)
+    expect(heroi(r.state).currentStamina).toBe(200)
   })
 })
 
 describe('o custo de erguer a guarda', () => {
   it('escala com a reserva máxima — cada classe aguenta o que a stamina dela permite', () => {
-    const suporte = createInitialState(stats({ stamina: 175 }), stats()).player
-    const conjurador = createInitialState(stats({ stamina: 75 }), stats()).player
+    const suporte = heroi(createInitialState(stats({ stamina: 175 }), stats()))
+    const conjurador = heroi(createInitialState(stats({ stamina: 75 }), stats()))
     expect(custoDeErguerGuarda(suporte)).toBeGreaterThan(custoDeErguerGuarda(conjurador))
   })
 
   it('nunca é zero, nem para quem tem reserva mínima', () => {
-    const semNada = createInitialState(stats({ stamina: 1 }), stats()).player
+    const semNada = heroi(createInitialState(stats({ stamina: 1 }), stats()))
     expect(custoDeErguerGuarda(semNada)).toBeGreaterThanOrEqual(1)
   })
 })
 
 describe('quando a IA decide bloquear', () => {
-  const cheio = () => createInitialState(stats(), stats()).player
+  const cheio = () => heroi(createInitialState(stats(), stats()))
   const semEnergia = () => ({ ...cheio(), currentEnergy: 0 })
 
   it('bloqueia quando todo o arsenal ofensivo está impagável', () => {

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/app/lib/prisma'
-import { hasBattleValue, custaStamina } from '@/app/lib/battle/engine'
+import { custaStamina, hasBattleValue } from '@/app/lib/battle/engine'
 import { toSkillDef } from '@/app/lib/battle/queries'
 import { CartaoDeHabilidade, CATEGORIA_LABEL } from '@/app/components/skills/CartaoDeHabilidade'
 
