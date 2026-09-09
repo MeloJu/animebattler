@@ -86,22 +86,36 @@ function registra(tipo, nome, d) {
   else relatorio.atualizados.push(`${tipo}: ${nome} (${d.campos.join(', ')})`);
 }
 
+// TAGS PRESERVAM O QUE JÁ ESTÁ NO BANCO E NÃO VEM DESTE CATÁLOGO.
+//
+// Sem isto, esta função resetava `tags` para a lista literal do arquivo toda
+// vez que rodava — apagando qualquer tag que syncTagsFaltantes tivesse
+// acrescentado numa passagem anterior. O dado final ficava certo porque
+// syncTagsFaltantes roda por último no pipeline e reaplicava a tag na mesma
+// execução, mas todo dry-run reportava as duas mudanças em oscilação
+// perpétua — "tira a tag" aqui, "põe a tag" lá —, e o resumo do sync nunca
+// fechava em "catálogo já está em dia" por causa disso.
+function comTagsPreservadas(atual, tags) {
+  const extras = Array.isArray(atual?.tags) ? atual.tags.filter((t) => !tags.includes(t)) : [];
+  return [...tags, ...extras];
+}
+
 async function syncEquipmentSkills(animeId) {
   const idPorNome = {};
 
   for (const def of equipmentCatalog.equipmentSkills) {
+    const atual = await prisma.skill.findUnique({
+      where: { name_category: { name: def.name, category: def.category } },
+    });
     const desejado = {
       name: def.name,
       category: def.category,
       power: def.power,
       energyCost: def.energyCost,
       cooldown: def.cooldown,
-      tags: def.tags,
+      tags: comTagsPreservadas(atual, def.tags),
       effects: def.effects,
     };
-    const atual = await prisma.skill.findUnique({
-      where: { name_category: { name: def.name, category: def.category } },
-    });
     registra('skill', def.name, diff(atual, desejado));
 
     if (!DRY_RUN) {
@@ -243,12 +257,13 @@ async function syncSkillLadders() {
     const atual = await prisma.skill.findUnique({
       where: { name_category: { name: skill.name, category: skill.category } },
     });
-    registra('skill', skill.name, diff(atual, skill));
+    const skillFinal = { ...skill, tags: comTagsPreservadas(atual, skill.tags) };
+    registra('skill', skill.name, diff(atual, skillFinal));
     if (!DRY_RUN) {
       const row = await prisma.skill.upsert({
         where: { name_category: { name: skill.name, category: skill.category } },
-        create: skill,
-        update: skill,
+        create: skillFinal,
+        update: skillFinal,
       });
       idPorNome[skill.name] = row.id;
     } else if (atual) {
