@@ -97,7 +97,10 @@ const transformacao = (over: Partial<TransformationDef> = {}): TransformationDef
 
 /** Contexto mínimo pra resolveRound, sem skills nem transformações. */
 const ctxVazio = () => ({ playerSkills: {}, enemySkills: {}, playerTransformations: {} })
-const ataqueBasico = { playerAction: { kind: 'ATTACK' as const, skillId: null }, enemyAction: { skillId: null } }
+const ataqueBasico = {
+  aliadas: [{ kind: 'ATTACK' as const, skillId: null }],
+  inimigas: [{ kind: 'ATTACK' as const, skillId: null }],
+}
 
 describe('computeBaseStats', () => {
   it('soma os bônus da skill tree aos stats do personagem', () => {
@@ -330,7 +333,7 @@ describe('resolveRound — dano e energia', () => {
     const sk = skill({ energyCost: 25, cooldown: 3 })
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'sk-1' }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'sk-1' }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { 'sk-1': sk } },
       NUNCA_CRITA
     )
@@ -410,7 +413,7 @@ describe('resolveRound — efeitos de status', () => {
     const cura: SkillEffect = { type: 'HEAL', target: 'SELF', magnitude: 999 }
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'cura' }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'cura' }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { cura: skill({ id: 'cura', power: 0, effects: [cura] }) } },
       NUNCA_CRITA
     )
@@ -423,7 +426,7 @@ describe('resolveRound — efeitos de status', () => {
     const roubo: SkillEffect = { type: 'LIFESTEAL', target: 'SELF', magnitude: 100 }
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'vamp' }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'vamp' }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { vamp: skill({ id: 'vamp', power: 30, effects: [roubo] }) } },
       NUNCA_CRITA
     )
@@ -450,7 +453,7 @@ describe('resolveRound — ordem, transformação e desfecho', () => {
     const t = transformacao({ id: 'ssj', attackModifier: 1 })
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'TRANSFORM', transformationId: 'ssj' }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'TRANSFORM', transformationId: 'ssj' }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerTransformations: { ssj: t } },
       NUNCA_CRITA
     )
@@ -597,7 +600,7 @@ describe('escala por atributo', () => {
   const usa = (s: ReturnType<typeof createInitialState>, sk: SkillDef) =>
     resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK' as const, skillId: sk.id }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK' as const, skillId: sk.id }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { [sk.id]: sk } },
       NUNCA_CRITA
     ).turnResults.find((t) => t.side === 'PLAYER')!
@@ -671,7 +674,7 @@ describe('reaplicar efeito renova, não empilha', () => {
   const usa = (s: ReturnType<typeof createInitialState>, sk: SkillDef) =>
     resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK' as const, skillId: sk.id }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK' as const, skillId: sk.id }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { [sk.id]: sk } },
       NUNCA_CRITA
     )
@@ -906,7 +909,7 @@ describe('stamina — reserva defensiva separada', () => {
     const s = createInitialState(stats({ energy: 100, stamina: 100 }), stats())
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'escudo' }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'escudo' }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { escudo } },
       NUNCA_CRITA
     )
@@ -1029,7 +1032,7 @@ describe('choque de golpes', () => {
     const dele = feixe('dele', 5)
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'meu' }, enemyAction: { skillId: 'dele' } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'meu' }], inimigas: [{ kind: 'ATTACK', skillId: 'dele' }] },
       { ...ctxVazio(), playerSkills: { meu }, enemySkills: { dele } },
       NUNCA_CRITA
     )
@@ -1045,7 +1048,7 @@ describe('choque de golpes', () => {
     const b = feixe('b', 30)
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'a' }, enemyAction: { skillId: 'b' } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'a' }], inimigas: [{ kind: 'ATTACK', skillId: 'b' }] },
       { ...ctxVazio(), playerSkills: { a }, enemySkills: { b } },
       NUNCA_CRITA
     )
@@ -1136,7 +1139,7 @@ describe('natureza do dano contínuo', () => {
     const s = createInitialState(stats(), stats())
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'v' }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'v' }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { v: veneno } },
       NUNCA_CRITA
     )
@@ -1156,7 +1159,7 @@ describe('natureza do dano contínuo', () => {
     const s = createInitialState(stats(), stats())
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'ATTACK', skillId: 'e' }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK', skillId: 'e' }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { ...ctxVazio(), playerSkills: { e: escudo } },
       NUNCA_CRITA
     )

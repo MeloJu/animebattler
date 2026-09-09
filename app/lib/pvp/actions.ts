@@ -220,7 +220,7 @@ async function maybeResolveRound(battleId: string): Promise<void> {
   // pra perspectiva de cada jogador acontece só na leitura (getPvpBattleView).
   const { state: newState, turnResults } = resolveRound(
     state,
-    { playerAction: hostAction, enemyAction: { skillId: guestAction.skillId } },
+    { aliadas: [hostAction], inimigas: [{ kind: 'ATTACK', skillId: guestAction.skillId }] },
     { playerSkills: hostSkills, enemySkills: guestSkills, playerTransformations: {} }
   )
 

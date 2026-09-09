@@ -313,11 +313,45 @@ export type BaseStats = {
   intelligence?: number
 }
 
-export type PlayerAction =
-  | { kind: 'ATTACK'; skillId: string | null }
+/**
+ * O que UM combatente faz na rodada — vale para os dois lados.
+ *
+ * Antes eram duas formas diferentes: o jogador tinha este union completo e o
+ * inimigo tinha `{ skillId, bloquear }`. A assimetria dizia, sem querer, que
+ * inimigo não se transforma — o que era verdade num 1x1 contra um Character
+ * do catálogo, e deixa de ser assim que existir um aliado controlado pela
+ * máquina ou um chefe de raid que muda de forma no meio da luta.
+ */
+export type AcaoDeCombate =
+  | {
+      kind: 'ATTACK'
+      skillId: string | null
+      /**
+       * Índice do alvo no array do lado OPOSTO. Ausente significa "o primeiro
+       * que ainda estiver de pé", que num 1x1 é sempre a resposta certa.
+       */
+      alvo?: number
+    }
   | { kind: 'TRANSFORM'; transformationId: string }
   /**
    * Gasta a rodada inteira para reduzir o dano recebido, pagando com stamina.
    * Não tem alvo nem habilidade: é uma postura, não um golpe.
    */
   | { kind: 'BLOCK' }
+
+/** O mesmo tipo, com o nome que o lado do jogador já usava. */
+export type PlayerAction = AcaoDeCombate
+
+/**
+ * As ações de uma rodada, PARALELAS aos arrays de combatentes do estado:
+ * `aliadas[i]` é o que `state.aliados[i]` faz.
+ *
+ * Posicional em vez de indexado por id porque o estado já é uma lista
+ * ordenada — uma segunda chave seria a mesma informação com uma chance a mais
+ * de as duas discordarem. Combatente caído tem ação ignorada, então o
+ * chamador não precisa saber quem está de pé para montar a lista.
+ */
+export type AcoesDaRodada = {
+  aliadas: AcaoDeCombate[]
+  inimigas: AcaoDeCombate[]
+}

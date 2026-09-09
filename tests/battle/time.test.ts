@@ -1,0 +1,241 @@
+import { describe, it, expect } from 'vitest'
+import { createInitialState, resolveRound } from '@/app/lib/battle/engine'
+import type { AcoesDaRodada, BaseStats, CombatantState, SkillDef } from '@/app/lib/battle/types'
+
+/**
+ * Combate com mais de um combatente por lado.
+ *
+ * O 1x1 continua sendo o caso mais jogado, e ele tem testes próprios em toda
+ * parte. O que ESTE arquivo protege é o que só existe com time: a fila única
+ * de iniciativa misturando os dois lados, a escolha de alvo, e a regra de que
+ * um lado só perde quando TODOS caem — não quando o primeiro cai.
+ */
+
+const NUNCA_CRITA = () => 1
+
+const stats = (over: Partial<BaseStats> = {}): BaseStats => ({
+  hp: 100,
+  attack: 20,
+  defense: 10,
+  speed: 15,
+  energy: 200,
+  stamina: 200,
+  ...over,
+})
+
+const skill = (over: Partial<SkillDef> = {}): SkillDef => ({
+  id: 'sk',
+  name: 'Golpe',
+  power: 30,
+  energyCost: 0,
+  cooldown: 0,
+  effects: [],
+  scalingStat: 'attack',
+  tags: [],
+  ...over,
+})
+
+/** Monta um estado com quantos combatentes se quiser de cada lado. */
+function campo(aliados: BaseStats[], inimigos: BaseStats[]) {
+  const molde = createInitialState(aliados[0], inimigos[0])
+  const como = (base: CombatantState, s: BaseStats): CombatantState => ({
+    ...base,
+    currentHp: s.hp,
+    maxHp: s.hp,
+    baseMaxHp: s.hp,
+    attack: s.attack,
+    baseAttack: s.attack,
+    speed: s.speed,
+    baseSpeed: s.speed,
+  })
+  return {
+    ...molde,
+    aliados: aliados.map((s) => como(molde.aliados[0], s)),
+    inimigos: inimigos.map((s) => como(molde.inimigos[0], s)),
+  }
+}
+
+const atacar = (skillId: string | null, alvo?: number) => ({ kind: 'ATTACK' as const, skillId, alvo })
+
+function rodada(
+  estado: ReturnType<typeof campo>,
+  acoes: AcoesDaRodada,
+  skills: Record<string, SkillDef> = { sk: skill() }
+) {
+  return resolveRound(
+    estado,
+    acoes,
+    { playerSkills: skills, enemySkills: skills, playerTransformations: {} },
+    NUNCA_CRITA
+  )
+}
+
+describe('a fila de iniciativa', () => {
+  it('mistura os dois lados: o veloz inimigo age antes do aliado lento', () => {
+    // Se a ordem fosse "time A inteiro, depois time B", o aliado lento agiria
+    // antes do inimigo veloz — e velocidade deixaria de significar o que
+    // significa no 1x1.
+    const e = campo([stats({ speed: 30 }), stats({ speed: 5 })], [stats({ speed: 20 })])
+    const r = rodada(e, {
+      aliadas: [atacar('sk'), atacar('sk')],
+      inimigas: [atacar('sk')],
+    })
+
+    const ordem = r.turnResults.filter((t) => t.kind === 'ATTACK').map((t) => t.side)
+    expect(ordem).toEqual(['PLAYER', 'ENEMY', 'PLAYER'])
+  })
+
+  it('empate de velocidade vai para o aliado, como no 1x1', () => {
+    const e = campo([stats({ speed: 15 })], [stats({ speed: 15 })])
+    const r = rodada(e, { aliadas: [atacar('sk')], inimigas: [atacar('sk')] })
+    expect(r.turnResults.filter((t) => t.kind === 'ATTACK')[0].side).toBe('PLAYER')
+  })
+
+  it('todo mundo de pé age uma vez por rodada', () => {
+    // HP alto de propósito: se alguém cair no meio da rodada, ele não age mais
+    // e a contagem deixa de medir o que este teste quer medir.
+    const e = campo([stats({ hp: 900 }), stats({ hp: 900 }), stats({ hp: 900 })], [stats({ hp: 900 }), stats({ hp: 900 })])
+    const r = rodada(e, {
+      aliadas: [atacar('sk'), atacar('sk'), atacar('sk')],
+      inimigas: [atacar('sk'), atacar('sk')],
+    })
+    expect(r.turnResults.filter((t) => t.kind === 'ATTACK')).toHaveLength(5)
+  })
+})
+
+describe('escolha de alvo', () => {
+  it('bate em quem a ação apontou, não sempre no primeiro', () => {
+    const e = campo([stats({ speed: 99 })], [stats(), stats()])
+    const r = rodada(e, { aliadas: [atacar('sk', 1)], inimigas: [atacar(null), atacar(null)] })
+
+    expect(r.state.inimigos[0].currentHp).toBe(100)
+    expect(r.state.inimigos[1].currentHp).toBeLessThan(100)
+  })
+
+  it('sem alvo declarado, bate no primeiro de pé', () => {
+    const e = campo([stats({ speed: 99 })], [stats(), stats()])
+    const r = rodada(e, { aliadas: [atacar('sk')], inimigas: [atacar(null), atacar(null)] })
+    expect(r.state.inimigos[0].currentHp).toBeLessThan(100)
+  })
+
+  it('redireciona quando o alvo escolhido cai antes da vez de quem escolheu', () => {
+    // O alvo foi escolhido no começo da rodada; alguém mais rápido pode
+    // derrubá-lo no meio dela. Desperdiçar a ação puniria o jogador por uma
+    // coisa que ele não tinha como prever — a intenção era ATACAR, e ela
+    // continua válida.
+    const e = campo(
+      [stats({ speed: 99, attack: 500 }), stats({ speed: 1 })],
+      [stats({ hp: 10 }), stats()]
+    )
+    const r = rodada(e, {
+      aliadas: [atacar('sk', 0), atacar('sk', 0)],
+      inimigas: [atacar(null), atacar(null)],
+    })
+
+    expect(r.state.inimigos[0].currentHp).toBe(0)
+    // O aliado lento mirava no que já caiu, e acertou o outro.
+    expect(r.state.inimigos[1].currentHp).toBeLessThan(100)
+  })
+
+  it('alvo fora do alcance do array cai no primeiro de pé', () => {
+    const e = campo([stats({ speed: 99 })], [stats()])
+    const r = rodada(e, { aliadas: [atacar('sk', 7)], inimigas: [atacar(null)] })
+    expect(r.state.inimigos[0].currentHp).toBeLessThan(100)
+  })
+})
+
+describe('quem cai fica caído', () => {
+  const derrubado = (c: CombatantState): CombatantState => ({ ...c, currentHp: 0 })
+
+  it('combatente caído não age', () => {
+    const e = campo([stats(), stats()], [stats()])
+    const comUmCaido = { ...e, aliados: [e.aliados[0], derrubado(e.aliados[1])] }
+    const r = rodada(comUmCaido, {
+      aliadas: [atacar('sk'), atacar('sk')],
+      inimigas: [atacar(null)],
+    })
+    expect(r.turnResults.filter((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')).toHaveLength(1)
+  })
+
+  it('combatente caído não recebe golpe: o ataque vai para quem está de pé', () => {
+    const e = campo([stats({ speed: 99 })], [stats(), stats()])
+    const comUmCaido = { ...e, inimigos: [derrubado(e.inimigos[0]), e.inimigos[1]] }
+    const r = rodada(comUmCaido, { aliadas: [atacar('sk', 0)], inimigas: [atacar(null), atacar(null)] })
+
+    expect(r.state.inimigos[0].currentHp).toBe(0)
+    expect(r.state.inimigos[1].currentHp).toBeLessThan(100)
+  })
+})
+
+describe('o desfecho', () => {
+  it('não termina enquanto sobrar UM de pé do lado', () => {
+    // A diferença central para o 1x1: lá, o primeiro a cair decidia a luta.
+    const e = campo([stats()], [stats({ hp: 1 }), stats()])
+    const r = rodada(e, { aliadas: [atacar('sk')], inimigas: [atacar(null), atacar(null)] })
+
+    expect(r.state.inimigos[0].currentHp).toBe(0)
+    expect(r.state.outcome).toBeNull()
+  })
+
+  it('vitória quando o último inimigo cai', () => {
+    const e = campo([stats({ attack: 500, speed: 99 })], [stats({ hp: 1 })])
+    const r = rodada(e, { aliadas: [atacar('sk')], inimigas: [atacar(null)] })
+    expect(r.state.outcome).toBe('PLAYER_WIN')
+  })
+
+  it('derrota quando o último aliado cai', () => {
+    const e = campo([stats({ hp: 1, speed: 1 })], [stats({ attack: 500, speed: 99 })])
+    const r = rodada(e, { aliadas: [atacar(null)], inimigas: [atacar('sk')] })
+    expect(r.state.outcome).toBe('ENEMY_WIN')
+  })
+
+  it('um time grande sobrevive à queda de metade dele', () => {
+    // O que sobra em pé precisa AGUENTAR o golpe: com HP normal ele cairia na
+    // mesma rodada e o teste mediria a derrota, não a sobrevivência.
+    const e = campo([stats({ hp: 5000 }), stats(), stats()], [stats({ attack: 500, speed: 99 })])
+    const doisCaidos = {
+      ...e,
+      aliados: [e.aliados[0], { ...e.aliados[1], currentHp: 0 }, { ...e.aliados[2], currentHp: 0 }],
+    }
+    const r = rodada(doisCaidos, {
+      aliadas: [atacar('sk'), atacar('sk'), atacar('sk')],
+      inimigas: [atacar(null)],
+    })
+    expect(r.state.outcome).toBeNull()
+  })
+})
+
+describe('choque de golpes com mais de dois em campo', () => {
+  const feixe = skill({ id: 'feixe', tags: ['beam'] })
+
+  it('exige que os dois tenham escolhido UM AO OUTRO', () => {
+    // Dois golpes só se encontram no meio se estiverem indo um na direção do
+    // outro. Sem reciprocidade, o choque viraria uma bagunça de quem chocou
+    // com quem assim que houvesse três em campo.
+    // 2x2 com as miras CRUZADAS: 0 bate em 0, mas 0 do outro lado bate em 1.
+    // Com um inimigo só, qualquer mira dele seria recíproca com alguém.
+    const e = campo(
+      [stats({ speed: 20, hp: 900 }), stats({ speed: 10, hp: 900 })],
+      [stats({ speed: 15, hp: 900 }), stats({ speed: 12, hp: 900 })]
+    )
+    const r = rodada(
+      e,
+      {
+        aliadas: [atacar('feixe', 0), atacar('feixe', 1)],
+        inimigas: [atacar('feixe', 1), atacar('feixe', 0)],
+      },
+      { feixe }
+    )
+    expect(r.turnResults.some((t) => t.kind === 'CLASH')).toBe(false)
+  })
+
+  it('dispara quando os dois se escolhem', () => {
+    const e = campo([stats({ speed: 20 })], [stats({ speed: 15 })])
+    const r = rodada(
+      e,
+      { aliadas: [atacar('feixe', 0)], inimigas: [atacar('feixe', 0)] },
+      { feixe }
+    )
+    expect(r.turnResults.some((t) => t.kind === 'CLASH')).toBe(true)
+  })
+})

@@ -400,7 +400,10 @@ export async function takeTurn(battleId: string, skillId: string | null): Promis
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
-    { playerAction, enemyAction: { skillId: enemySkillId, bloquear: inimigoBloqueia } },
+    {
+      aliadas: [playerAction],
+      inimigas: [inimigoBloqueia ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: enemySkillId }],
+    },
     { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
   )
 
@@ -423,7 +426,7 @@ export async function blockTurn(battleId: string): Promise<void> {
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
-    { playerAction: { kind: 'BLOCK' }, enemyAction: { skillId: enemySkillId, bloquear: inimigoBloqueia } },
+    { aliadas: [{ kind: 'BLOCK' }], inimigas: [inimigoBloqueia ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: enemySkillId }] },
     { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
   )
 
@@ -489,7 +492,10 @@ export async function activateTransformation(battleId: string, transformationId:
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
-    { playerAction, enemyAction: { skillId: enemySkillId, bloquear: inimigoBloqueia } },
+    {
+      aliadas: [playerAction],
+      inimigas: [inimigoBloqueia ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: enemySkillId }],
+    },
     { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
   )
 

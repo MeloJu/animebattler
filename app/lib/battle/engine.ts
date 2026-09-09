@@ -21,17 +21,19 @@ import {
   SCALING_REFERENCE,
 } from './constants'
 import type {
+  AcaoDeCombate,
+  AcoesDaRodada,
   AppliedEffect,
   BaseStats,
   BattleState,
+  BattleStateGravado,
   CombatantState,
+  DotFlavor,
   Outcome,
-  PlayerAction,
   ScalingStat,
+  Side,
   SkillDef,
   SkillEffect,
-  Side,
-  DotFlavor,
   Stat,
   StatBonus,
   StatusEffectInstance,
@@ -39,7 +41,6 @@ import type {
   TransformationDef,
   TransformationTrigger,
   TurnResult,
-  BattleStateGravado,
 } from './types'
 
 function clamp(value: number, min: number, max: number): number {
@@ -1264,103 +1265,240 @@ export function resolverClash(
   return { vencedor: fa > fb ? 'PLAYER' : 'ENEMY' }
 }
 
+/**
+ * Um combatente em campo, junto com onde ele está.
+ *
+ * A posição (lado + índice) é o endereço dele: é assim que uma ação diz em
+ * quem bate e é assim que o resultado volta para o array certo. Guardar isso
+ * aqui, e não dentro de CombatantState, mantém o estado gravado sem
+ * informação redundante — o lado já é o array em que ele está.
+ */
+type EmCampo = { lado: Side; indice: number }
+
+const LADO_ALIADO: Side = 'PLAYER'
+
+function estaDePe(c: CombatantState): boolean {
+  return c.currentHp > 0
+}
+
+/**
+ * A ordem em que todos agem na rodada.
+ *
+ * UMA FILA SÓ, com os dois lados misturados, ordenada por velocidade. Não é
+ * "o time A joga, depois o time B": o veloz do lado inimigo age antes do
+ * tanque do seu, que é o que faz velocidade continuar significando a mesma
+ * coisa que significava no 1x1.
+ *
+ * O EMPATE VAI PARA O ALIADO, preservando exatamente a regra anterior
+ * (`speed do jogador >= speed do inimigo` colocava o jogador primeiro). Entre
+ * dois do mesmo lado, o de índice menor age antes — arbitrário, mas precisa
+ * ser determinístico: o estado é um snapshot gravado, e a mesma entrada tem
+ * que dar sempre a mesma rodada.
+ */
+function ordemDeIniciativa(state: BattleState): EmCampo[] {
+  const todos: EmCampo[] = [
+    ...state.aliados.map((_, indice) => ({ lado: LADO_ALIADO, indice })),
+    ...state.inimigos.map((_, indice) => ({ lado: 'ENEMY' as Side, indice })),
+  ]
+
+  return todos.sort((a, b) => {
+    const va = getCombatStat(combatenteEm(state, a), 'speed')
+    const vb = getCombatStat(combatenteEm(state, b), 'speed')
+    if (va !== vb) return vb - va
+    if (a.lado !== b.lado) return a.lado === LADO_ALIADO ? -1 : 1
+    return a.indice - b.indice
+  })
+}
+
+function combatenteEm(state: BattleState, onde: EmCampo): CombatantState {
+  return onde.lado === LADO_ALIADO ? state.aliados[onde.indice] : state.inimigos[onde.indice]
+}
+
+function comCombatenteEm(state: BattleState, onde: EmCampo, c: CombatantState): BattleState {
+  if (onde.lado === LADO_ALIADO) {
+    const aliados = [...state.aliados]
+    aliados[onde.indice] = c
+    return { ...state, aliados }
+  }
+  const inimigos = [...state.inimigos]
+  inimigos[onde.indice] = c
+  return { ...state, inimigos }
+}
+
+function timeOposto(state: BattleState, lado: Side): CombatantState[] {
+  return lado === LADO_ALIADO ? state.inimigos : state.aliados
+}
+
+/**
+ * Em quem este combatente bate.
+ *
+ * O alvo pedido só vale se ainda estiver de pé — quem escolheu o alvo fez isso
+ * no começo da rodada, e alguém mais rápido pode tê-lo derrubado no meio dela.
+ * Redirecionar para o primeiro vivo é melhor que desperdiçar a ação: o jogador
+ * escolheu ATACAR, e a intenção continua válida mesmo com o alvo caído.
+ */
+function alvoDe(state: BattleState, atacante: EmCampo, pedido: number | undefined): EmCampo | null {
+  const oposto = timeOposto(state, atacante.lado)
+  const ladoAlvo: Side = atacante.lado === LADO_ALIADO ? 'ENEMY' : LADO_ALIADO
+
+  if (pedido !== undefined && oposto[pedido] && estaDePe(oposto[pedido])) {
+    return { lado: ladoAlvo, indice: pedido }
+  }
+  const primeiroVivo = oposto.findIndex(estaDePe)
+  return primeiroVivo === -1 ? null : { lado: ladoAlvo, indice: primeiroVivo }
+}
+
+function acaoDe(input: AcoesDaRodada, onde: EmCampo): AcaoDeCombate | undefined {
+  return onde.lado === LADO_ALIADO ? input.aliadas[onde.indice] : input.inimigas[onde.indice]
+}
+
+const mesmoLugar = (a: EmCampo, b: EmCampo) => a.lado === b.lado && a.indice === b.indice
+
 export function resolveRound(
   state: BattleState,
-  input: {
-    playerAction: PlayerAction
-    enemyAction: { skillId: string | null; bloquear?: boolean }
-  },
+  input: AcoesDaRodada,
   ctx: {
     playerSkills: Record<string, SkillDef>
     enemySkills: Record<string, SkillDef>
+    /**
+     * Transformações de `aliados[0]`, o personagem do jogador.
+     *
+     * Um mapa só, e não um por combatente, porque hoje ninguém mais tem
+     * transformação desbloqueada: o inimigo entra como Character puro do
+     * catálogo, sem nenhuma. Quando existir aliado controlado pela máquina
+     * com forma própria, isto vira um mapa por posição.
+     */
     playerTransformations: Record<string, TransformationDef>
   },
   rand: () => number = Math.random
 ): { state: BattleState; turnResults: TurnResult[] } {
-  // COMMIT A: a forma do estado ja e de time, mas a rodada ainda resolve so o
-  // principal de cada lado. Separar as duas mudancas e deliberado — assim
-  // este passo e provadamente inerte (as taxas de vitoria tem que sair
-  // identicas, digito por digito), e qualquer diferenca de comportamento que
-  // aparecer depois so pode ter vindo do laco para N, que vem em seguida.
-  let player = { ...heroi(state) }
-  let enemy = { ...vilao(state) }
+  let atual: BattleState = {
+    ...state,
+    aliados: state.aliados.map((c) => ({ ...c })),
+    inimigos: state.inimigos.map((c) => ({ ...c })),
+  }
   const turnResults: TurnResult[] = []
 
-  // 1. Start of round: energy regen, cooldown tick, DOT tick + status-duration tick (both sides)
-  player = tickCooldowns(regenEnergy(player))
-  enemy = tickCooldowns(regenEnergy(enemy))
-  const dominioJogador = manterDominio('PLAYER', player)
-  player = dominioJogador.combatant
-  turnResults.push(...dominioJogador.results)
-  const dominioInimigo = manterDominio('ENEMY', enemy)
-  enemy = dominioInimigo.combatant
-  turnResults.push(...dominioInimigo.results)
+  const posicoes: EmCampo[] = [
+    ...atual.aliados.map((_, indice) => ({ lado: LADO_ALIADO, indice })),
+    ...atual.inimigos.map((_, indice) => ({ lado: 'ENEMY' as Side, indice })),
+  ]
+  const vivos = () => posicoes.filter((p) => estaDePe(combatenteEm(atual, p)))
 
-  const playerUpkeep = tickStatusEffects('PLAYER', player)
-  player = playerUpkeep.combatant
-  turnResults.push(...playerUpkeep.results)
-  const enemyUpkeep = tickStatusEffects('ENEMY', enemy)
-  enemy = enemyUpkeep.combatant
-  turnResults.push(...enemyUpkeep.results)
-
-  // 2. Reactive/passive auto-transform checks that fire at round start.
-  // Enemy (a bare Character, not a UserCharacter) never has unlocked
-  // transformations in v1, so only the player is checked here.
-  const startAuto = maybeAutoTransform(player, ctx.playerTransformations, ['LOW_HP', 'ENERGY_CHARGE'], 0)
-  if (startAuto) {
-    player = startAuto.combatant
-    turnResults.push(makeTransformResult('PLAYER', startAuto.transformation))
-  }
-
-  // 3. CHOQUE, antes da ordem por velocidade — ele é simultâneo por natureza:
-  // os dois golpes partem juntos e se encontram no meio. Resolver na ordem de
-  // iniciativa faria o mais rápido "acertar primeiro" e não haveria choque.
-  // BLOQUEIO SE RESOLVE AQUI, antes da ordem por velocidade, e não no turno de
-  // quem bloqueou. Tem que ser assim: a guarda precisa estar de pé quando o
-  // oponente ataca, e quem é mais lento também bloqueia — senão o bloqueio só
-  // funcionaria para quem já tem a vantagem da iniciativa, que é o contrário
-  // do que ele existe para fazer.
+  // 1. Início da rodada: regeneração, recarga, manutenção de domínio e o tique
+  //    dos efeitos — para todo mundo que estiver de pé.
   //
-  // Atordoado não bloqueia: perder a rodada já é a punição, e deixar a guarda
-  // de pé apagaria a consequência do atordoamento.
-  const jogadorBloqueia = input.playerAction.kind === 'BLOCK' && !isStunned(player) && podeBloquear(player)
-  const inimigoBloqueia = input.enemyAction.bloquear === true && !isStunned(enemy) && podeBloquear(enemy)
-
-  if (jogadorBloqueia) {
-    const custo = custoDeErguerGuarda(player)
-    player = erguerGuarda(player)
-    turnResults.push({ version: 1, side: 'PLAYER', kind: 'BLOCK', skillId: null, skillName: 'Bloqueio', guardaGasta: custo })
+  //    A ORDEM DAS TRÊS FASES é preservada de propósito (todas as regenerações,
+  //    depois todos os domínios, depois todos os status) em vez de fazer as
+  //    três de cada combatente juntas: é a ordem em que o log saía antes, e
+  //    mudá-la mudaria a leitura de toda batalha antiga sem nenhum ganho.
+  for (const p of vivos()) {
+    atual = comCombatenteEm(atual, p, tickCooldowns(regenEnergy(combatenteEm(atual, p))))
   }
-  if (inimigoBloqueia) {
-    const custo = custoDeErguerGuarda(enemy)
-    enemy = erguerGuarda(enemy)
-    turnResults.push({ version: 1, side: 'ENEMY', kind: 'BLOCK', skillId: null, skillName: 'Bloqueio', guardaGasta: custo })
+  for (const p of vivos()) {
+    const r = manterDominio(p.lado, combatenteEm(atual, p))
+    atual = comCombatenteEm(atual, p, r.combatant)
+    turnResults.push(...r.results)
+  }
+  for (const p of vivos()) {
+    const r = tickStatusEffects(p.lado, combatenteEm(atual, p))
+    atual = comCombatenteEm(atual, p, r.combatant)
+    turnResults.push(...r.results)
   }
 
-  let habilidadeDoJogador =
-    input.playerAction.kind === 'ATTACK' && input.playerAction.skillId
-      ? ctx.playerSkills[input.playerAction.skillId] ?? null
-      : null
-  let habilidadeDoInimigo =
-    input.enemyAction.bloquear === true
-      ? null
-      : input.enemyAction.skillId
-        ? ctx.enemySkills[input.enemyAction.skillId] ?? null
-        : null
+  // 2. Transformação automática de início de rodada. Só o principal aliado
+  //    tem formas hoje — ver o comentário de ctx.playerTransformations.
+  const heroiEmCampo: EmCampo = { lado: LADO_ALIADO, indice: 0 }
+  if (estaDePe(combatenteEm(atual, heroiEmCampo))) {
+    const auto = maybeAutoTransform(
+      combatenteEm(atual, heroiEmCampo),
+      ctx.playerTransformations,
+      ['LOW_HP', 'ENERGY_CHARGE'],
+      0
+    )
+    if (auto) {
+      atual = comCombatenteEm(atual, heroiEmCampo, auto.combatant)
+      turnResults.push(makeTransformResult(LADO_ALIADO, auto.transformation))
+    }
+  }
 
-  // Quem bloqueia não disputa choque: não há golpe partindo do lado dele.
-  const tagChoque =
-    !isStunned(player) && !isStunned(enemy) && !jogadorBloqueia && !inimigoBloqueia
-      ? tagDeClash(habilidadeDoJogador, habilidadeDoInimigo)
-      : null
+  // 3. BLOQUEIO, antes da ordem de iniciativa e não no turno de quem bloqueou:
+  //    a guarda precisa estar de pé quando o oponente ataca, e quem é mais
+  //    lento também bloqueia — senão bloquear só serviria a quem já tem a
+  //    vantagem da iniciativa, que é o contrário do que ele existe para fazer.
+  const bloqueando = new Set<string>()
+  const chave = (p: EmCampo) => `${p.lado}:${p.indice}`
 
-  if (tagChoque && habilidadeDoJogador && habilidadeDoInimigo) {
-    const { vencedor } = resolverClash(player, enemy, habilidadeDoJogador, habilidadeDoInimigo, rand)
+  for (const p of vivos()) {
+    const c = combatenteEm(atual, p)
+    if (acaoDe(input, p)?.kind !== 'BLOCK') continue
+    if (isStunned(c) || !podeBloquear(c)) continue
+
+    const custo = custoDeErguerGuarda(c)
+    atual = comCombatenteEm(atual, p, erguerGuarda(c))
+    bloqueando.add(chave(p))
     turnResults.push({
       version: 1,
-      side: vencedor ?? 'PLAYER',
+      side: p.lado,
+      kind: 'BLOCK',
+      skillId: null,
+      skillName: 'Bloqueio',
+      guardaGasta: custo,
+    })
+  }
+
+  // 4. Habilidade e alvo de cada um, resolvidos ANTES de qualquer golpe sair.
+  //    Tem que ser antes: o choque compara os dois golpes partindo juntos, e
+  //    isso não existiria se cada um fosse escolhido na sua vez.
+  const golpes = new Map<string, { skill: SkillDef | null; alvo: EmCampo | null }>()
+  for (const p of vivos()) {
+    const acao = acaoDe(input, p)
+    if (!acao || acao.kind !== 'ATTACK' || bloqueando.has(chave(p))) continue
+
+    const catalogo = p.lado === LADO_ALIADO ? ctx.playerSkills : ctx.enemySkills
+    golpes.set(chave(p), {
+      skill: acao.skillId ? catalogo[acao.skillId] ?? null : null,
+      alvo: alvoDe(atual, p, acao.alvo),
+    })
+  }
+
+  // 5. CHOQUE DE GOLPES, entre dois que escolheram UM AO OUTRO.
+  //
+  //    A exigência de reciprocidade é o que dá sentido ao choque com mais de
+  //    dois em campo: dois golpes só se encontram no meio se estiverem indo um
+  //    na direção do outro. Num 1x1 isso é sempre verdade, então a regra
+  //    antiga é o caso particular desta.
+  //
+  //    Cada combatente entra em no máximo um choque, e os pares são varridos
+  //    em ordem fixa — o estado é um snapshot gravado, e a mesma entrada tem
+  //    que dar sempre a mesma rodada.
+  const anulados = new Set<string>()
+  const jaChocou = new Set<string>()
+
+  for (const a of vivos()) {
+    if (a.lado !== LADO_ALIADO || jaChocou.has(chave(a))) continue
+    const meu = golpes.get(chave(a))
+    if (!meu?.alvo || !meu.skill) continue
+
+    const b = meu.alvo
+    if (jaChocou.has(chave(b))) continue
+    const dele = golpes.get(chave(b))
+    if (!dele?.alvo || !dele.skill || !mesmoLugar(dele.alvo, a)) continue
+
+    const ca = combatenteEm(atual, a)
+    const cb = combatenteEm(atual, b)
+    if (isStunned(ca) || isStunned(cb)) continue
+    if (bloqueando.has(chave(a)) || bloqueando.has(chave(b))) continue
+
+    const tag = tagDeClash(meu.skill, dele.skill)
+    if (!tag) continue
+
+    const { vencedor } = resolverClash(ca, cb, meu.skill, dele.skill, rand)
+    turnResults.push({
+      version: 1,
+      side: vencedor ?? LADO_ALIADO,
       kind: 'CLASH',
-      clashTag: tagChoque,
+      clashTag: tag,
       skillId: null,
       skillName: vencedor === null ? 'Choque equilibrado' : 'Choque',
     })
@@ -1371,99 +1509,104 @@ export function resolveRound(
       ...sk,
       power: Math.round(sk.power * (1 + CLASH_BONUS_DO_VENCEDOR)),
     })
-    if (vencedor === 'PLAYER') {
-      habilidadeDoJogador = amplificar(habilidadeDoJogador)
-      habilidadeDoInimigo = null
-    } else if (vencedor === 'ENEMY') {
-      habilidadeDoInimigo = amplificar(habilidadeDoInimigo)
-      habilidadeDoJogador = null
+    if (vencedor === a.lado) {
+      golpes.set(chave(a), { ...meu, skill: amplificar(meu.skill) })
+      anulados.add(chave(b))
+    } else if (vencedor === b.lado) {
+      golpes.set(chave(b), { ...dele, skill: amplificar(dele.skill) })
+      anulados.add(chave(a))
     } else {
-      habilidadeDoJogador = null
-      habilidadeDoInimigo = null
+      anulados.add(chave(a))
+      anulados.add(chave(b))
+    }
+    jaChocou.add(chave(a))
+    jaChocou.add(chave(b))
+  }
+
+  // 6. Cada um age na sua vez, na fila única de iniciativa.
+  const ordem = ordemDeIniciativa(atual)
+
+  for (const p of ordem) {
+    // Um lado inteiro no chão encerra a rodada: não há mais em quem bater.
+    if (!atual.aliados.some(estaDePe) || !atual.inimigos.some(estaDePe)) break
+
+    const c = combatenteEm(atual, p)
+    if (!estaDePe(c)) continue
+
+    if (isStunned(c)) {
+      turnResults.push(makeStunResult(p.lado))
+      continue
+    }
+
+    const acao = acaoDe(input, p)
+
+    if (acao?.kind === 'TRANSFORM' && p.lado === LADO_ALIADO && p.indice === 0) {
+      const t = ctx.playerTransformations[acao.transformationId]
+      if (t) {
+        atual = comCombatenteEm(atual, p, applyTransformation(c, t))
+        turnResults.push(makeTransformResult(p.lado, t))
+      }
+      continue
+    }
+
+    if (bloqueando.has(chave(p)) || anulados.has(chave(p))) continue
+
+    const golpe = golpes.get(chave(p))
+    // Quem não declarou ataque nesta rodada não age.
+    if (!golpe) continue
+
+    // O ALVO É RECONFERIDO AQUI, e não só na hora de escolher: alguém mais
+    // rápido pode ter derrubado quem este ia atacar no meio da mesma rodada.
+    // Desperdiçar a ação puniria o jogador por uma coisa que ele não tinha
+    // como prever — a intenção era ATACAR, e ela continua válida. Sem alvo
+    // nenhum de pé, aí sim não há o que fazer.
+    const mira = golpe.alvo && estaDePe(combatenteEm(atual, golpe.alvo))
+      ? golpe.alvo
+      : alvoDe(atual, p, undefined)
+    if (!mira) continue
+
+    const alvoAtual = combatenteEm(atual, mira)
+
+    const hpAntes = c.currentHp
+    const r = performSkillUse(
+      p.lado,
+      c,
+      alvoAtual,
+      golpe.skill,
+      rand,
+      bloqueando.has(chave(mira))
+    )
+    atual = comCombatenteEm(atual, p, r.attacker)
+    atual = comCombatenteEm(atual, mira, r.defender)
+    turnResults.push(r.turnResult, ...r.eventos)
+
+    // Transformação por dano recebido, do lado de quem apanhou E de quem
+    // levou counter — as duas são "tomei dano", e o counter machuca o atacante.
+    for (const machucado of [p, mira]) {
+      if (machucado.lado !== LADO_ALIADO || machucado.indice !== 0) continue
+      const depois = combatenteEm(atual, machucado)
+      if (!estaDePe(depois)) continue
+      const sofrido = mesmoLugar(machucado, p) ? hpAntes - depois.currentHp : r.turnResult.damage ?? 0
+      if (sofrido <= 0) continue
+      const auto = maybeAutoTransform(depois, ctx.playerTransformations, ['ON_DAMAGE_TAKEN'], sofrido)
+      if (auto) {
+        atual = comCombatenteEm(atual, machucado, auto.combatant)
+        turnResults.push(makeTransformResult(LADO_ALIADO, auto.transformation))
+      }
     }
   }
 
-  // Um golpe anulado pelo choque não vira ataque básico: a rodada foi gasta na
-  // disputa. Quem NÃO estava chocando segue normalmente.
-  const jogadorAnulado = tagChoque !== null && habilidadeDoJogador === null
-  const inimigoAnulado = tagChoque !== null && habilidadeDoInimigo === null
+  // 7. Fim da rodada: dreno das formas ativas (só o principal aliado as tem).
+  atual = comCombatenteEm(atual, heroiEmCampo, applyDrain(combatenteEm(atual, heroiEmCampo), ctx.playerTransformations))
 
-  // 3b. Resolve actions in effective-speed order (ties go to the player)
-  const order: Side[] = getCombatStat(player, 'speed') >= getCombatStat(enemy, 'speed') ? ['PLAYER', 'ENEMY'] : ['ENEMY', 'PLAYER']
+  // 8. Desfecho: um lado perde quando TODOS caem, não quando o primeiro cai.
+  const aliadosDePe = atual.aliados.some(estaDePe)
+  const inimigosDePe = atual.inimigos.some(estaDePe)
 
-  for (const side of order) {
-    if (player.currentHp <= 0 || enemy.currentHp <= 0) break
-
-    if (side === 'PLAYER') {
-      if (isStunned(player)) {
-        turnResults.push(makeStunResult('PLAYER'))
-        continue
-      }
-      if (input.playerAction.kind === 'TRANSFORM') {
-        const t = ctx.playerTransformations[input.playerAction.transformationId]
-        if (t) {
-          player = applyTransformation(player, t)
-          turnResults.push(makeTransformResult('PLAYER', t))
-        }
-        continue
-      }
-      if (jogadorAnulado || jogadorBloqueia) continue
-      const skill = habilidadeDoJogador
-      const hpBefore = player.currentHp
-      const result = performSkillUse('PLAYER', player, enemy, skill, rand, inimigoBloqueia)
-      player = result.attacker
-      enemy = result.defender
-      turnResults.push(result.turnResult, ...result.eventos)
-
-      // Being countered costs the player HP too (reflected damage) — check the same trigger.
-      const selfDamageTaken = hpBefore - player.currentHp
-      if (selfDamageTaken > 0 && player.currentHp > 0) {
-        const auto = maybeAutoTransform(player, ctx.playerTransformations, ['ON_DAMAGE_TAKEN'], selfDamageTaken)
-        if (auto) {
-          player = auto.combatant
-          turnResults.push(makeTransformResult('PLAYER', auto.transformation))
-        }
-      }
-    } else {
-      if (isStunned(enemy)) {
-        turnResults.push(makeStunResult('ENEMY'))
-        continue
-      }
-      if (inimigoAnulado || inimigoBloqueia) continue
-      const skill = habilidadeDoInimigo
-      const result = performSkillUse('ENEMY', enemy, player, skill, rand, jogadorBloqueia)
-      enemy = result.attacker
-      player = result.defender
-      turnResults.push(result.turnResult, ...result.eventos)
-
-      if (player.currentHp > 0) {
-        const damageAuto = maybeAutoTransform(player, ctx.playerTransformations, ['ON_DAMAGE_TAKEN'], result.turnResult.damage ?? 0)
-        if (damageAuto) {
-          player = damageAuto.combatant
-          turnResults.push(makeTransformResult('PLAYER', damageAuto.transformation))
-        }
-      }
-    }
-  }
-
-  // 4. End of round: drain active transformations (player only, per above)
-  player = applyDrain(player, ctx.playerTransformations)
-
-  // 5. Outcome
   let outcome: Outcome = state.outcome
-  if (player.currentHp <= 0 && enemy.currentHp <= 0) outcome = 'DRAW'
-  else if (enemy.currentHp <= 0) outcome = 'PLAYER_WIN'
-  else if (player.currentHp <= 0) outcome = 'ENEMY_WIN'
+  if (!aliadosDePe && !inimigosDePe) outcome = 'DRAW'
+  else if (!inimigosDePe) outcome = 'PLAYER_WIN'
+  else if (!aliadosDePe) outcome = 'ENEMY_WIN'
 
-  return {
-    state: {
-      ...state,
-      // Substitui o principal e preserva o resto do time — que hoje esta
-      // sempre vazio, e nao estara quando o laco para N chegar.
-      aliados: [player, ...state.aliados.slice(1)],
-      inimigos: [enemy, ...state.inimigos.slice(1)],
-      outcome,
-    },
-    turnResults,
-  }
+  return { state: { ...atual, outcome }, turnResults }
 }

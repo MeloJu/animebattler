@@ -71,10 +71,7 @@ export function simulateBattle(jogador: Combatente, inimigo: Combatente, seed: n
 
     const r = resolveRound(
       state,
-      {
-        playerAction: jogadorBloqueia ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: escolhaJogador },
-        enemyAction: { skillId: escolhaInimigo, bloquear: inimigoBloqueia },
-      },
+      { aliadas: [jogadorBloqueia ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: escolhaJogador }], inimigas: [inimigoBloqueia ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: escolhaInimigo }] },
       { playerSkills: jogadorPorId, enemySkills: inimigoPorId, playerTransformations: {} },
       rand
     )

@@ -57,8 +57,8 @@ function rodada(
     s,
     {
       // O jogador não ataca nos dois casos, para isolar o efeito da guarda.
-      playerAction: bloquear ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: 'inexistente' },
-      enemyAction: { skillId: golpeDoInimigo.id },
+      aliadas: [bloquear ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: 'inexistente' }],
+      inimigas: [{ kind: 'ATTACK', skillId: golpeDoInimigo.id }],
     },
     { playerSkills: {}, enemySkills: { [golpeDoInimigo.id]: golpeDoInimigo }, playerTransformations: {} },
     NUNCA_CRITA
@@ -94,7 +94,7 @@ describe('a guarda aparando', () => {
     const s = createInitialState(stats(), stats())
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'BLOCK' }, enemyAction: { skillId: null, bloquear: true } },
+      { aliadas: [{ kind: 'BLOCK' }], inimigas: [{ kind: 'BLOCK' }] },
       { playerSkills: {}, enemySkills: {}, playerTransformations: {} },
       NUNCA_CRITA
     )
@@ -107,7 +107,7 @@ describe('a guarda aparando', () => {
     const golpe = skill()
     const r = resolveRound(
       s,
-      { playerAction: { kind: 'BLOCK' }, enemyAction: { skillId: golpe.id, bloquear: true } },
+      { aliadas: [{ kind: 'BLOCK' }], inimigas: [{ kind: 'BLOCK' }] },
       { playerSkills: {}, enemySkills: { [golpe.id]: golpe }, playerTransformations: {} },
       NUNCA_CRITA
     )
@@ -162,7 +162,7 @@ describe('quebra de guarda', () => {
     const golpe = skill()
     const r = resolveRound(
       seco,
-      { playerAction: { kind: 'BLOCK' }, enemyAction: { skillId: golpe.id } },
+      { aliadas: [{ kind: 'BLOCK' }], inimigas: [{ kind: 'ATTACK', skillId: golpe.id }] },
       { playerSkills: {}, enemySkills: { [golpe.id]: golpe }, playerTransformations: {} },
       NUNCA_CRITA
     )
@@ -182,7 +182,7 @@ describe('quebra de guarda', () => {
     const golpe = skill()
     const r = resolveRound(
       atordoado,
-      { playerAction: { kind: 'BLOCK' }, enemyAction: { skillId: golpe.id } },
+      { aliadas: [{ kind: 'BLOCK' }], inimigas: [{ kind: 'ATTACK', skillId: golpe.id }] },
       { playerSkills: {}, enemySkills: { [golpe.id]: golpe }, playerTransformations: {} },
       NUNCA_CRITA
     )

@@ -54,7 +54,7 @@ function golpe(jogadorStats: BaseStats, inimigoStats: BaseStats, sk: SkillDef, r
   const s = createInitialState(jogadorStats, inimigoStats)
   return resolveRound(
     s,
-    { playerAction: { kind: 'ATTACK', skillId: sk.id }, enemyAction: { skillId: null } },
+    { aliadas: [{ kind: 'ATTACK', skillId: sk.id }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
     { playerSkills: { [sk.id]: sk }, enemySkills: {}, playerTransformations: {} },
     rand
   )
@@ -163,7 +163,7 @@ describe('o golpe errado, na rodada', () => {
     })
     const r = resolveRound(
       comDominio,
-      { playerAction: { kind: 'ATTACK', skillId: impreciso.id }, enemyAction: { skillId: null } },
+      { aliadas: [{ kind: 'ATTACK', skillId: impreciso.id }], inimigas: [{ kind: 'ATTACK', skillId: null }] },
       { playerSkills: { [impreciso.id]: impreciso }, enemySkills: {}, playerTransformations: {} },
       () => 0.99
     )

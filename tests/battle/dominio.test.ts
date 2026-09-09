@@ -62,7 +62,7 @@ const efeitoDe = (tipo: StatusEffectInstance['type'], over: Partial<StatusEffect
 function jogadorUsa(state: ReturnType<typeof createInitialState>, sk: SkillDef, inimigoUsa: SkillDef | null = null) {
   return resolveRound(
     state,
-    { playerAction: { kind: 'ATTACK', skillId: sk.id }, enemyAction: { skillId: inimigoUsa?.id ?? null } },
+    { aliadas: [{ kind: 'ATTACK', skillId: sk.id }], inimigas: [{ kind: 'ATTACK', skillId: inimigoUsa?.id ?? null }] },
     {
       playerSkills: { [sk.id]: sk },
       enemySkills: inimigoUsa ? { [inimigoUsa.id]: inimigoUsa } : {},
