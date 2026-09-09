@@ -43,7 +43,7 @@ function Interior({
     <button
       type="submit"
       disabled={semGuarda || pending}
-      className={`rounded-md px-3 py-2 text-sm border text-left transition-all ${
+      className={`w-full h-full rounded-md px-3 py-2 text-sm border text-left transition-all ${
         semGuarda
           ? 'border-border opacity-40 cursor-not-allowed'
           : 'border-amber-500/50 hover:bg-amber-500/10 hover:border-amber-500'

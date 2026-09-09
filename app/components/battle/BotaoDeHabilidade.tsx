@@ -57,7 +57,7 @@ function Interior({
     <button
       type="submit"
       disabled={bloqueado || pending}
-      className={`w-full rounded-md px-3 py-2 text-sm border text-left transition-all ${
+      className={`w-full h-full rounded-md px-3 py-2 text-sm border text-left transition-all ${
         bloqueado
           ? 'border-border opacity-40 cursor-not-allowed'
           : 'border-border hover:bg-surface-raised hover:border-accent/50'

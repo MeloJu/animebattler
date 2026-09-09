@@ -103,61 +103,87 @@ export default async function BattleArenaPage({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        <FighterCard
-          name={userCharacter.nickname}
-          imageUrl={userCharacter.character.imageUrl}
-          levelBadge={userCharacter.level}
-          transformationName={state.player.activeTransformationId ? playerTransformations[state.player.activeTransformationId]?.name : undefined}
-          combatant={state.player}
-        />
-
+        {/* A coluna do jogador: o card dele e as formas dele.
+            
+            As formas ficavam no fim do painel de Ações, depois do histórico e
+            de todas as habilidades — ou seja, fora da tela, e quem não rolasse
+            a página nunca saberia que existiam. O lugar delas é aqui por dois
+            motivos: a coluna é curta e cabe sem rolagem, e transformação é um
+            ESTADO DE QUEM VOCÊ É, não um golpe no adversário. Agrupada com o
+            próprio retrato, ela se lê como parte do personagem. */}
         <div className="space-y-4">
-          <div className="card p-4">
-            <h2 className="font-semibold mb-2">Histórico</h2>
-            <ul className="space-y-1 text-sm max-h-96 overflow-y-auto">
-              {turns.length === 0 && <li className="opacity-60">Nenhuma ação ainda.</li>}
-              {turns.map((turn) => (
-                <li key={turn.id} className="opacity-80">
-                  <TurnLogEntry turn={turn.result as unknown as TurnResult} playerName={userCharacter.nickname} enemyName={enemy.name} />
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FighterCard
+            name={userCharacter.nickname}
+            imageUrl={userCharacter.character.imageUrl}
+            levelBadge={userCharacter.level}
+            transformationName={state.player.activeTransformationId ? playerTransformations[state.player.activeTransformationId]?.name : undefined}
+            combatant={state.player}
+          />
 
-          {isActive && (
-            <div className="card p-4 space-y-3">
-              <h2 className="font-semibold">Ações</h2>
-              <div className="flex flex-wrap gap-2">
-                <form action={takeTurn.bind(null, battleId, null)}>
-                  <button type="submit" className="rounded-md px-3 py-2 text-sm border border-border hover:bg-surface-raised">
-                    Ataque Básico
-                  </button>
+          {isActive && availableTransformations.length > 0 && (
+            <div className="card p-4 space-y-2">
+              <h2 className="text-xs uppercase tracking-wide opacity-45">Formas</h2>
+              {availableTransformations.map((t) => (
+                <form key={t.id} action={activateTransformation.bind(null, battleId, t.id)}>
+                  <BotaoDeForma forma={t} energiaAtual={state.player.currentEnergy} />
                 </form>
-                {Object.values(playerSkills).map((skill) => (
-                  <form key={skill.id} action={takeTurn.bind(null, battleId, skill.id)}>
-                    <BotaoDeHabilidade skill={skill} combatente={state.player} />
-                  </form>
-                ))}
-                <form action={blockTurn.bind(null, battleId)}>
-                  <BotaoDeBloqueio combatente={state.player} custo={custoDeErguerGuarda(state.player)} />
-                </form>
-              </div>
-              {availableTransformations.length > 0 && (
-                <div className="pt-3 border-t border-border space-y-2">
-                  <div className="text-xs uppercase tracking-wide opacity-45">Formas</div>
-                  {availableTransformations.map((t) => (
-                    <form key={t.id} action={activateTransformation.bind(null, battleId, t.id)}>
-                      <BotaoDeForma forma={t} energiaAtual={state.player.currentEnergy} />
-                    </form>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
           )}
         </div>
 
+        <div className="card p-4">
+          <h2 className="font-semibold mb-2">Histórico</h2>
+          {/* Mais baixo do que era: agora é a altura do histórico que decide a
+              que distância da dobra a barra de ações começa. O log é
+              referência, não é onde a rodada se decide. */}
+          <ul className="space-y-1 text-sm max-h-80 overflow-y-auto">
+            {turns.length === 0 && <li className="opacity-60">Nenhuma ação ainda.</li>}
+            {turns.map((turn) => (
+              <li key={turn.id} className="opacity-80">
+                <TurnLogEntry turn={turn.result as unknown as TurnResult} playerName={userCharacter.nickname} enemyName={enemy.name} />
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <FighterCard name={enemy.name} imageUrl={enemy.imageUrl} combatant={state.enemy} />
       </div>
+
+      {/* AS AÇÕES OCUPAM A LARGURA INTEIRA, e não a coluna do meio.
+          
+          Na coluna elas tinham um terço da página: oito habilidades, cada uma
+          com nome, custo, efeitos e precisão, empilhavam numa torre que só
+          cabia rolando — e rolar para escolher a jogada é rolar TODA rodada.
+          Em largura total a mesma lista vira duas ou três fileiras curtas.
+          
+          Ficam DEPOIS dos três cards de propósito: a decisão da rodada se toma
+          olhando as duas barras de vida, então elas precisam estar acima e
+          visíveis no momento do clique. */}
+      {isActive && (
+        <div className="card p-4 space-y-3">
+          <h2 className="font-semibold">Ações</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 items-stretch">
+            <form action={takeTurn.bind(null, battleId, null)}>
+              <button
+                type="submit"
+                className="w-full h-full rounded-md px-3 py-2 text-sm border border-border text-left hover:bg-surface-raised hover:border-accent/50 transition-all"
+              >
+                <span className="font-medium">Ataque Básico</span>
+                <span className="block text-xs opacity-60 mt-0.5">sem custo</span>
+              </button>
+            </form>
+            {Object.values(playerSkills).map((skill) => (
+              <form key={skill.id} action={takeTurn.bind(null, battleId, skill.id)} className="h-full">
+                <BotaoDeHabilidade skill={skill} combatente={state.player} />
+              </form>
+            ))}
+            <form action={blockTurn.bind(null, battleId)} className="h-full">
+              <BotaoDeBloqueio combatente={state.player} custo={custoDeErguerGuarda(state.player)} />
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
