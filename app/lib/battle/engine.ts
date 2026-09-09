@@ -9,6 +9,11 @@ import {
   LEVEL_SCALING,
   ACERTO_MINIMO,
   ATRIBUTO_NEUTRO,
+  BLOQUEIO_CUSTO_BASE,
+  BLOQUEIO_REDUCAO,
+  GUARDA_POR_DANO,
+  GUARDA_QUEBRADA_ATORDOA,
+  SEVERIDADE,
   DOMAIN_DAMAGE_BONUS,
   EVASAO_MAXIMA,
   EVASAO_POR_PONTO,
@@ -663,6 +668,92 @@ function applySkillEffects(
 }
 
 /** Dano que ignora escudo — ver dominioAberto. */
+/**
+ * Passa o golpe pela guarda de quem está bloqueando.
+ *
+ * Três resultados possíveis, e o do meio é o que dá graça à mecânica:
+ *
+ * - GUARDA AGUENTA: o dano cai para 40% e os 60% impedidos são debitados da
+ *   stamina, um para um. Você trocou vida por reserva defensiva.
+ * - GUARDA QUEBRA: não havia stamina para pagar o que seria impedido. O golpe
+ *   entra INTEIRO, a stamina zera e quem bloqueou perde a rodada seguinte. É
+ *   a punição por bloquear o que não dava para bloquear — e é o que impede
+ *   encastelar de ser sempre a resposta certa.
+ * - NÃO ESTAVA BLOQUEANDO: nada muda.
+ *
+ * A quebra acontecer no golpe que ESTOURA a reserva, e não quando ela já está
+ * vazia, é deliberado: assim o atacante pode escolher gastar um golpe grande
+ * justamente para forçá-la, que é a jogada que a mecânica existe para criar.
+ */
+/**
+ * Se este combatente consegue erguer a guarda, e quanto isso custa de entrada.
+ *
+ * Sem stamina para o custo base não há bloqueio — a ação simplesmente não
+ * está disponível, do mesmo jeito que uma habilidade sem energia.
+ */
+export function custoDeErguerGuarda(c: CombatantState): number {
+  return Math.max(1, Math.round((c.maxStamina ?? 0) * BLOQUEIO_CUSTO_BASE))
+}
+
+export function podeBloquear(c: CombatantState): boolean {
+  return (c.currentStamina ?? 0) >= custoDeErguerGuarda(c)
+}
+
+/** Cobra o custo de entrada da guarda. */
+function erguerGuarda(c: CombatantState): CombatantState {
+  return { ...c, currentStamina: Math.max(0, (c.currentStamina ?? 0) - custoDeErguerGuarda(c)) }
+}
+
+function passarPelaGuarda(
+  defensor: CombatantState,
+  dano: number
+): { dano: number; defensor: CombatantState; bloqueado: boolean; guardaGasta: number; quebrou: boolean } {
+  const impedido = Math.round(dano * BLOQUEIO_REDUCAO)
+  const custo = Math.round(impedido * GUARDA_POR_DANO)
+  const reserva = defensor.currentStamina ?? 0
+
+  if (custo > reserva) {
+    return {
+      dano,
+      defensor: {
+        ...defensor,
+        currentStamina: 0,
+        statusEffects: [
+          ...defensor.statusEffects,
+          {
+            id: makeEffectId(),
+            type: 'STUN',
+            magnitude: 1,
+            remainingRounds: GUARDA_QUEBRADA_ATORDOA,
+            sourceSkillName: 'Guarda quebrada',
+          },
+        ],
+      },
+      bloqueado: false,
+      guardaGasta: reserva,
+      quebrou: true,
+    }
+  }
+
+  return {
+    dano: dano - impedido,
+    defensor: { ...defensor, currentStamina: reserva - custo },
+    bloqueado: true,
+    guardaGasta: custo,
+    quebrou: false,
+  }
+}
+
+/** Intensidade do golpe em fração da vida máxima do alvo — ver SEVERIDADE. */
+function severidadeDe(dano: number, maxHp: number): TurnResult['severidade'] {
+  if (maxHp <= 0) return undefined
+  const fracao = dano / maxHp
+  if (fracao < SEVERIDADE.raspao) return 'raspao'
+  if (fracao < SEVERIDADE.solido) return 'solido'
+  if (fracao < SEVERIDADE.pesado) return 'pesado'
+  return 'devastador'
+}
+
 function aplicarDanoDireto(target: CombatantState, amount: number): { target: CombatantState; actualDamage: number } {
   const currentHp = Math.max(0, target.currentHp - amount)
   return { target: { ...target, currentHp }, actualDamage: target.currentHp - currentHp }
@@ -673,7 +764,9 @@ function performSkillUse(
   attacker: CombatantState,
   defender: CombatantState,
   skill: SkillDef | null,
-  rand: () => number
+  rand: () => number,
+  /** Se o defensor declarou bloqueio nesta rodada — ver passarPelaGuarda. */
+  defensorBloqueia = false
 ): { attacker: CombatantState; defender: CombatantState; turnResult: TurnResult; eventos: TurnResult[] } {
   const power = skill ? skill.power : BASIC_ATTACK_POWER
   const energyCost = skill ? energyCostFor(attacker, skill.energyCost) : 0
@@ -696,6 +789,9 @@ function performSkillUse(
   let damage: number | undefined
   let isCrit: boolean | undefined
   let errou = false
+  let bloqueado = false
+  let guardaGasta = 0
+  let guardaQuebrou = false
   let countered = false
   let reflectedDamage: number | undefined
   let targetHpBefore: number | undefined
@@ -731,11 +827,25 @@ function performSkillUse(
       damage = 0
       targetHpAfter = newDefender.currentHp
     } else {
+      // A GUARDA VEM ANTES DO ESCUDO, e a ordem importa: bloquear é uma
+      // decisão desta rodada, o escudo é um efeito que já estava lá. Aparar
+      // primeiro e só então gastar escudo faz o escudo render mais, que é o
+      // prêmio de quem se preparou E se defendeu.
+      let danoFinal = computed.damage
+      if (defensorBloqueia) {
+        const guarda = passarPelaGuarda(newDefender, computed.damage)
+        danoFinal = guarda.dano
+        newDefender = guarda.defensor
+        bloqueado = guarda.bloqueado
+        guardaGasta = guarda.guardaGasta
+        guardaQuebrou = guarda.quebrou
+      }
+
       const applied = acertoGarantido
-        ? aplicarDanoDireto(newDefender, computed.damage)
-        : applyDamageWithShield(newDefender, computed.damage)
+        ? aplicarDanoDireto(newDefender, danoFinal)
+        : applyDamageWithShield(newDefender, danoFinal)
       newDefender = applied.target
-      damage = computed.damage
+      damage = danoFinal
       isCrit = computed.isCrit
       targetHpAfter = newDefender.currentHp
 
@@ -770,6 +880,9 @@ function performSkillUse(
     isCrit,
     acertoGarantido: acertoGarantido && power > 0 ? true : undefined,
     errou: errou || undefined,
+    bloqueado: bloqueado || undefined,
+    guardaGasta: guardaGasta > 0 ? guardaGasta : undefined,
+    severidade: typeof damage === 'number' && damage > 0 ? severidadeDe(damage, newDefender.maxHp) : undefined,
     countered: countered || undefined,
     reflectedDamage,
     healed: healed > 0 ? healed : undefined,
@@ -779,7 +892,18 @@ function performSkillUse(
     effectsApplied: supportResult.applied.length > 0 ? supportResult.applied : undefined,
   }
 
-  return { attacker: newAttacker, defender: newDefender, turnResult, eventos: supportResult.eventos }
+  const eventos = [...supportResult.eventos]
+  if (guardaQuebrou) {
+    eventos.push({
+      version: 1,
+      side: side === 'PLAYER' ? 'ENEMY' : 'PLAYER',
+      kind: 'GUARD_BREAK',
+      skillId: null,
+      skillName: skill?.name ?? 'Ataque Básico',
+    })
+  }
+
+  return { attacker: newAttacker, defender: newDefender, turnResult, eventos }
 }
 
 function regenEnergy(c: CombatantState): CombatantState {
@@ -1043,7 +1167,7 @@ export function resolveRound(
   state: BattleState,
   input: {
     playerAction: PlayerAction
-    enemyAction: { skillId: string | null }
+    enemyAction: { skillId: string | null; bloquear?: boolean }
   },
   ctx: {
     playerSkills: Record<string, SkillDef>
@@ -1085,14 +1209,44 @@ export function resolveRound(
   // 3. CHOQUE, antes da ordem por velocidade — ele é simultâneo por natureza:
   // os dois golpes partem juntos e se encontram no meio. Resolver na ordem de
   // iniciativa faria o mais rápido "acertar primeiro" e não haveria choque.
+  // BLOQUEIO SE RESOLVE AQUI, antes da ordem por velocidade, e não no turno de
+  // quem bloqueou. Tem que ser assim: a guarda precisa estar de pé quando o
+  // oponente ataca, e quem é mais lento também bloqueia — senão o bloqueio só
+  // funcionaria para quem já tem a vantagem da iniciativa, que é o contrário
+  // do que ele existe para fazer.
+  //
+  // Atordoado não bloqueia: perder a rodada já é a punição, e deixar a guarda
+  // de pé apagaria a consequência do atordoamento.
+  const jogadorBloqueia = input.playerAction.kind === 'BLOCK' && !isStunned(player) && podeBloquear(player)
+  const inimigoBloqueia = input.enemyAction.bloquear === true && !isStunned(enemy) && podeBloquear(enemy)
+
+  if (jogadorBloqueia) {
+    const custo = custoDeErguerGuarda(player)
+    player = erguerGuarda(player)
+    turnResults.push({ version: 1, side: 'PLAYER', kind: 'BLOCK', skillId: null, skillName: 'Bloqueio', guardaGasta: custo })
+  }
+  if (inimigoBloqueia) {
+    const custo = custoDeErguerGuarda(enemy)
+    enemy = erguerGuarda(enemy)
+    turnResults.push({ version: 1, side: 'ENEMY', kind: 'BLOCK', skillId: null, skillName: 'Bloqueio', guardaGasta: custo })
+  }
+
   let habilidadeDoJogador =
     input.playerAction.kind === 'ATTACK' && input.playerAction.skillId
       ? ctx.playerSkills[input.playerAction.skillId] ?? null
       : null
-  let habilidadeDoInimigo = input.enemyAction.skillId ? ctx.enemySkills[input.enemyAction.skillId] ?? null : null
+  let habilidadeDoInimigo =
+    input.enemyAction.bloquear === true
+      ? null
+      : input.enemyAction.skillId
+        ? ctx.enemySkills[input.enemyAction.skillId] ?? null
+        : null
 
+  // Quem bloqueia não disputa choque: não há golpe partindo do lado dele.
   const tagChoque =
-    !isStunned(player) && !isStunned(enemy) ? tagDeClash(habilidadeDoJogador, habilidadeDoInimigo) : null
+    !isStunned(player) && !isStunned(enemy) && !jogadorBloqueia && !inimigoBloqueia
+      ? tagDeClash(habilidadeDoJogador, habilidadeDoInimigo)
+      : null
 
   if (tagChoque && habilidadeDoJogador && habilidadeDoInimigo) {
     const { vencedor } = resolverClash(player, enemy, habilidadeDoJogador, habilidadeDoInimigo, rand)
@@ -1147,10 +1301,10 @@ export function resolveRound(
         }
         continue
       }
-      if (jogadorAnulado) continue
+      if (jogadorAnulado || jogadorBloqueia) continue
       const skill = habilidadeDoJogador
       const hpBefore = player.currentHp
-      const result = performSkillUse('PLAYER', player, enemy, skill, rand)
+      const result = performSkillUse('PLAYER', player, enemy, skill, rand, inimigoBloqueia)
       player = result.attacker
       enemy = result.defender
       turnResults.push(result.turnResult, ...result.eventos)
@@ -1169,9 +1323,9 @@ export function resolveRound(
         turnResults.push(makeStunResult('ENEMY'))
         continue
       }
-      if (inimigoAnulado) continue
+      if (inimigoAnulado || inimigoBloqueia) continue
       const skill = habilidadeDoInimigo
-      const result = performSkillUse('ENEMY', enemy, player, skill, rand)
+      const result = performSkillUse('ENEMY', enemy, player, skill, rand, jogadorBloqueia)
       enemy = result.attacker
       player = result.defender
       turnResults.push(result.turnResult, ...result.eventos)

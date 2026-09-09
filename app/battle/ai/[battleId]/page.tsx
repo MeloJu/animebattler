@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireUser } from '@/app/lib/session'
-import { activateTransformation, takeTurn } from '@/app/lib/battle/actions'
+import { activateTransformation, takeTurn, blockTurn} from '@/app/lib/battle/actions'
 import { getBattleView, getEquippedSkills, getPlayerTransformations } from '@/app/lib/battle/queries'
 import { getRetratosDosFalantes, getStageOutro, parseDialogo } from '@/app/lib/story/queries'
 import { CenaDeDialogo } from '@/app/components/story/CenaDeDialogo'
@@ -10,6 +10,8 @@ import { FighterCard } from '@/app/components/battle/FighterCard'
 import { BotaoDeForma } from '@/app/components/battle/BotaoDeForma'
 import { BotaoDeHabilidade } from '@/app/components/battle/BotaoDeHabilidade'
 import { TurnLogEntry } from '@/app/components/battle/TurnLogEntry'
+import { BotaoDeBloqueio } from '@/app/components/battle/BotaoDeBloqueio'
+import { custoDeErguerGuarda } from '@/app/lib/battle/engine'
 import type { BattleState, TurnResult } from '@/app/lib/battle/types'
 
 export default async function BattleArenaPage({
@@ -136,6 +138,9 @@ export default async function BattleArenaPage({
                     <BotaoDeHabilidade skill={skill} combatente={state.player} />
                   </form>
                 ))}
+                <form action={blockTurn.bind(null, battleId)}>
+                  <BotaoDeBloqueio combatente={state.player} custo={custoDeErguerGuarda(state.player)} />
+                </form>
               </div>
               {availableTransformations.length > 0 && (
                 <div className="pt-3 border-t border-border space-y-2">

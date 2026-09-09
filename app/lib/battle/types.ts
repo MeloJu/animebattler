@@ -124,7 +124,18 @@ export type AppliedEffect = {
 export type TurnResult = {
   version: 1
   side: Side
-  kind: 'ATTACK' | 'TRANSFORM' | 'SUPPORT' | 'STUNNED' | 'DOT_TICK' | 'CLASH' | 'DOMAIN_OPEN' | 'DOMAIN_CLASH' | 'DOMAIN_FALL'
+  kind:
+    | 'ATTACK'
+    | 'TRANSFORM'
+    | 'SUPPORT'
+    | 'STUNNED'
+    | 'DOT_TICK'
+    | 'CLASH'
+    | 'DOMAIN_OPEN'
+    | 'DOMAIN_CLASH'
+    | 'DOMAIN_FALL'
+    | 'BLOCK'
+    | 'GUARD_BREAK'
   /** CLASH: a natureza do choque ('beam', 'espada', 'fisico'). */
   clashTag?: string
   skillId: string | null // null = Basic Attack (synthesized, not a DB row)
@@ -136,6 +147,15 @@ export type TurnResult = {
   acertoGarantido?: boolean
   /** ATTACK: o golpe passou longe — ver resolverAcerto. */
   errou?: boolean
+  /** ATTACK: o alvo estava bloqueando e a guarda aguentou. */
+  bloqueado?: boolean
+  /** ATTACK/BLOCK: stamina consumida pela guarda ao aparar o golpe. */
+  guardaGasta?: number
+  /**
+   * Intensidade do golpe, em fração da vida máxima do alvo. Calculada aqui
+   * porque a tela não conhece a vida máxima — ver SEVERIDADE.
+   */
+  severidade?: 'raspao' | 'solido' | 'pesado' | 'devastador'
   countered?: boolean // true if this attack was negated + reflected by the defender's COUNTER
   reflectedDamage?: number // damage dealt back to the attacker when countered
   healed?: number // self-heal amount (HEAL or LIFESTEAL)
@@ -244,3 +264,8 @@ export type BaseStats = {
 export type PlayerAction =
   | { kind: 'ATTACK'; skillId: string | null }
   | { kind: 'TRANSFORM'; transformationId: string }
+  /**
+   * Gasta a rodada inteira para reduzir o dano recebido, pagando com stamina.
+   * Não tem alvo nem habilidade: é uma postura, não um golpe.
+   */
+  | { kind: 'BLOCK' }

@@ -5,10 +5,45 @@ const NATUREZA_DO_CHOQUE: Record<string, string> = {
   beam: 'feixes',
   espada: 'aços',
   fisico: 'punhos',
+  hado: 'encantamentos',
+  cero: 'ceros',
+}
+
+/**
+ * Como o golpe é narrado, por intensidade.
+ *
+ * POR QUE ISSO EXISTE: o log inteiro era "Fulano usou X e causou 7 de dano." e
+ * "Fulano usou X e causou 68 de dano." — a mesma frase, com o número trocado.
+ * Numa luta de doze rodadas isso vira uma coluna de texto idêntico em que a
+ * única informação está num algarismo, e ler o combate exige comparar números
+ * de cabeça em vez de simplesmente ler.
+ *
+ * A intensidade vem do MOTOR (campo `severidade`), calculada sobre a vida
+ * máxima do alvo. Tem que ser assim: 30 de dano é um arranhão num tanque de
+ * 250 e quase um terço de um conjurador de 110, e a mesma frase para os dois
+ * seria mentira.
+ *
+ * É DETERMINÍSTICO de propósito — nada de sortear sinônimo. O histórico é
+ * renderizado no servidor a cada visita, e um verbo sorteado mudaria o texto
+ * de um turno que já aconteceu toda vez que a página recarregasse.
+ */
+const VERBO: Record<NonNullable<TurnResult['severidade']>, string> = {
+  raspao: 'raspou em',
+  solido: 'acertou',
+  pesado: 'castigou',
+  devastador: 'arrebentou',
+}
+
+const VERBO_CRITICO: Record<NonNullable<TurnResult['severidade']>, string> = {
+  raspao: 'pegou de raspão, mas na brecha, em',
+  solido: 'encontrou a abertura e acertou',
+  pesado: 'achou o ponto exato e castigou',
+  devastador: 'acertou em cheio e arrebentou',
 }
 
 export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult; playerName: string; enemyName: string }) {
   const actorName = turn.side === 'PLAYER' ? playerName : enemyName
+  const alvoName = turn.side === 'PLAYER' ? enemyName : playerName
 
   if (turn.kind === 'TRANSFORM') {
     return (
@@ -65,6 +100,27 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
       </>
     )
   }
+  if (turn.kind === 'BLOCK') {
+    return (
+      <>
+        <span className="font-medium">{actorName}</span> firmou a guarda
+        {typeof turn.guardaGasta === 'number' && turn.guardaGasta > 0 && (
+          <span className="opacity-60"> (−{turn.guardaGasta} de stamina)</span>
+        )}
+        .
+      </>
+    )
+  }
+  if (turn.kind === 'GUARD_BREAK') {
+    // O ator aqui é quem TEVE a guarda quebrada, não quem quebrou: o evento
+    // pertence a quem sofre a consequência, que é perder a rodada seguinte.
+    return (
+      <>
+        <span className="font-medium text-amber-600 dark:text-amber-400">A guarda de {actorName} se partiu</span> sob{' '}
+        <span className="font-medium">{turn.skillName}</span> — o golpe entrou inteiro e ele perde a próxima rodada.
+      </>
+    )
+  }
   if (turn.kind === 'STUNNED') {
     return (
       <>
@@ -80,30 +136,38 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
     )
   }
 
-  // ATTACK or SUPPORT
+  // ATTACK ou SUPPORT.
+  const acertou = typeof turn.damage === 'number' && turn.damage > 0 && !turn.countered
+  const verbo = turn.severidade ? (turn.isCrit ? VERBO_CRITICO : VERBO)[turn.severidade] : 'acertou'
+
   return (
     <>
       <span className="font-medium">{actorName}</span> usou <span className="font-medium">{turn.skillName}</span>
-      {/* Errar precisa ser dito com todas as letras. Sem esta linha, um golpe
-          que passa longe aparece no log como "usou X." e some — indistinguível
-          de uma habilidade de suporte que não faz dano. */}
-      {turn.errou && <>, e o golpe passou longe</>}
+      {turn.errou && <> e o golpe passou longe</>}
       {turn.countered && (
         <>, mas foi contra-atacado{typeof turn.reflectedDamage === 'number' ? ` e sofreu ${turn.reflectedDamage} de dano refletido` : ''}</>
       )}
-      {!turn.countered && typeof turn.damage === 'number' && turn.damage > 0 && (
+      {acertou && (
         <>
           {' '}
-          e causou {turn.damage} de dano{turn.isCrit ? ' (CRÍTICO)' : ''}
-          {/* Sem isto, um golpe que atravessa escudo é indistinguível de um
-              golpe contra alguém sem escudo — some justo a informação que
-              justifica ter aberto o domínio. */}
-          {turn.acertoGarantido && ', ignorando a defesa'}
+          e <span className={turn.isCrit ? 'font-medium text-amber-600 dark:text-amber-400' : ''}>{verbo}</span>{' '}
+          {alvoName} — <span className="tabular-nums">{turn.damage}</span> de dano
+          {turn.isCrit && <span className="text-amber-600 dark:text-amber-400"> (CRÍTICO)</span>}
+          {/* Bloqueado e ignorando-a-defesa são os dois extremos do mesmo eixo,
+              e os dois precisam aparecer: sem eles, o mesmo número de dano
+              conta histórias diferentes sem avisar qual. */}
+          {turn.bloqueado && (
+            <span className="opacity-70">
+              , aparado pela guarda
+              {typeof turn.guardaGasta === 'number' && turn.guardaGasta > 0 && ` (−${turn.guardaGasta} de stamina)`}
+            </span>
+          )}
+          {turn.acertoGarantido && <span className="opacity-70">, ignorando a defesa</span>}
         </>
       )}
-      {typeof turn.healed === 'number' && turn.healed > 0 && <> e curou {turn.healed} de HP</>}
+      {typeof turn.healed === 'number' && turn.healed > 0 && <> e recuperou {turn.healed} de vida</>}
       {turn.effectsApplied && turn.effectsApplied.length > 0 && (
-        <> ({turn.effectsApplied.map(describeEffect).join(', ')})</>
+        <> <span className="opacity-70">({turn.effectsApplied.map(describeEffect).join(', ')})</span></>
       )}
       .
     </>

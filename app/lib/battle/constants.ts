@@ -59,6 +59,76 @@ export const EVASAO_POR_PONTO = 0.01
  */
 export const ACERTO_MINIMO = 0.66
 
+/**
+ * BLOQUEIO, e por que a stamina é a barra de guarda.
+ *
+ * Até aqui nunca havia motivo para não atacar: a rodada não era uma decisão,
+ * era uma consulta a qual habilidade tinha o maior dano esperado disponível.
+ * Bloquear gasta a rodada inteira e devolve redução de dano — a primeira
+ * troca de verdade que o combate oferece.
+ *
+ * O QUE FAZ ISSO FUNCIONAR é não ter barra nova. O dano que o bloqueio impede
+ * é cobrado da stamina, que já existe, já é separada da energia e já regenera
+ * mais devagar de propósito. Daí o guard break sai sem nenhuma mecânica
+ * inventada: quando não há stamina para pagar o que foi impedido, a guarda
+ * quebra, o golpe entra inteiro e quem bloqueou perde a rodada seguinte.
+ *
+ * E a diferença de stamina entre as classes, que já estava no catálogo, vira
+ * identidade defensiva de graça: SUPORTE tem 175 e aguenta sete bloqueios,
+ * CONJURADOR tem 75 e aguenta três. O conjurador não pode encastelar, que é
+ * exatamente o que se quer dele.
+ *
+ * O RISCO É O EMPATE POR TEMPO — os dois lados encastelando até MAX_ROUNDS.
+ * A trava é a regeneração baixa da stamina somada ao guard break: dá para
+ * bloquear várias rodadas seguidas, nunca indefinidamente.
+ */
+export const BLOQUEIO_REDUCAO = 0.6
+
+/**
+ * Quanto de stamina custa cada ponto de dano impedido pela guarda.
+ *
+ * 1 para 1 é o número honesto: a stamina que você gasta é exatamente o dano
+ * que você não tomou. Qualquer outro valor precisaria de justificativa
+ * própria, e não há nenhuma — a conversão É a mecânica.
+ */
+export const GUARDA_POR_DANO = 1
+
+/**
+ * Fração da stamina máxima que custa DECLARAR o bloqueio, mesmo sem levar
+ * golpe nenhum.
+ *
+ * Existe para fechar um buraco do desenho original: se a guarda só cobrasse
+ * ao aparar, dois lados sem energia poderiam bloquear indefinidamente sem
+ * gastar nada, e a luta terminaria por MAX_ROUNDS. Com um custo de entrada,
+ * encastelar tem prazo mesmo quando ninguém ataca — e a stamina volta a ser o
+ * único relógio que a defesa obedece.
+ *
+ * PRECISA SER MAIOR QUE STAMINA_REGEN_PCT, e a primeira versão errou nisso: os
+ * dois estavam em 5%, então a regeneração pagava exatamente o custo de entrada
+ * e erguer a guarda era de graça em regime permanente — a trava não travava
+ * nada. Um teste pegou, e é a razão de os dois números estarem no mesmo
+ * arquivo, um perto do outro: eles são um par, não duas constantes.
+ *
+ * Com 10% contra 5% de regeneração, a guarda pura drena 5% líquidos por
+ * rodada: cerca de vinte rodadas de encastelamento antes de a reserva acabar
+ * sozinha, mesmo sem levar um golpe.
+ */
+export const BLOQUEIO_CUSTO_BASE = 0.1
+
+/** Rodadas perdidas por quem teve a guarda quebrada. */
+export const GUARDA_QUEBRADA_ATORDOA = 1
+
+/**
+ * Quanto do máximo de vida um golpe precisa levar para ser narrado em cada
+ * nível de intensidade.
+ *
+ * A severidade é calculada no MOTOR e gravada no turno, e não deduzida na
+ * tela, por uma razão prática: a tela tem o dano mas não tem a vida máxima do
+ * alvo, e plumbar isso por duas páginas de batalha seria pior do que gravar
+ * um campo que o motor já sabe calcular.
+ */
+export const SEVERIDADE = { raspao: 0.05, solido: 0.12, pesado: 0.22 }
+
 export const BASIC_ATTACK_POWER = 12
 
 /**

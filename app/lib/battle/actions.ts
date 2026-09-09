@@ -12,12 +12,13 @@ import {
   computeFighterStats,
   createInitialState,
   isLegalMove,
+  podeBloquear,
   resolveRound,
   sumStatBonuses,
   traitEnergyCostModifier,
   SEM_BONUS,
 } from './engine'
-import { pickAiSkill } from './ai'
+import { deveBloquear, pickAiSkill } from './ai'
 import { recompensaComTeto, vitoriasContraIaHoje } from './recompensa'
 import { applyExperience, battleXpGained } from './leveling'
 import { getCharacterTraits, getEquippedSkills, getPlayerTransformations, getTreeBonus, loadEnemyProfile } from './queries'
@@ -387,11 +388,35 @@ export async function takeTurn(battleId: string, skillId: string | null): Promis
   if (!isLegalMove(ctx.state.player, chosenSkill)) redirect(`/battle/ai/${battleId}?error=illegal_move`)
 
   const playerAction: PlayerAction = { kind: 'ATTACK', skillId }
+  const inimigoBloqueia = deveBloquear(ctx.state.enemy, Object.values(ctx.enemySkills))
   const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
-    { playerAction, enemyAction: { skillId: enemySkillId } },
+    { playerAction, enemyAction: { skillId: enemySkillId, bloquear: inimigoBloqueia } },
+    { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
+  )
+
+  await finalizeRound(battleId, ctx, newState, turnResults)
+}
+
+/**
+ * Gasta a rodada erguendo a guarda.
+ *
+ * Não recebe habilidade nem alvo — é uma postura. A legalidade é conferida
+ * aqui e não só na tela, como em toda action: esta rota é alcançável por POST
+ * direto, e bloquear sem stamina precisa falhar do lado do servidor.
+ */
+export async function blockTurn(battleId: string): Promise<void> {
+  const ctx = await loadActiveBattleContext(battleId)
+  if (!podeBloquear(ctx.state.player)) redirect(`/battle/ai/${battleId}?error=no_stamina`)
+
+  const inimigoBloqueia = deveBloquear(ctx.state.enemy, Object.values(ctx.enemySkills))
+  const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
+
+  const { state: newState, turnResults } = resolveRound(
+    ctx.state,
+    { playerAction: { kind: 'BLOCK' }, enemyAction: { skillId: enemySkillId, bloquear: inimigoBloqueia } },
     { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
   )
 
@@ -452,11 +477,12 @@ export async function activateTransformation(battleId: string, transformationId:
   }
 
   const playerAction: PlayerAction = { kind: 'TRANSFORM', transformationId }
+  const inimigoBloqueia = deveBloquear(ctx.state.enemy, Object.values(ctx.enemySkills))
   const enemySkillId = pickAiSkill(ctx.state.enemy, Object.values(ctx.enemySkills), ctx.state.player)
 
   const { state: newState, turnResults } = resolveRound(
     ctx.state,
-    { playerAction, enemyAction: { skillId: enemySkillId } },
+    { playerAction, enemyAction: { skillId: enemySkillId, bloquear: inimigoBloqueia } },
     { playerSkills: ctx.playerSkills, enemySkills: ctx.enemySkills, playerTransformations: ctx.playerTransformations }
   )
 

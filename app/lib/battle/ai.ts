@@ -1,4 +1,4 @@
-import { isLegalMove } from './engine'
+import { isLegalMove, podeBloquear } from './engine'
 import type { CombatantState, SkillDef } from './types'
 
 const LOW_HP_HEAL_THRESHOLD = 0.4
@@ -137,4 +137,56 @@ export function pickAiSkill(
   if (supportSkills.length > 0) return supportSkills[0].id
 
   return null
+}
+
+
+/**
+ * Se a IA deve gastar a rodada bloqueando em vez de agir.
+ *
+ * A REGRA É "meu melhor golpe não vale a rodada". Ela dispara quando não
+ * sobrou nenhuma habilidade ofensiva pagável — o que restaria seria o ataque
+ * básico, de poder 12 — e ainda há guarda para erguer. Nesse momento bloquear
+ * é objetivamente melhor: você impede 60% de um golpe inteiro em vez de
+ * entregar 12 de poder, e a energia regenera enquanto isso.
+ *
+ * POR QUE NÃO É MAIS ESPERTA QUE ISSO: a IA não sabe o que o oponente vai
+ * fazer, e num jogo de escolha simultânea qualquer regra mais elaborada seria
+ * adivinhação disfarçada. Bloquear quando não há nada bom a fazer é a única
+ * leitura que não depende de prever o outro.
+ *
+ * O EFEITO COLATERAL BOM: a IA para de dar ataques básicos de 12 enquanto
+ * espera energia, que era o comportamento mais visivelmente burro dela.
+ */
+export function deveBloquear(self: CombatantState, availableSkills: SkillDef[]): boolean {
+  if (!podeBloquear(self)) return false
+
+  // PRECISA TER GOLPE PARA ESTAR RECARREGANDO. Sem esta linha, quem tem o
+  // arsenal vazio bloqueia toda rodada para sempre — e dois assim empatam por
+  // MAX_ROUNDS sem nunca trocar um golpe. Foi o que a simulação mostrou na
+  // primeira versão. Para quem não tem habilidade nenhuma, o ataque básico
+  // não é um consolo: é literalmente a jogada dele.
+  const temArsenalOfensivo = availableSkills.some((s) => s.power > 0)
+  if (!temArsenalOfensivo) return false
+
+  // Habilidade de suporte pagável vale mais que a guarda em qualquer caso:
+  // escudo e cura continuam valendo depois da rodada, o bloqueio não.
+  if (availableSkills.some((s) => s.power === 0 && isLegalMove(self, s))) return false
+
+  // RECARGA: nenhum golpe pagável, então o que restaria é o ataque básico de
+  // poder 12. Impedir 60% de um golpe inteiro vale mais que isso.
+  //
+  // ESTA É A ÚNICA REGRA, e a segunda foi MEDIDA E DESCARTADA — de propósito,
+  // não por esquecimento. "Bloquear com a vida no fim" é o que um humano faz,
+  // e deixaria a quebra de guarda alcançável para quem joga contra a IA (hoje
+  // ela quase não bloqueia, porque as lutas duram cerca de seis rodadas e a
+  // energia raramente acaba nesse tempo).
+  //
+  // O problema é o tamanho do efeito. Com limiar de 25% de vida, Kenpachi vai
+  // de 2% para 73% no estágio 2 e Yuji cai de 87% para 15% no estágio 3;
+  // baixando para 15% o Yuji continua em 15%. Defender no fim da luta é
+  // simplesmente muito forte — vale para os dois lados, e vira a partida.
+  //
+  // Uma heurística de IA não deveria mover balanceamento nessa escala sem uma
+  // recurva dos estágios junto. A regra volta quando essa recurva for feita.
+  return !availableSkills.some((s) => s.power > 0 && isLegalMove(self, s))
 }

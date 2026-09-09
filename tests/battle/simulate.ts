@@ -1,5 +1,5 @@
 import { createInitialState, resolveRound } from '@/app/lib/battle/engine'
-import { pickAiSkill } from '@/app/lib/battle/ai'
+import { deveBloquear, pickAiSkill } from '@/app/lib/battle/ai'
 import { MAX_ROUNDS } from '@/app/lib/battle/constants'
 import type { BaseStats, Outcome, SkillDef } from '@/app/lib/battle/types'
 
@@ -64,12 +64,17 @@ export function simulateBattle(jogador: Combatente, inimigo: Combatente, seed: n
 
   let rodadas = 0
   while (state.outcome === null && rodadas < MAX_ROUNDS) {
+    const jogadorBloqueia = deveBloquear(state.player, jogador.skills)
+    const inimigoBloqueia = deveBloquear(state.enemy, inimigo.skills)
     const escolhaJogador = pickAiSkill(state.player, jogador.skills, state.enemy)
     const escolhaInimigo = pickAiSkill(state.enemy, inimigo.skills, state.player)
 
     const r = resolveRound(
       state,
-      { playerAction: { kind: 'ATTACK', skillId: escolhaJogador }, enemyAction: { skillId: escolhaInimigo } },
+      {
+        playerAction: jogadorBloqueia ? { kind: 'BLOCK' } : { kind: 'ATTACK', skillId: escolhaJogador },
+        enemyAction: { skillId: escolhaInimigo, bloquear: inimigoBloqueia },
+      },
       { playerSkills: jogadorPorId, enemySkills: inimigoPorId, playerTransformations: {} },
       rand
     )
