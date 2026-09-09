@@ -45,7 +45,15 @@ COPY prisma ./prisma
 RUN npx prisma generate
 
 # ---- runner: só o necessário pra servir
+# Commit que gerou esta imagem, exposto em /api/health.
+#
+# POR QUE EXISTE: nao havia como saber, de fora, qual versao estava no ar. Na
+# pratica isso significa que "a mudanca nao apareceu" e uma pergunta sem
+# resposta — pode ser deploy pendente, cache do navegador ou bug de verdade, e
+# as tres se parecem. Com o SHA no healthcheck, um curl decide.
 FROM node:20-alpine AS runner
+ARG GIT_SHA=desconhecido
+ENV GIT_SHA=$GIT_SHA
 RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 
