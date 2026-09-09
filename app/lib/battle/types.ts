@@ -23,13 +23,27 @@ export type EffectType =
   | 'HEAL'
   | 'LIFESTEAL'
   | 'DOMAIN'
+  /**
+   * Traz um ALIADO CAÍDO de volta, com uma fração da vida máxima dele.
+   *
+   * É o único efeito que precisa enxergar o time inteiro — os outros mexem em
+   * quem lança ou em quem recebe o golpe, e este procura entre os aliados
+   * alguém que já está fora. Por isso não é aplicado por applySkillEffects
+   * como os demais: só resolveRound conhece os dois times.
+   */
+  | 'REVIVE'
 
 // Mechanical definition attached to a Skill (Skill.effects in the DB). A
 // skill can carry several of these alongside its normal power-based damage
 // (e.g. a strike that also applies a bleed DOT).
 export type SkillEffect = {
   type: EffectType
-  target: 'SELF' | 'ENEMY'
+  /**
+   * ALIADO_CAIDO existe só para REVIVE: nem quem lança nem quem apanha, mas
+   * um terceiro que está fora da luta. Sem este valor, um efeito de
+   * ressurreição cairia no ramo de 'ENEMY' e seria aplicado no adversário.
+   */
+  target: 'SELF' | 'ENEMY' | 'ALIADO_CAIDO'
   stat?: Stat // BUFF/DEBUFF only
   magnitude: number // % for BUFF/DEBUFF/LIFESTEAL, flat amount for DOT/SHIELD/HEAL, % reflected for COUNTER
   duration?: number // rounds; absent = instantaneous (HEAL, LIFESTEAL)
@@ -188,6 +202,7 @@ export type TurnResult = {
     | 'DOMAIN_FALL'
     | 'BLOCK'
     | 'GUARD_BREAK'
+    | 'REVIVE'
   /** CLASH: a natureza do choque ('beam', 'espada', 'fisico'). */
   clashTag?: string
   skillId: string | null // null = Basic Attack (synthesized, not a DB row)
@@ -203,6 +218,8 @@ export type TurnResult = {
   bloqueado?: boolean
   /** ATTACK/BLOCK: stamina consumida pela guarda ao aparar o golpe. */
   guardaGasta?: number
+  /** REVIVE: vida com que o aliado voltou. */
+  vidaDeVolta?: number
   /**
    * Intensidade do golpe, em fração da vida máxima do alvo. Calculada aqui
    * porque a tela não conhece a vida máxima — ver SEVERIDADE.

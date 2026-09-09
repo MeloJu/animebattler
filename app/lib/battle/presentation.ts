@@ -36,6 +36,7 @@ const EFFECT_ICON: Record<EffectType, string> = {
   HEAL: '💚',
   LIFESTEAL: '🩸',
   DOMAIN: '🌌',
+  REVIVE: '🕊️',
 }
 
 export function describeEffect(e: EffectLike): string {
@@ -63,6 +64,8 @@ export function describeEffect(e: EffectLike): string {
     // que o golpe passa por defesa e quanto custa manter aberto.
     case 'DOMAIN':
       return `${EFFECT_ICON.DOMAIN} Domínio · acerto garantido · ${e.magnitude} EN/rodada`
+    case 'REVIVE':
+      return `${EFFECT_ICON.REVIVE} Traz um aliado caído de volta com ${e.magnitude}% da vida`
   }
 }
 

@@ -44,6 +44,36 @@
 // zero empates em 1260 batalhas simuladas, ou seja, a sustentação não virou
 // luta que não fecha.
 
+// RESSURREIÇÃO: a exceção à regra de que quem cai fica caído.
+//
+// Ela existe porque, sem exceção nenhuma, perder um aliado na segunda rodada
+// de uma raid condena as outras dez a um jogo já perdido — e o jogador percebe
+// isso muito antes do fim. Mas se todo mundo revive, morrer deixa de custar.
+//
+// A saída é ela ter DONO. Quem traz de volta são as duas curandeiras que fazem
+// exatamente isso na obra:
+//
+//   ORIHIME rejeitou a morte do Ichigo depois do Ulquiorra. O Sōten Kisshun
+//   não cura o ferimento: ele recusa que o ferimento tenha acontecido, o que
+//   é a justificativa mais forte de ressurreição em todo o elenco.
+//
+//   UNOHANA é a maior curandeira da Soul Society, e o Minazuki em shikai é uma
+//   arraia que engole e cura quem está dentro. Na luta contra o Kenpachi ela
+//   curava os dois repetidamente só para prolongar o combate.
+//
+// O BATMAN FICA DE FORA, e é decisão de arquétipo, não esquecimento: ele é
+// suporte de auto-sustento — o tipo que segura a própria linha sozinho —, não
+// de manter o time em pé. Ukitake, Rangiku e Wonder Woman também não revivem,
+// pela mesma razão: o que torna a mecânica valiosa é ela ser rara.
+//
+// CUSTA ENERGIA, não stamina, mesmo sendo defensiva. Se saísse da stamina,
+// reviver esvaziaria a reserva com que a suporte se protege — e ela precisa
+// justamente das duas coisas na mesma rodada em que o time está caindo. Quem
+// limita é a recarga longa.
+//
+// VOLTA COM 30% DA VIDA. Voltar inteiro apagaria a queda; voltar com pouco faz
+// de quem voltou uma coisa a proteger, o que dá à suporte um segundo turno de
+// trabalho em vez de um botão que resolve.
 const orihime = {
   character: 'Orihime Inoue',
   skills: [
@@ -76,6 +106,16 @@ const orihime = {
       tags: ['rejeicao'],
       effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 22, duration: 3 }],
       level: 9,
+    },
+    {
+      name: 'Sōten Kisshun: Rejeitar a Morte',
+      category: 'OTHER',
+      power: 0,
+      energyCost: 44,
+      cooldown: 7,
+      tags: ['rejeicao', 'ressurreicao'],
+      effects: [{ type: 'REVIVE', target: 'ALIADO_CAIDO', magnitude: 30 }],
+      level: 12,
     },
     {
       name: 'Sōten Kisshun: Negar o Golpe',
@@ -125,6 +165,20 @@ const unohana = {
       tags: ['espada'],
       effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 20, duration: 3 }],
       level: 9,
+    },
+    {
+      // O Minazuki que CURA é o shikai: uma arraia que engole e restaura quem
+      // está dentro dela. A "Verdadeira Forma" logo abaixo é o bankai, que é
+      // uma lâmina — são duas coisas diferentes com o mesmo nome, e é por isso
+      // que a de ressurreição não é a de dano.
+      name: 'Minazuki: Ventre que Cura',
+      category: 'OTHER',
+      power: 0,
+      energyCost: 44,
+      cooldown: 7,
+      tags: ['cura', 'ressurreicao'],
+      effects: [{ type: 'REVIVE', target: 'ALIADO_CAIDO', magnitude: 30 }],
+      level: 12,
     },
     {
       name: 'Minazuki: Verdadeira Forma',

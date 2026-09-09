@@ -869,7 +869,22 @@ function performSkillUse(
   rand: () => number,
   /** Se o defensor declarou bloqueio nesta rodada — ver passarPelaGuarda. */
   defensorBloqueia = false
-): { attacker: CombatantState; defender: CombatantState; turnResult: TurnResult; eventos: TurnResult[] } {
+): {
+  attacker: CombatantState
+  defender: CombatantState
+  turnResult: TurnResult
+  eventos: TurnResult[]
+  /**
+   * Fração da vida máxima com que um aliado caído deve voltar, quando a
+   * habilidade pede ressurreição.
+   *
+   * Sai daqui como INTENÇÃO em vez de ser aplicada como os outros efeitos
+   * porque esta função enxerga só duas pessoas — quem bate e quem apanha — e
+   * ressurreição precisa procurar entre os aliados alguém que já saiu da
+   * luta. Quem tem os dois times é resolveRound.
+   */
+  reviveSolicitado?: number
+} {
   const power = skill ? skill.power : BASIC_ATTACK_POWER
   const energyCost = skill ? energyCostFor(attacker, skill.energyCost) : 0
   const effects = skill ? skill.effects : []
@@ -966,7 +981,13 @@ function performSkillUse(
   // ele não encostou. O que é lançado em si mesmo continua valendo, porque o
   // lançador agiu de qualquer forma.
   const naoEncostou = countered || errou
-  const supportEffects = effects.filter((e) => e.type !== 'LIFESTEAL' && (!naoEncostou || e.target === 'SELF'))
+  const supportEffects = effects.filter(
+    (e) => e.type !== 'LIFESTEAL' && e.type !== 'REVIVE' && (!naoEncostou || e.target === 'SELF')
+  )
+  // A ressurreição não é anulada por counter nem por erro: ela não vai no
+  // adversário, então não há nada para o adversário aparar. Quem lançou pagou
+  // e agiu, e o aliado caído não tem culpa do golpe ter passado longe.
+  const revive = effects.find((e) => e.type === 'REVIVE')
   const supportResult = applySkillEffects(side, newAttacker, newDefender, supportEffects, skill?.name ?? 'Ataque Básico', scalingStat, skill?.tags ?? [])
   newAttacker = supportResult.user
   newDefender = supportResult.target
@@ -1005,7 +1026,13 @@ function performSkillUse(
     })
   }
 
-  return { attacker: newAttacker, defender: newDefender, turnResult, eventos }
+  return {
+    attacker: newAttacker,
+    defender: newDefender,
+    turnResult,
+    eventos,
+    ...(revive ? { reviveSolicitado: revive.magnitude } : {}),
+  }
 }
 
 function regenEnergy(c: CombatantState): CombatantState {
@@ -1352,6 +1379,54 @@ function acaoDe(input: AcoesDaRodada, onde: EmCampo): AcaoDeCombate | undefined 
   return onde.lado === LADO_ALIADO ? input.aliadas[onde.indice] : input.inimigas[onde.indice]
 }
 
+/**
+ * Traz de volta o primeiro aliado caído do lado de quem lançou.
+ *
+ * QUEM CAI FICA CAÍDO é a regra, e esta é a única exceção — de propósito. Sem
+ * exceção nenhuma, perder um aliado na segunda rodada de uma raid condena as
+ * outras dez a um jogo já perdido, e o jogador percebe isso muito antes do
+ * fim. Com ressurreição para todo mundo, morrer deixa de custar.
+ *
+ * A saída é ela ser RARA e ter dono: quem revive são as duas curandeiras que
+ * fazem isso na obra — a Orihime, que rejeitou a morte do Ichigo, e a
+ * Unohana, que se curava no meio da luta contra o Kenpachi. Não é um botão do
+ * sistema, é a técnica de dois personagens.
+ *
+ * VOLTA COM UMA FRAÇÃO DA VIDA (ver as habilidades no catálogo), nunca cheia:
+ * voltar inteiro apagaria a queda, e voltar com pouco significa que o inimigo
+ * pode derrubar de novo — quem foi trazido de volta vira uma coisa a proteger,
+ * o que dá ao suporte um segundo turno de trabalho em vez de um botão que
+ * resolve.
+ *
+ * O PRIMEIRO da fila, e não o mais forte nem o mais recente: precisa ser
+ * determinístico, e qualquer outro critério seria uma regra a mais para o
+ * jogador ter que adivinhar.
+ */
+function reviverAliado(
+  state: BattleState,
+  lado: Side,
+  porcentagem: number
+): { state: BattleState; resultado: TurnResult } | null {
+  const time = lado === LADO_ALIADO ? state.aliados : state.inimigos
+  const indice = time.findIndex((c) => !estaDePe(c))
+  if (indice === -1) return null
+
+  const caido = time[indice]
+  const vida = Math.max(1, Math.round(caido.maxHp * (porcentagem / 100)))
+
+  return {
+    state: comCombatenteEm(state, { lado, indice }, { ...caido, currentHp: vida }),
+    resultado: {
+      version: 1,
+      side: lado,
+      kind: 'REVIVE',
+      skillId: null,
+      skillName: caido.nome ?? 'Aliado caído',
+      vidaDeVolta: vida,
+    },
+  }
+}
+
 const mesmoLugar = (a: EmCampo, b: EmCampo) => a.lado === b.lado && a.indice === b.indice
 
 export function resolveRound(
@@ -1579,6 +1654,16 @@ export function resolveRound(
     atual = comCombatenteEm(atual, p, r.attacker)
     atual = comCombatenteEm(atual, mira, r.defender)
     turnResults.push(r.turnResult, ...r.eventos)
+
+    // Ressurreição depois do golpe: quem lança pode ter derrubado alguém na
+    // mesma ação (counter), e o aliado que acabou de cair já conta.
+    if (r.reviveSolicitado !== undefined) {
+      const volta = reviverAliado(atual, p.lado, r.reviveSolicitado)
+      if (volta) {
+        atual = volta.state
+        turnResults.push(volta.resultado)
+      }
+    }
 
     // Transformação por dano recebido, do lado de quem apanhou E de quem
     // levou counter — as duas são "tomei dano", e o counter machuca o atacante.

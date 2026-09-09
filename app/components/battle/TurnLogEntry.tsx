@@ -121,6 +121,14 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
       </>
     )
   }
+  if (turn.kind === 'REVIVE') {
+    return (
+      <>
+        <span className="font-medium text-green-600 dark:text-green-400">{turn.skillName}</span> volta à luta
+        {typeof turn.vidaDeVolta === 'number' && <> com {turn.vidaDeVolta} de vida</>}.
+      </>
+    )
+  }
   if (turn.kind === 'STUNNED') {
     return (
       <>

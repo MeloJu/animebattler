@@ -239,3 +239,111 @@ describe('choque de golpes com mais de dois em campo', () => {
     expect(r.turnResults.some((t) => t.kind === 'CLASH')).toBe(true)
   })
 })
+
+describe('ressurreição', () => {
+  // A exceção à regra de que quem cai fica caído. Existe com dono: são as duas
+  // curandeiras que fazem isso na obra, não um botão do sistema.
+  const reviver = (over: Partial<SkillDef> = {}) =>
+    skill({
+      id: 'reviver',
+      name: 'Rejeição',
+      power: 0,
+      energyCost: 0,
+      effects: [{ type: 'REVIVE', target: 'ALIADO_CAIDO', magnitude: 30 }],
+      ...over,
+    })
+
+  const comCaido = () => {
+    const e = campo([stats({ speed: 99 }), stats({ hp: 200 })], [stats({ hp: 900 })])
+    return { ...e, aliados: [e.aliados[0], { ...e.aliados[1], currentHp: 0 }] }
+  }
+
+  it('traz o aliado caído de volta com a fração declarada da vida máxima', () => {
+    const r = rodada(
+      comCaido(),
+      { aliadas: [atacar('reviver'), atacar(null)], inimigas: [atacar(null)] },
+      { reviver: reviver() }
+    )
+    // 30% de 200.
+    expect(r.state.aliados[1].currentHp).toBe(60)
+  })
+
+  it('nunca traz de volta com a vida cheia — voltar inteiro apagaria a queda', () => {
+    const r = rodada(
+      comCaido(),
+      { aliadas: [atacar('reviver'), atacar(null)], inimigas: [atacar(null)] },
+      { reviver: reviver() }
+    )
+    expect(r.state.aliados[1].currentHp).toBeLessThan(r.state.aliados[1].maxHp)
+  })
+
+  it('registra a volta no log', () => {
+    const r = rodada(
+      comCaido(),
+      { aliadas: [atacar('reviver'), atacar(null)], inimigas: [atacar(null)] },
+      { reviver: reviver() }
+    )
+    expect(r.turnResults.some((t) => t.kind === 'REVIVE' && t.side === 'PLAYER')).toBe(true)
+  })
+
+  it('quem voltou já age na rodada seguinte', () => {
+    const primeiro = rodada(
+      comCaido(),
+      { aliadas: [atacar('reviver'), atacar(null)], inimigas: [atacar(null)] },
+      { reviver: reviver() }
+    )
+    const segundo = rodada(
+      primeiro.state as ReturnType<typeof campo>,
+      { aliadas: [atacar(null), atacar('sk')], inimigas: [atacar(null)] },
+      { sk: skill(), reviver: reviver() }
+    )
+    expect(segundo.turnResults.filter((t) => t.side === 'PLAYER' && t.kind === 'ATTACK')).toHaveLength(2)
+  })
+
+  it('sem ninguém caído, não acontece nada — e a rodada segue', () => {
+    const inteiro = campo([stats({ speed: 99 }), stats()], [stats({ hp: 900 })])
+    const r = rodada(
+      inteiro,
+      { aliadas: [atacar('reviver'), atacar(null)], inimigas: [atacar(null)] },
+      { reviver: reviver() }
+    )
+    expect(r.turnResults.some((t) => t.kind === 'REVIVE')).toBe(false)
+  })
+
+  it('não ressuscita ninguém do lado inimigo', () => {
+    const e = campo([stats({ speed: 99 })], [stats(), stats({ hp: 900 })])
+    const comInimigoCaido = { ...e, inimigos: [{ ...e.inimigos[0], currentHp: 0 }, e.inimigos[1]] }
+    const r = rodada(
+      comInimigoCaido,
+      { aliadas: [atacar('reviver')], inimigas: [atacar(null), atacar(null)] },
+      { reviver: reviver() }
+    )
+    expect(r.state.inimigos[0].currentHp).toBe(0)
+  })
+
+  it('traz de volta o PRIMEIRO da fila, não o mais forte nem o mais recente', () => {
+    const e = campo([stats({ speed: 99 }), stats({ hp: 100 }), stats({ hp: 400 })], [stats({ hp: 900 })])
+    const doisCaidos = {
+      ...e,
+      aliados: [e.aliados[0], { ...e.aliados[1], currentHp: 0 }, { ...e.aliados[2], currentHp: 0 }],
+    }
+    const r = rodada(
+      doisCaidos,
+      { aliadas: [atacar('reviver'), atacar(null), atacar(null)], inimigas: [atacar(null)] },
+      { reviver: reviver() }
+    )
+    expect(r.state.aliados[1].currentHp).toBeGreaterThan(0)
+    expect(r.state.aliados[2].currentHp).toBe(0)
+  })
+
+  it('a ressurreição não é anulada quando o golpe de quem lança erra', () => {
+    // Ela não vai no adversário, então não há o que ele apare — e o aliado
+    // caído não tem culpa do golpe ter passado longe.
+    const r = rodada(
+      comCaido(),
+      { aliadas: [atacar('reviver'), atacar(null)], inimigas: [atacar(null)] },
+      { reviver: reviver({ precision: 1 }) }
+    )
+    expect(r.state.aliados[1].currentHp).toBe(60)
+  })
+})
