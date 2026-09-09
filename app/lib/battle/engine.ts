@@ -55,11 +55,48 @@ function clamp(value: number, min: number, max: number): number {
  *
  * Sem correspondência, fica indefinido e a tela cai no genérico.
  */
+/**
+ * As tags que identificam cada natureza de dano contínuo, em ordem de
+ * prioridade.
+ *
+ * A PRIMEIRA VERSÃO SÓ OLHAVA QUATRO PARES DE TAGS e, na prática, não
+ * funcionava: das 131 habilidades que aplicam dano contínuo, 95 não tinham
+ * nenhuma delas e caíam todas no ícone genérico. O jogador via fogo em
+ * absolutamente tudo — veneno, corte, maldição, kidō — e a distinção que a
+ * tela prometia não existia em lugar nenhum.
+ *
+ * O erro foi construir a tela e não conferir se o DADO alimentava ela. Esta
+ * lista saiu de um censo das tags que as habilidades com DOT realmente têm,
+ * não de suposição.
+ *
+ * A ORDEM É A REGRA: o sabor explícito vence sempre, depois vem o elemento, e
+ * `espiritual` fica por último por ser o balde mais largo. Um Hadō marcado
+ * como `fogo` é queimadura, não energia espiritual.
+ */
+const TAGS_DO_SABOR: [DotFlavor, string[]][] = [
+  // Sabor declarado na própria habilidade: vence tudo.
+  ['queimadura', ['fogo', 'fire', 'burn']],
+  ['veneno', ['veneno', 'poison']],
+  ['sangramento', ['sangramento', 'bleed']],
+  ['maldicao', ['maldicao', 'decay']],
+
+  // Elemento ou natureza do golpe, quando o sabor não foi declarado.
+  ['congelamento', ['gelo', 'ice', 'agua', 'water']],
+  ['sangramento', ['espada', 'blades', 'corte', 'pierce', 'fisico']],
+  ['veneno', ['planta', 'natureza', 'dreno']],
+  ['maldicao', ['sombra', 'shikigami', 'alma', 'dominio']],
+  ['queimadura', ['cinza', 'ash', 'explosao']],
+
+  // O balde largo, e o que mais muda a tela: 70 das 131 habilidades com dano
+  // contínuo são kidō. Elas não são fogo — são queimadura de energia
+  // espiritual, e mereciam ícone próprio em vez de emprestar o das outras.
+  ['espiritual', ['hado', 'kido', 'ki', 'cero', 'quincy', 'hollow', 'beam', 'reiatsu']],
+]
+
 export function saborDoDot(tags: string[]): DotFlavor | undefined {
-  if (tags.some((t) => t === 'fogo' || t === 'fire' || t === 'burn')) return 'queimadura'
-  if (tags.some((t) => t === 'veneno' || t === 'poison')) return 'veneno'
-  if (tags.some((t) => t === 'sangramento' || t === 'bleed')) return 'sangramento'
-  if (tags.some((t) => t === 'maldicao' || t === 'decay')) return 'maldicao'
+  for (const [sabor, gatilhos] of TAGS_DO_SABOR) {
+    if (tags.some((t) => gatilhos.includes(t))) return sabor
+  }
   return undefined
 }
 
@@ -661,7 +698,14 @@ function applySkillEffects(
         statusEffects: [...semDuplicataDaMesmaSkill(newTarget.statusEffects, instance), instance],
       }
     }
-    applied.push({ type: effect.type, target: targetSide, stat: effect.stat, magnitude: instance.magnitude, duration: effect.duration })
+    applied.push({
+      type: effect.type,
+      target: targetSide,
+      stat: effect.stat,
+      magnitude: instance.magnitude,
+      duration: effect.duration,
+      ...(instance.flavor ? { flavor: instance.flavor } : {}),
+    })
   }
 
   return { user: newUser, target: newTarget, applied, healed, eventos }

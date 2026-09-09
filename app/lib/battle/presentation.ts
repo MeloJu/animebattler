@@ -1,13 +1,35 @@
 import { resolveErrorMessage } from '@/app/lib/error-messages'
-import type { EffectType, Stat } from './types'
+import { saborDoDot } from './engine'
+import type { DotFlavor, EffectType, Stat } from './types'
 
-export type EffectLike = { type: EffectType; stat?: Stat; magnitude: number }
+export type EffectLike = { type: EffectType; stat?: Stat; magnitude: number; flavor?: DotFlavor }
+
+/**
+ * Ícone e nome de cada natureza de dano contínuo.
+ *
+ * VIVE AQUI, e não no componente que desenha as tarjas, porque são DUAS telas
+ * lendo a mesma coisa: a tarja de status na batalha e o texto do efeito no
+ * cartão da habilidade. Enquanto cada uma tinha a própria tabela, a segunda
+ * mostrava 🔥 para todo dano contínuo — inclusive para veneno e corte — e
+ * contradizia a primeira na mesma partida.
+ */
+export const DOT_SABOR: Record<DotFlavor, { icone: string; rotulo: string }> = {
+  queimadura: { icone: '🔥', rotulo: 'Queimadura' },
+  veneno: { icone: '☠️', rotulo: 'Veneno' },
+  sangramento: { icone: '🩸', rotulo: 'Sangramento' },
+  maldicao: { icone: '🟣', rotulo: 'Maldição' },
+  congelamento: { icone: '❄️', rotulo: 'Congelamento' },
+  espiritual: { icone: '💠', rotulo: 'Queimadura espiritual' },
+}
+
+/** Quando a habilidade não diz de que natureza é o dano — ver StatusBadges. */
+export const DOT_GENERICO = { icone: '⏳', rotulo: 'Dano contínuo' }
 
 const STAT_LABEL: Record<Stat, string> = { attack: 'ATQ', defense: 'DEF', speed: 'VEL' }
 const EFFECT_ICON: Record<EffectType, string> = {
   BUFF: '↑',
   DEBUFF: '↓',
-  DOT: '🔥',
+  DOT: '⏳',
   STUN: '😵',
   COUNTER: '🔄',
   SHIELD: '🛡️',
@@ -22,8 +44,10 @@ export function describeEffect(e: EffectLike): string {
       return `${EFFECT_ICON.BUFF} ${e.stat ? STAT_LABEL[e.stat] : ''} +${e.magnitude}%`
     case 'DEBUFF':
       return `${EFFECT_ICON.DEBUFF} ${e.stat ? STAT_LABEL[e.stat] : ''} -${e.magnitude}%`
+    // O ícone segue a NATUREZA quando ela é conhecida. Antes era 🔥 fixo, e
+    // era o que fazia todo dano contínuo parecer fogo no cartão da habilidade.
     case 'DOT':
-      return `${EFFECT_ICON.DOT} ${e.magnitude}/rodada`
+      return `${(e.flavor ? DOT_SABOR[e.flavor] : DOT_GENERICO).icone} ${e.magnitude}/rodada`
     case 'STUN':
       return `${EFFECT_ICON.STUN} Atordoa`
     case 'COUNTER':
@@ -54,4 +78,23 @@ const BATTLE_ERROR_MESSAGES: Record<string, string> = {
 
 export function battleErrorMessage(code: string | undefined): string | null {
   return resolveErrorMessage(BATTLE_ERROR_MESSAGES, code, 'Ocorreu um erro inesperado.')
+}
+
+
+/**
+ * Descreve os efeitos de uma HABILIDADE, deduzindo a natureza do dano
+ * contínuo a partir das tags dela.
+ *
+ * Existe porque SkillEffect não guarda o sabor — ele só é decidido quando o
+ * efeito é APLICADO, a partir das tags de quem lançou. Sem esta função, o
+ * cartão da habilidade mostrava o ícone genérico para todo dano contínuo,
+ * enquanto a mesma habilidade em batalha mostrava veneno ou corte: duas telas
+ * discordando sobre o mesmo golpe.
+ */
+export function descreverEfeitosDaHabilidade(skill: {
+  effects: { type: EffectType; stat?: Stat; magnitude: number }[]
+  tags: string[]
+}): string[] {
+  const flavor = saborDoDot(skill.tags)
+  return skill.effects.map((e) => describeEffect(e.type === 'DOT' ? { ...e, flavor } : e))
 }

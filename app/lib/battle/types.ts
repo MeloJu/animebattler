@@ -58,7 +58,13 @@ export type StatusEffectInstance = {
 }
 
 /** Naturezas de dano contínuo que a tela sabe apresentar. */
-export type DotFlavor = 'queimadura' | 'veneno' | 'sangramento' | 'maldicao'
+export type DotFlavor =
+  | 'queimadura'
+  | 'veneno'
+  | 'sangramento'
+  | 'maldicao'
+  | 'congelamento'
+  | 'espiritual'
 
 // A combatant's stats are split into "base" (character + skill tree bonuses,
 // fixed for the whole battle) and "current" (base, or transformed if a
@@ -119,6 +125,8 @@ export type AppliedEffect = {
   stat?: Stat
   magnitude: number
   duration?: number
+  /** DOT: a natureza, para o log poder mostrar o ícone certo. */
+  flavor?: DotFlavor
 }
 
 export type TurnResult = {

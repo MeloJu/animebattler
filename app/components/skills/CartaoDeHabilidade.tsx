@@ -1,4 +1,4 @@
-import { describeEffect } from '@/app/lib/battle/presentation'
+import { descreverEfeitosDaHabilidade } from '@/app/lib/battle/presentation'
 import { custaStamina } from '@/app/lib/battle/engine'
 import type { ScalingStat, SkillDef } from '@/app/lib/battle/types'
 
@@ -98,7 +98,7 @@ export function CartaoDeHabilidade({
         </div>
 
         {skill.effects.length > 0 && (
-          <div className="text-xs opacity-70">{skill.effects.map(describeEffect).join(' · ')}</div>
+          <div className="text-xs opacity-70">{descreverEfeitosDaHabilidade(skill).join(' · ')}</div>
         )}
 
         {categoria && (

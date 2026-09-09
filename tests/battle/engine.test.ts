@@ -1096,9 +1096,36 @@ describe('natureza do dano contínuo', () => {
     expect(saborDoDot(['decay'])).toBe('maldicao')
   })
 
-  it('sem tag reconhecida, fica indefinido e a tela cai no genérico', () => {
+  it('sem tag NENHUMA reconhecida, fica indefinido e a tela cai no genérico', () => {
     expect(saborDoDot([])).toBeUndefined()
-    expect(saborDoDot(['ki', 'beam'])).toBeUndefined()
+    expect(saborDoDot(['ultimate', 'canon'])).toBeUndefined()
+  })
+
+  it('deduz o sabor do elemento quando ele não foi declarado', () => {
+    // A primeira versão só reconhecia as quatro tags de sabor explícitas, e na
+    // prática não funcionava: 95 das 131 habilidades com dano contínuo não
+    // tinham nenhuma delas e caíam todas no mesmo ícone. O jogador via fogo em
+    // tudo — inclusive em corte, veneno e kidō.
+    expect(saborDoDot(['espada'])).toBe('sangramento')
+    expect(saborDoDot(['pierce'])).toBe('sangramento')
+    expect(saborDoDot(['gelo'])).toBe('congelamento')
+    expect(saborDoDot(['planta', 'dreno'])).toBe('veneno')
+    expect(saborDoDot(['shikigami'])).toBe('maldicao')
+    expect(saborDoDot(['cinza'])).toBe('queimadura')
+  })
+
+  it('kidō e energia viram queimadura espiritual, não fogo', () => {
+    // São 70 das 131: o maior grupo de todos, e o que mais fazia a tela
+    // parecer que só existia fogo no jogo.
+    expect(saborDoDot(['hado', 'kido'])).toBe('espiritual')
+    expect(saborDoDot(['ki', 'beam'])).toBe('espiritual')
+    expect(saborDoDot(['cero'])).toBe('espiritual')
+  })
+
+  it('o sabor declarado vence o elemento — a ordem da tabela é a regra', () => {
+    // Um Hadō de fogo é queimadura, não energia espiritual.
+    expect(saborDoDot(['hado', 'kido', 'fogo'])).toBe('queimadura')
+    expect(saborDoDot(['espada', 'veneno'])).toBe('veneno')
   })
 
   it('o efeito aplicado carrega a natureza da habilidade de origem', () => {

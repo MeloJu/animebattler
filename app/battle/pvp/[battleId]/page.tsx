@@ -5,7 +5,7 @@ import { getPvpBattleView } from '@/app/lib/pvp/queries'
 import { submitPvpAction, forfeitPvpBattle } from '@/app/lib/pvp/actions'
 import { getEquippedSkills } from '@/app/lib/battle/queries'
 import { isLegalMove } from '@/app/lib/battle/engine'
-import { battleErrorMessage, describeEffect } from '@/app/lib/battle/presentation'
+import { battleErrorMessage, descreverEfeitosDaHabilidade } from '@/app/lib/battle/presentation'
 import { FighterCard } from '@/app/components/battle/FighterCard'
 import { TurnLogEntry } from '@/app/components/battle/TurnLogEntry'
 import { LiveBattleSync } from '@/app/components/pvp/LiveBattleSync'
@@ -146,7 +146,7 @@ export default async function PvpArenaPage({
                           {skill.name} <span className="text-muted">({skill.energyCost} EN)</span>
                         </div>
                         {skill.effects.length > 0 && (
-                          <div className="text-xs text-muted">{skill.effects.map(describeEffect).join(' · ')}</div>
+                          <div className="text-xs text-muted">{descreverEfeitosDaHabilidade(skill).join(' · ')}</div>
                         )}
                       </button>
                     </form>

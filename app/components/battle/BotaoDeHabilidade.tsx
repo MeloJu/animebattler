@@ -2,7 +2,7 @@
 
 import { useFormStatus } from 'react-dom'
 import { custaStamina, energyCostFor } from '@/app/lib/battle/engine'
-import { describeEffect } from '@/app/lib/battle/presentation'
+import { descreverEfeitosDaHabilidade } from '@/app/lib/battle/presentation'
 import type { CombatantState, SkillDef } from '@/app/lib/battle/types'
 
 /**
@@ -78,7 +78,7 @@ function Interior({
       )}
 
       {skill.effects.length > 0 && (
-        <div className="text-xs opacity-60 mt-0.5">{skill.effects.map(describeEffect).join(' · ')}</div>
+        <div className="text-xs opacity-60 mt-0.5">{descreverEfeitosDaHabilidade(skill).join(' · ')}</div>
       )}
 
       {motivo && <div className="text-xs opacity-70 mt-0.5">{motivo}</div>}

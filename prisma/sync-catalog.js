@@ -29,6 +29,7 @@ const { PrismaClient } = require('@prisma/client');
 const storyCatalog = require('./catalog/story');
 const atributosNovos = require('./catalog/atributos-novos');
 const precisaoCatalog = require('./catalog/precisao');
+const tagsFaltantes = require('./catalog/tags-faltantes');
 const storyJujutsu = require('./catalog/story-jujutsu');
 const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
@@ -484,6 +485,38 @@ async function syncSkillScaling() {
 }
 
 /**
+ * Acrescenta tags que faltavam em habilidades antigas. Ver
+ * prisma/catalog/tags-faltantes.js para o motivo.
+ *
+ * ACRESCENTA, nao substitui: a habilidade pode ter ganhado tags por outro
+ * caminho, e apagá-las seria trocar dado ausente por dado errado.
+ */
+async function syncTagsFaltantes() {
+  for (const def of tagsFaltantes.tagsFaltantes) {
+    const sk = await prisma.skill.findUnique({
+      where: { name_category: { name: def.name, category: def.category } },
+      select: { id: true, name: true, tags: true },
+    });
+    if (!sk) {
+      console.log(`  (aviso) habilidade do catalogo de tags nao existe neste banco: ${def.name}`);
+      continue;
+    }
+
+    const atuais = Array.isArray(sk.tags) ? sk.tags : [];
+    const faltando = def.tags.filter((t) => !atuais.includes(t));
+    if (faltando.length === 0) {
+      relatorio.iguais += 1;
+      continue;
+    }
+
+    registra('tags', `${sk.name} +${faltando.join(', ')}`, { acao: 'atualizar', campos: ['tags'] });
+    if (!DRY_RUN) {
+      await prisma.skill.update({ where: { id: sk.id }, data: { tags: [...atuais, ...faltando] } });
+    }
+  }
+}
+
+/**
  * Precisao de toda habilidade, derivada do poder dela.
  *
  * Passagem unica sobre a tabela inteira, e nao um campo em cada catalogo, por
@@ -740,6 +773,7 @@ async function main() {
   await syncTransformations();
   await syncTraits();
   await syncSkillLadders();
+  await syncTagsFaltantes();
   await syncSkillScaling();
   // Por ultimo: depende de toda habilidade ja existir com o poder final.
   await syncPrecisao();

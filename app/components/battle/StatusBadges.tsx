@@ -1,4 +1,4 @@
-import { describeEffect } from '@/app/lib/battle/presentation'
+import { DOT_GENERICO, DOT_SABOR, describeEffect } from '@/app/lib/battle/presentation'
 import type { DotFlavor, StatusEffectInstance } from '@/app/lib/battle/types'
 
 /**
@@ -12,30 +12,16 @@ import type { DotFlavor, StatusEffectInstance } from '@/app/lib/battle/types'
  * que o ícone: queimadura tremula, veneno pulsa devagar, sangramento pisca em
  * batidas, maldição respira. Dá para saber o que está acontecendo sem ler.
  */
-const DOT: Record<DotFlavor, { icone: string; rotulo: string; classe: string }> = {
-  queimadura: {
-    icone: '🔥',
-    rotulo: 'Queimadura',
-    classe: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 animate-[tremular_1.1s_ease-in-out_infinite]',
-  },
-  veneno: {
-    icone: '☠️',
-    rotulo: 'Veneno',
-    classe: 'bg-green-600/15 text-green-700 dark:text-green-400 animate-[pulsar_2s_ease-in-out_infinite]',
-  },
-  sangramento: {
-    icone: '🩸',
-    rotulo: 'Sangramento',
-    classe: 'bg-red-600/15 text-red-600 dark:text-red-400 animate-[bater_1.6s_ease-in-out_infinite]',
-  },
-  maldicao: {
-    icone: '🟣',
-    rotulo: 'Maldição',
-    classe: 'bg-purple-600/15 text-purple-600 dark:text-purple-400 animate-[respirar_2.4s_ease-in-out_infinite]',
-  },
+const ANIMACAO: Record<DotFlavor, string> = {
+  queimadura: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 animate-[tremular_1.1s_ease-in-out_infinite]',
+  veneno: 'bg-green-600/15 text-green-700 dark:text-green-400 animate-[pulsar_2s_ease-in-out_infinite]',
+  sangramento: 'bg-red-600/15 text-red-600 dark:text-red-400 animate-[bater_1.6s_ease-in-out_infinite]',
+  maldicao: 'bg-purple-600/15 text-purple-600 dark:text-purple-400 animate-[respirar_2.4s_ease-in-out_infinite]',
+  congelamento: 'bg-sky-500/15 text-sky-600 dark:text-sky-300 animate-[cintilar_3s_ease-in-out_infinite]',
+  espiritual: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 animate-[respirar_2.4s_ease-in-out_infinite]',
 }
 
-const GENERICO = { icone: '🔥', rotulo: 'Dano contínuo', classe: 'bg-background-alt' }
+const CLASSE_GENERICA = 'bg-background-alt'
 
 export function StatusBadges({ effects }: { effects: StatusEffectInstance[] }) {
   if (effects.length === 0) return null
@@ -43,7 +29,13 @@ export function StatusBadges({ effects }: { effects: StatusEffectInstance[] }) {
   return (
     <div className="flex flex-wrap gap-1">
       {effects.map((e) => {
-        const dot = e.type === 'DOT' ? (e.flavor ? DOT[e.flavor] : GENERICO) : null
+        const dot =
+          e.type === 'DOT'
+            ? {
+                ...(e.flavor ? DOT_SABOR[e.flavor] : DOT_GENERICO),
+                classe: e.flavor ? ANIMACAO[e.flavor] : CLASSE_GENERICA,
+              }
+            : null
 
         if (dot) {
           return (

@@ -30,15 +30,15 @@ const NATUREZA_DO_CHOQUE: Record<string, string> = {
 const VERBO: Record<NonNullable<TurnResult['severidade']>, string> = {
   raspao: 'raspou em',
   solido: 'acertou',
-  pesado: 'castigou',
+  pesado: 'acertou em cheio',
   devastador: 'arrebentou',
 }
 
 const VERBO_CRITICO: Record<NonNullable<TurnResult['severidade']>, string> = {
-  raspao: 'pegou de raspão, mas na brecha, em',
+  raspao: 'achou a brecha e raspou em',
   solido: 'encontrou a abertura e acertou',
-  pesado: 'achou o ponto exato e castigou',
-  devastador: 'acertou em cheio e arrebentou',
+  pesado: 'achou o ponto exato e acertou em cheio',
+  devastador: 'não deu chance e arrebentou',
 }
 
 export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult; playerName: string; enemyName: string }) {
