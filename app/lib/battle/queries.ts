@@ -31,6 +31,7 @@ export function toSkillDef(skill: {
   power: number
   energyCost: number
   cooldown: number
+  precision?: number
   effects: unknown
   tags: unknown
   scalingStat: PrismaScalingStat
@@ -40,6 +41,7 @@ export function toSkillDef(skill: {
     name: skill.name,
     power: skill.power,
     energyCost: skill.energyCost,
+    precision: skill.precision,
     cooldown: skill.cooldown,
     effects: parseEffects(skill.effects),
     // Json sem garantia de forma: só entram as strings.

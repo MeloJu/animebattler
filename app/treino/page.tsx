@@ -53,15 +53,18 @@ export default async function TreinoPage({
   ])
 
   const moedas = conta?.coins ?? 0
-  const custo = custoDoTreino(selected.treinos)
-  const cabem = treinosQueCabem(moedas, selected.treinos)
-  const podeTreinar = moedas >= custo
 
   const stats = computeFighterStats(
     selected.character,
     selected.level,
     sumStatBonuses(treeBonus, equipmentBonus, bonusDeAtributos(selected))
   )
+  // Depende de stats, então vem depois dele: a inteligência do personagem
+  // desconta o preço, e é ela que decide quantos treinos cabem no saldo.
+  const custo = custoDoTreino(selected.treinos, stats.intelligence)
+  const cabem = treinosQueCabem(moedas, selected.treinos, stats.intelligence)
+  const podeTreinar = moedas >= custo
+
   const valorAtual: Record<string, number> = {
     hp: stats.hp,
     attack: stats.attack,
@@ -69,6 +72,9 @@ export default async function TreinoPage({
     speed: stats.speed,
     energy: stats.energy,
     stamina: stats.stamina,
+    accuracy: stats.accuracy ?? 0,
+    agility: stats.agility ?? 0,
+    intelligence: stats.intelligence ?? 0,
   }
 
   return (

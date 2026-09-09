@@ -7,7 +7,11 @@ import {
   ENERGY_REGEN_PCT,
   STAMINA_REGEN_PCT,
   LEVEL_SCALING,
+  ACERTO_MINIMO,
+  ATRIBUTO_NEUTRO,
   DOMAIN_DAMAGE_BONUS,
+  EVASAO_MAXIMA,
+  EVASAO_POR_PONTO,
   SCALING_BASE,
   SCALING_REFERENCE,
 } from './constants'
@@ -74,6 +78,8 @@ function makeCombatant(stats: BaseStats, energyCostModifier = 0): CombatantState
     baseDefense: stats.defense,
     speed: stats.speed,
     baseSpeed: stats.speed,
+    accuracy: stats.accuracy,
+    agility: stats.agility,
     cooldowns: {},
     activeTransformationId: null,
     energyCostModifier,
@@ -83,7 +89,17 @@ function makeCombatant(stats: BaseStats, energyCostModifier = 0): CombatantState
 
 /** Character base stats + flat bonuses from unlocked skill-tree nodes. Battles always start untransformed. */
 export function computeBaseStats(
-  character: { hp: number; attack: number; defense: number; speed: number; energy: number; stamina: number },
+  character: {
+    hp: number
+    attack: number
+    defense: number
+    speed: number
+    energy: number
+    stamina: number
+    accuracy?: number
+    agility?: number
+    intelligence?: number
+  },
   bonus: StatBonus
 ): BaseStats {
   return {
@@ -93,6 +109,9 @@ export function computeBaseStats(
     speed: character.speed + bonus.speed,
     energy: character.energy + bonus.energy,
     stamina: character.stamina + bonus.stamina,
+    accuracy: (character.accuracy ?? ATRIBUTO_NEUTRO) + (bonus.accuracy ?? 0),
+    agility: (character.agility ?? ATRIBUTO_NEUTRO) + (bonus.agility ?? 0),
+    intelligence: (character.intelligence ?? ATRIBUTO_NEUTRO) + (bonus.intelligence ?? 0),
   }
 }
 
@@ -101,7 +120,17 @@ export function computeBaseStats(
  * bloco antes dele virar stat de batalha. Existe pra que adicionar uma nova
  * fonte não signifique tocar em cada chamador de computeBaseStats.
  */
-export const SEM_BONUS: StatBonus = { hp: 0, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0 }
+export const SEM_BONUS: StatBonus = {
+  hp: 0,
+  attack: 0,
+  defense: 0,
+  speed: 0,
+  energy: 0,
+  stamina: 0,
+  accuracy: 0,
+  agility: 0,
+  intelligence: 0,
+}
 
 export function sumStatBonuses(...bonuses: Partial<StatBonus>[]): StatBonus {
   return bonuses.reduce<StatBonus>(
@@ -112,6 +141,9 @@ export function sumStatBonuses(...bonuses: Partial<StatBonus>[]): StatBonus {
       speed: acc.speed + (b.speed ?? 0),
       energy: acc.energy + (b.energy ?? 0),
       stamina: acc.stamina + (b.stamina ?? 0),
+      accuracy: (acc.accuracy ?? 0) + (b.accuracy ?? 0),
+      agility: (acc.agility ?? 0) + (b.agility ?? 0),
+      intelligence: (acc.intelligence ?? 0) + (b.intelligence ?? 0),
     }),
     { ...SEM_BONUS }
   )
@@ -161,6 +193,12 @@ export function applyBossOverrides(
   }
 ): BaseStats {
   return {
+    // O spread não é estilo: sem ele, todo atributo novo some silenciosamente
+    // aqui. Foi o que aconteceu com acurácia e agilidade — o chefe caía no
+    // valor neutro e a evasão contra ele mudava sem ninguém ter pedido.
+    // Chefe não tem override para os três, e não deve mesmo: eles não têm
+    // teto de escala como os outros.
+    ...stats,
     hp: overrides.bossHp ?? stats.hp,
     attack: overrides.bossAttack ?? stats.attack,
     defense: overrides.bossDefense ?? stats.defense,
@@ -203,6 +241,10 @@ export function applyTraits(stats: BaseStats, traits: TraitDef[]): BaseStats {
     { hp: 0, attack: 0, defense: 0, speed: 0 }
   )
   return {
+    // Mesmo motivo do spread em applyBossOverrides: nenhum traço mexe em
+    // acurácia, agilidade ou inteligência, e sem isto eles seriam apagados
+    // por passar por aqui.
+    ...stats,
     hp: Math.round(stats.hp) + plano.hp,
     attack: Math.round(stats.attack * (1 + pct.attack)) + plano.attack,
     defense: Math.round(stats.defense * (1 + pct.defense)) + plano.defense,
@@ -350,6 +392,57 @@ function scalingValue(c: CombatantState, stat: ScalingStat): number {
  */
 function scaledBonus(c: CombatantState, stat: ScalingStat): number {
   return SCALING_BASE * (scalingValue(c, stat) / SCALING_REFERENCE[stat])
+}
+
+/**
+ * Quanto o alvo desvia deste atacante, de 0 ao teto.
+ *
+ * Só a DIFERENÇA conta, não o valor absoluto: dois personagens com agilidade
+ * 18 e acurácia 18 se acertam sempre, do mesmo jeito que dois com 8 e 8. Isso
+ * é o que impede a inflação — subir os dois números do elenco inteiro não
+ * muda nada, e é também por isso que nenhum dos dois escala por nível.
+ */
+export function evasaoContra(atacante: CombatantState, alvo: CombatantState): number {
+  const vantagem = (alvo.agility ?? ATRIBUTO_NEUTRO) - (atacante.accuracy ?? ATRIBUTO_NEUTRO)
+  return clamp(vantagem * EVASAO_POR_PONTO, 0, EVASAO_MAXIMA)
+}
+
+/**
+ * Se o golpe acerta.
+ *
+ * Duas coisas independentes se multiplicam, e a separação é o ponto:
+ *
+ * - PRECISÃO é da habilidade. Não depende de quem lança nem de quem recebe —
+ *   é o golpe ser largo e difícil de encaixar. É o que permite existir uma
+ *   habilidade que bate muito e erra às vezes, quebrando a regra de que a de
+ *   maior número é sempre a melhor escolha.
+ * - EVASÃO é do alvo, contra a acurácia de quem ataca. É build, e responde a
+ *   investimento dos dois lados.
+ *
+ * O produto tem piso (ACERTO_MINIMO) porque as duas empilhadas poderiam
+ * mandar a chance para bem abaixo do que qualquer uma prometia sozinha.
+ *
+ * Só vale para golpe com poder. Habilidade de suporte não erra: escudo, cura
+ * e buff são lançados em si mesmo, e um escudo que falha é frustração pura —
+ * o jogador gastou a rodada defensiva e não recebeu nem informação em troca.
+ */
+export function resolverAcerto(
+  atacante: CombatantState,
+  alvo: CombatantState,
+  precisao: number,
+  rand: () => number
+): { acertou: boolean; chance: number } {
+  const chance = clamp((precisao / 100) * (1 - evasaoContra(atacante, alvo)), ACERTO_MINIMO, 1)
+
+  // NÃO CONSOME ALEATORIEDADE quando o acerto é certo, e isso não é
+  // microotimização: rand() é a mesma sequência que decide crítico e choque,
+  // então gastar um número a mais por golpe deslocaria toda simulação com
+  // semente. Como precisão 100 contra evasão 0 é o caso de quase todo o
+  // catálogo hoje, pular o sorteio faz a mecânica ser literalmente inerte
+  // onde ela não se aplica — as medições de balanceamento anteriores
+  // continuam valendo dígito por dígito.
+  if (chance >= 1) return { acertou: true, chance: 1 }
+  return { acertou: rand() < chance, chance }
 }
 
 function computeDamage(
@@ -602,6 +695,7 @@ function performSkillUse(
 
   let damage: number | undefined
   let isCrit: boolean | undefined
+  let errou = false
   let countered = false
   let reflectedDamage: number | undefined
   let targetHpBefore: number | undefined
@@ -613,6 +707,16 @@ function performSkillUse(
 
   if (power > 0) {
     targetHpBefore = newDefender.currentHp
+    targetHpAfter = newDefender.currentHp
+
+    // O acerto garantido do domínio também vence a esquiva: "a técnica acerta"
+    // não pode valer contra escudo e counter e falhar contra agilidade.
+    errou = acertoGarantido
+      ? false
+      : !resolverAcerto(newAttacker, newDefender, skill?.precision ?? 100, rand).acertou
+  }
+
+  if (power > 0 && !errou) {
     const counterIdx = acertoGarantido
       ? -1
       : newDefender.statusEffects.findIndex((e) => e.type === 'COUNTER' && e.remainingRounds > 0)
@@ -646,7 +750,11 @@ function performSkillUse(
 
   // A countered attack didn't land, so effects aimed at the enemy shouldn't apply either —
   // but self-targeted effects (a buff/heal on the caster) still do, since the caster still acted.
-  const supportEffects = effects.filter((e) => e.type !== 'LIFESTEAL' && (!countered || e.target === 'SELF'))
+  // Golpe que errou não entrega efeito no alvo, pela mesma razão do counter:
+  // ele não encostou. O que é lançado em si mesmo continua valendo, porque o
+  // lançador agiu de qualquer forma.
+  const naoEncostou = countered || errou
+  const supportEffects = effects.filter((e) => e.type !== 'LIFESTEAL' && (!naoEncostou || e.target === 'SELF'))
   const supportResult = applySkillEffects(side, newAttacker, newDefender, supportEffects, skill?.name ?? 'Ataque Básico', scalingStat, skill?.tags ?? [])
   newAttacker = supportResult.user
   newDefender = supportResult.target
@@ -661,6 +769,7 @@ function performSkillUse(
     damage,
     isCrit,
     acertoGarantido: acertoGarantido && power > 0 ? true : undefined,
+    errou: errou || undefined,
     countered: countered || undefined,
     reflectedDamage,
     healed: healed > 0 ? healed : undefined,

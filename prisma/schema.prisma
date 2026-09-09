@@ -179,6 +179,31 @@ model Character {
   /// de "quantas vezes eu me protejo", que antes disputavam a mesma barra.
   stamina Int @default(80)
 
+  /// ACURACIA, AGILIDADE e INTELIGENCIA. Os tres foram acrescentados juntos
+  /// porque os seis atributos anteriores cobriam bater e aguentar, e nenhum
+  /// cobria ERRAR nem APRENDER.
+  ///
+  /// Nenhum dos tres escala por nivel, ao contrario dos outros seis. Se
+  /// acuracia e agilidade escalassem, a DIFERENCA entre elas cresceria junto
+  /// e a evasao inflaria sozinha ao longo do jogo: o mesmo confronto que da
+  /// 6% no nivel 1 daria o teto de 15% no nivel 14, sem ninguem ter escolhido
+  /// isso. Ver scaleForLevel em app/lib/battle/engine.ts.
+  ///
+  /// Os valores base saem da CLASSE (ver perfilDeClasse em
+  /// prisma/catalog/atributos-novos.js), nao de numero individual: por
+  /// enquanto sao tracos de arquetipo, e o catalogo permite excecao quando
+  /// algum personagem pedir.
+
+  /// Chance de o golpe acertar. Entra contra a agilidade do alvo.
+  accuracy     Int @default(11)
+  /// Chance de desviar. Contra a acuracia de quem ataca, com teto de 15% —
+  /// ver EVASAO_MAXIMA. Separada de speed de proposito: velocidade ja paga
+  /// iniciativa e critico, e por isso ja custa o dobro por ponto.
+  agility      Int @default(11)
+  /// Barateia o treino, e no futuro o nivel das habilidades. E atributo de
+  /// PROGRESSAO, nao de combate: nao entra em nenhuma conta de dano.
+  intelligence Int @default(11)
+
   // Relations
   characterSkills CharacterSkill[]
   treeNodes       SkillTreeNode[]
@@ -240,6 +265,14 @@ model Skill {
   power       Int           @default(10) // base multiplier or flat power
   energyCost  Int           @default(10)
   cooldown    Int           @default(0)
+  /// PRECISAO da habilidade, em porcento. E a confiabilidade do golpe em si,
+  /// independente de quem lanca — o par da acuracia, que e de quem lanca.
+  ///
+  /// 100 e o padrao e reproduz o comportamento antigo, em que nada errava.
+  /// Abaixo disso a habilidade vira uma aposta: um golpe pesado e impreciso
+  /// deixa de ser sempre a melhor escolha pelo maior numero, que era o unico
+  /// criterio que existia.
+  precision   Int           @default(100)
   tags        Json // JSON array of strings, e.g., ["bleed", "stun", "fire"] - flavor only
   /// Ícone da habilidade. Curto de propósito — um emoji ou o nome de um
   /// glifo de biblioteca aberta — porque arte de anime é material com
@@ -394,6 +427,9 @@ model UserCharacter {
   allocSpeed             Int             @default(0)
   allocEnergy            Int             @default(0)
   allocStamina           Int             @default(0)
+  allocAccuracy          Int             @default(0)
+  allocAgility           Int             @default(0)
+  allocIntelligence      Int             @default(0)
 
   /// Quantos treinos este personagem já comprou. Guardado só para PRECIFICAR
   /// o próximo: o ganho em si vai para as colunas alloc acima, para que a

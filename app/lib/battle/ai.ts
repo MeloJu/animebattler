@@ -4,6 +4,24 @@ import type { CombatantState, SkillDef } from './types'
 const LOW_HP_HEAL_THRESHOLD = 0.4
 
 /**
+ * Dano ESPERADO de uma habilidade: poder descontado da chance de errar.
+ *
+ * Existe porque as duas funções abaixo ordenavam por poder cru, e com
+ * precisão isso passou a estar errado. Um golpe de poder 45 com 88% de
+ * precisão rende 39,6 em média — menos que um de 42 que nunca erra. Sem esta
+ * conta, a precisão seria só um imposto silencioso sobre as habilidades
+ * grandes, e a escolha que ela existe para criar não apareceria em lugar
+ * nenhum: nem no loadout automático, nem na jogada da IA.
+ *
+ * Não é a conta completa de dano — ignora escala por atributo e defesa do
+ * alvo — e não precisa ser. Ela serve para ORDENAR habilidades do mesmo
+ * personagem, e esses dois fatores são aproximadamente iguais para todas elas.
+ */
+export function danoEsperado(skill: SkillDef): number {
+  return skill.power * ((skill.precision ?? 100) / 100)
+}
+
+/**
  * Escolhe um loadout padrão a partir das habilidades disponíveis.
  *
  * Usada pelos DOIS lados: monta o arsenal do inimigo e preenche os slots
@@ -41,12 +59,12 @@ export function escolherLoadoutPadrao(skills: SkillDef[], slots: number): SkillD
 
   // Desempate por id mantém a ordem estável quando poder e custo empatam.
   const porPoder = [...skills].sort(
-    (a, b) => b.power - a.power || a.energyCost - b.energyCost || a.id.localeCompare(b.id)
+    (a, b) => danoEsperado(b) - danoEsperado(a) || a.energyCost - b.energyCost || a.id.localeCompare(b.id)
   )
   const escolhidas = porPoder.slice(0, slots)
 
   const maisBarata = [...skills].sort(
-    (a, b) => a.energyCost - b.energyCost || b.power - a.power || a.id.localeCompare(b.id)
+    (a, b) => a.energyCost - b.energyCost || danoEsperado(b) - danoEsperado(a) || a.id.localeCompare(b.id)
   )[0]
   if (!escolhidas.some((s) => s.id === maisBarata.id)) {
     escolhidas[escolhidas.length - 1] = maisBarata
@@ -110,7 +128,9 @@ export function pickAiSkill(
     if (dominio && !disputaPerdida) return dominio.id
   }
 
-  const damageSkills = legal.filter((s) => s.power > 0).sort((a, b) => b.power - a.power || a.energyCost - b.energyCost)
+  const damageSkills = legal
+    .filter((s) => s.power > 0)
+    .sort((a, b) => danoEsperado(b) - danoEsperado(a) || a.energyCost - b.energyCost)
   if (damageSkills.length > 0) return damageSkills[0].id
 
   const supportSkills = legal.filter((s) => s.power === 0)

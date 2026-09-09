@@ -84,6 +84,10 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
   return (
     <>
       <span className="font-medium">{actorName}</span> usou <span className="font-medium">{turn.skillName}</span>
+      {/* Errar precisa ser dito com todas as letras. Sem esta linha, um golpe
+          que passa longe aparece no log como "usou X." e some — indistinguível
+          de uma habilidade de suporte que não faz dano. */}
+      {turn.errou && <>, e o golpe passou longe</>}
       {turn.countered && (
         <>, mas foi contra-atacado{typeof turn.reflectedDamage === 'number' ? ` e sofreu ${turn.reflectedDamage} de dano refletido` : ''}</>
       )}

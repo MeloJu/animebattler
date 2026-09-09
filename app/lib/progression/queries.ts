@@ -1,5 +1,6 @@
 import { prisma } from '@/app/lib/prisma'
 import { bonusDeAtributos } from './atributos'
+import { SEM_BONUS } from '@/app/lib/battle/engine'
 import type { StatBonus } from '@/app/lib/battle/types'
 
 // Duplicated identically across battle/ai, battle/raid, story/actions and
@@ -64,7 +65,10 @@ export async function getBonusDeAtributos(userCharacterId: string): Promise<Stat
       allocSpeed: true,
       allocEnergy: true,
       allocStamina: true,
+      allocAccuracy: true,
+      allocAgility: true,
+      allocIntelligence: true,
     },
   })
-  return uc ? bonusDeAtributos(uc) : { hp: 0, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0 }
+  return uc ? bonusDeAtributos(uc) : SEM_BONUS
 }

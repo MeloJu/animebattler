@@ -1,6 +1,16 @@
 import type { StatBonus } from '@/app/lib/battle/types'
 
-export const ATRIBUTOS = ['hp', 'attack', 'defense', 'speed', 'energy', 'stamina'] as const
+export const ATRIBUTOS = [
+  'hp',
+  'attack',
+  'defense',
+  'speed',
+  'energy',
+  'stamina',
+  'accuracy',
+  'agility',
+  'intelligence',
+] as const
 export type Atributo = (typeof ATRIBUTOS)[number]
 
 /**
@@ -29,6 +39,27 @@ export const ATRIBUTO_POR_PONTO: Record<Atributo, number> = {
   speed: 1,
   energy: 12,
   stamina: 12,
+  /**
+   * OS TRÊS NOVOS NÃO SEGUEM O ORÇAMENTO, e não é descuido.
+   *
+   * O orçamento (hp + 5*atq + 5*def + 4*vel + 0,3*energia) precifica o quanto
+   * um atributo contribui para bater e aguentar. Acurácia e agilidade não
+   * fazem nem uma coisa nem outra: mudam a FREQUÊNCIA com que o resto
+   * acontece, e a agilidade tem teto de 15% de evasão. Um ponto vale muito no
+   * começo da curva e literalmente zero depois do teto, então qualquer preço
+   * único estaria errado em uma das duas pontas.
+   *
+   * +1 por ponto os deixa na mesma escala de velocidade, que é o número com
+   * que eles disputam de fato. Quinze pontos de vantagem esgotam a evasão; é
+   * um investimento grande e a mecânica se recusa a pagar mais que isso.
+   *
+   * Inteligência é o caso mais claro: ela não entra em NENHUMA conta de
+   * combate. Vale +2 por ponto porque desconto de treino é dinheiro, não
+   * poder, e não há motivo para encarecê-la contra quem quer poder.
+   */
+  accuracy: 1,
+  agility: 1,
+  intelligence: 2,
 }
 
 export const ATRIBUTO_LABEL: Record<Atributo, string> = {
@@ -38,6 +69,9 @@ export const ATRIBUTO_LABEL: Record<Atributo, string> = {
   speed: 'Velocidade',
   energy: 'Energia',
   stamina: 'Stamina',
+  accuracy: 'Acurácia',
+  agility: 'Agilidade',
+  intelligence: 'Inteligência',
 }
 
 export const ATRIBUTO_AJUDA: Record<Atributo, string> = {
@@ -47,6 +81,12 @@ export const ATRIBUTO_AJUDA: Record<Atributo, string> = {
   speed: 'Decide quem age primeiro na rodada e aumenta a chance de crítico. Por render em duas coisas, cada ponto dá metade.',
   energy: 'Reserva de ataque: quantas habilidades ofensivas você lança. Também é a escala de kidō, ki e ninjutsu.',
   stamina: 'Reserva defensiva: quantas vezes você consegue usar escudo, cura e counter antes de ficar sem.',
+  accuracy:
+    'Reduz a chance de o adversário desviar dos seus golpes. Só a diferença para a agilidade dele conta — contra alguém tão preciso quanto você, ninguém erra.',
+  agility:
+    'Chance de desviar dos golpes do adversário, até no máximo 15%. Separada de velocidade de propósito: velocidade decide a ordem da rodada, agilidade decide se o golpe encosta.',
+  intelligence:
+    'Barateia o treino de atributos. Não entra em nenhuma conta de dano — é o atributo de quem prefere crescer mais rápido a bater mais forte.',
 }
 
 type Alocacoes = {
@@ -56,6 +96,9 @@ type Alocacoes = {
   allocSpeed: number
   allocEnergy: number
   allocStamina: number
+  allocAccuracy: number
+  allocAgility: number
+  allocIntelligence: number
 }
 
 /** Converte pontos gastos em bônus plano, para somar aos stats do personagem. */
@@ -67,6 +110,9 @@ export function bonusDeAtributos(a: Alocacoes): StatBonus {
     speed: a.allocSpeed * ATRIBUTO_POR_PONTO.speed,
     energy: a.allocEnergy * ATRIBUTO_POR_PONTO.energy,
     stamina: a.allocStamina * ATRIBUTO_POR_PONTO.stamina,
+    accuracy: a.allocAccuracy * ATRIBUTO_POR_PONTO.accuracy,
+    agility: a.allocAgility * ATRIBUTO_POR_PONTO.agility,
+    intelligence: a.allocIntelligence * ATRIBUTO_POR_PONTO.intelligence,
   }
 }
 
@@ -79,6 +125,9 @@ export function colunaDe(atributo: Atributo): keyof Alocacoes {
     speed: 'allocSpeed',
     energy: 'allocEnergy',
     stamina: 'allocStamina',
+    accuracy: 'allocAccuracy',
+    agility: 'allocAgility',
+    intelligence: 'allocIntelligence',
   }
   return mapa[atributo]
 }

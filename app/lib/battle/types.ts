@@ -88,6 +88,13 @@ export type CombatantState = {
   baseDefense: number
   speed: number
   baseSpeed: number
+  /**
+   * Acurácia e agilidade não têm par `base` como os outros, porque nada as
+   * modifica em batalha: não há BUFF nem transformação que mexa nelas, e elas
+   * não escalam por nível. São o número da build, do começo ao fim da luta.
+   */
+  accuracy?: number
+  agility?: number
   cooldowns: Record<string, number> // skillId -> rounds remaining
   activeTransformationId: string | null
   /**
@@ -127,6 +134,8 @@ export type TurnResult = {
   isCrit?: boolean
   /** ATTACK: o golpe passou por counter/escudo porque o dono tinha dominio aberto. */
   acertoGarantido?: boolean
+  /** ATTACK: o golpe passou longe — ver resolverAcerto. */
+  errou?: boolean
   countered?: boolean // true if this attack was negated + reflected by the defender's COUNTER
   reflectedDamage?: number // damage dealt back to the attacker when countered
   healed?: number // self-heal amount (HEAL or LIFESTEAL)
@@ -142,6 +151,11 @@ export type SkillDef = {
   power: number
   energyCost: number
   cooldown: number
+  /**
+   * Confiabilidade da habilidade em si, 0-100. Ausente vale 100, que é o
+   * comportamento antigo de nunca errar.
+   */
+  precision?: number
   effects: SkillEffect[]
   scalingStat: ScalingStat
   /**
@@ -202,6 +216,9 @@ export type StatBonus = {
   speed: number
   energy: number
   stamina: number
+  accuracy?: number
+  agility?: number
+  intelligence?: number
 }
 
 export type BaseStats = {
@@ -211,6 +228,17 @@ export type BaseStats = {
   speed: number
   energy: number
   stamina: number
+  /**
+   * Acurácia, agilidade e inteligência.
+   *
+   * Opcionais porque batalhas em andamento foram gravadas antes deles: um
+   * combatente sem os três cai no valor neutro, e acurácia igual à agilidade
+   * dá evasão zero — ou seja, batalha antiga se comporta exatamente como se
+   * comportava. Ver ATRIBUTO_NEUTRO.
+   */
+  accuracy?: number
+  agility?: number
+  intelligence?: number
 }
 
 export type PlayerAction =

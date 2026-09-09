@@ -27,6 +27,8 @@ const fs = require('fs');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const storyCatalog = require('./catalog/story');
+const atributosNovos = require('./catalog/atributos-novos');
+const precisaoCatalog = require('./catalog/precisao');
 const storyJujutsu = require('./catalog/story-jujutsu');
 const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
@@ -350,6 +352,9 @@ async function syncCharacters() {
     const desejado = {
       class: c.class, hp: c.hp, attack: c.attack,
       defense: c.defense, speed: c.speed, energy: c.energy, stamina: c.stamina,
+      // Acuracia, agilidade e inteligencia vem da CLASSE, nao do personagem
+      // — ver prisma/catalog/atributos-novos.js.
+      ...atributosNovos.atributosDe(c.name, c.class),
     };
     registra('personagem', c.name, diff(atual, desejado));
     if (!DRY_RUN) await prisma.character.update({ where: { id: atual.id }, data: desejado });
@@ -370,6 +375,7 @@ async function syncCharacters() {
     const desejado = {
       name: c.name, slug: c.slug, animeId: anime.id, affiliationId: af?.id ?? null,
       class: c.class, hp: c.hp, attack: c.attack, defense: c.defense, speed: c.speed, energy: c.energy, stamina: c.stamina,
+      ...atributosNovos.atributosDe(c.name, c.class),
     };
     registra('personagem', c.name, diff(atual, desejado));
     if (!DRY_RUN) {
@@ -473,6 +479,35 @@ async function syncSkillScaling() {
     registra('escala', `${sk.name} (${sk.category}) ${sk.scalingStat} -> ${desejado}`, { acao: 'atualizar', campos: ['scalingStat'] });
     if (!DRY_RUN) {
       await prisma.skill.update({ where: { id: sk.id }, data: { scalingStat: desejado } });
+    }
+  }
+}
+
+/**
+ * Precisao de toda habilidade, derivada do poder dela.
+ *
+ * Passagem unica sobre a tabela inteira, e nao um campo em cada catalogo, por
+ * duas razoes: habilidade entra por seis arquivos diferentes (escadas, kits,
+ * assinaturas, invocadores, suportes, equipamento), e a regra e derivada — se
+ * ela mudar, tem que mudar para todas de uma vez. Ver prisma/catalog/precisao.js.
+ */
+async function syncPrecisao() {
+  const skills = await prisma.skill.findMany({
+    select: { id: true, name: true, power: true, tags: true, precision: true },
+  });
+
+  for (const sk of skills) {
+    const desejado = precisaoCatalog.precisaoDe(sk);
+    if (sk.precision === desejado) {
+      relatorio.iguais += 1;
+      continue;
+    }
+    registra('precisao', `${sk.name} (poder ${sk.power}) ${sk.precision} -> ${desejado}`, {
+      acao: 'atualizar',
+      campos: ['precision'],
+    });
+    if (!DRY_RUN) {
+      await prisma.skill.update({ where: { id: sk.id }, data: { precision: desejado } });
     }
   }
 }
@@ -706,6 +741,8 @@ async function main() {
   await syncTraits();
   await syncSkillLadders();
   await syncSkillScaling();
+  // Por ultimo: depende de toda habilidade ja existir com o poder final.
+  await syncPrecisao();
 
   console.log(`sem alteração: ${relatorio.iguais}`);
   if (relatorio.criados.length) {

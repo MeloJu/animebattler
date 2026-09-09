@@ -115,6 +115,9 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
             speed: selected.allocSpeed,
             energy: selected.allocEnergy,
             stamina: selected.allocStamina,
+            accuracy: selected.allocAccuracy,
+            agility: selected.allocAgility,
+            intelligence: selected.allocIntelligence,
           }}
         />
         {selected.pointsAvailable === 0 && (

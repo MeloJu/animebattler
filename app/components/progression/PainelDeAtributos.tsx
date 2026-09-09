@@ -5,6 +5,7 @@ import {
   ATRIBUTO_POR_PONTO,
   type Atributo,
 } from '@/app/lib/progression/atributos'
+import { ATRIBUTO_NEUTRO } from '@/app/lib/battle/constants'
 import { alocarAtributo } from '@/app/lib/progression/actions'
 import type { BaseStats } from '@/app/lib/battle/types'
 
@@ -42,6 +43,11 @@ export function PainelDeAtributos({
     speed: stats.speed,
     energy: stats.energy,
     stamina: stats.stamina,
+    // Os três novos são opcionais em BaseStats porque batalhas gravadas antes
+    // deles não os têm — ver ATRIBUTO_NEUTRO.
+    accuracy: stats.accuracy ?? ATRIBUTO_NEUTRO,
+    agility: stats.agility ?? ATRIBUTO_NEUTRO,
+    intelligence: stats.intelligence ?? ATRIBUTO_NEUTRO,
   }
 
   return (

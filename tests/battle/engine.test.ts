@@ -101,7 +101,12 @@ describe('computeBaseStats', () => {
       { hp: 100, attack: 20, defense: 10, speed: 15, energy: 80, stamina: 60 },
       { hp: 25, attack: 5, defense: 3, speed: 2, energy: 0, stamina: 0 }
     )
-    expect(r).toEqual({ hp: 125, attack: 25, defense: 13, speed: 17, energy: 80, stamina: 60 })
+    // Os três novos não vêm no personagem de teste, então caem no neutro. Que
+    // eles apareçam aqui é o ponto: acurácia igual à agilidade dá evasão zero.
+    expect(r).toEqual({
+      hp: 125, attack: 25, defense: 13, speed: 17, energy: 80, stamina: 60,
+      accuracy: 11, agility: 11, intelligence: 11,
+    })
   })
 
   it('não altera energia — a skill tree não dá bônus de energia', () => {
@@ -503,7 +508,10 @@ describe('sumStatBonuses', () => {
   it('soma árvore de skills e equipamento campo a campo', () => {
     const arvore = { hp: 10, attack: 2, defense: 1, speed: 0, energy: 0, stamina: 0 }
     const equipamento = { hp: 8, attack: 0, defense: 3, speed: 5, energy: 0, stamina: 0 }
-    expect(sumStatBonuses(arvore, equipamento)).toEqual({ hp: 18, attack: 2, defense: 4, speed: 5, energy: 0, stamina: 0 })
+    expect(sumStatBonuses(arvore, equipamento)).toEqual({
+      hp: 18, attack: 2, defense: 4, speed: 5, energy: 0, stamina: 0,
+      accuracy: 0, agility: 0, intelligence: 0,
+    })
   })
 
   it('bônus negativo (ex: Fragmento de Máscara Hollow) subtrai', () => {
@@ -514,12 +522,18 @@ describe('sumStatBonuses', () => {
       speed: 0,
       energy: 0,
       stamina: 0,
+      accuracy: 0,
+      agility: 0,
+      intelligence: 0,
     })
   })
 
   it('aceita mais de duas fontes', () => {
     const um = { hp: 1, attack: 1, defense: 1, speed: 1, energy: 0, stamina: 0 }
-    expect(sumStatBonuses(um, um, um)).toEqual({ hp: 3, attack: 3, defense: 3, speed: 3, energy: 0, stamina: 0 })
+    expect(sumStatBonuses(um, um, um)).toEqual({
+      hp: 3, attack: 3, defense: 3, speed: 3, energy: 0, stamina: 0,
+      accuracy: 0, agility: 0, intelligence: 0,
+    })
   })
 })
 
@@ -537,8 +551,13 @@ describe('computeFighterStats', () => {
 
   it('escala o personagem pelo nível', () => {
     // nível 5 => 1 + 4*0.12 = 1.48
+    // Acurácia, agilidade e inteligência NÃO são multiplicadas pelo nível —
+    // seguem em 11 enquanto o resto cresce 48%. Ver o comentário em
+    // schema.prisma: se escalassem, a diferença entre acurácia e agilidade
+    // cresceria junto e a evasão inflaria sozinha ao longo do jogo.
     expect(computeFighterStats(base, 5, semBonus)).toEqual({
       hp: 192, attack: 27, defense: 16, speed: 18, energy: 148, stamina: 133,
+      accuracy: 11, agility: 11, intelligence: 11,
     })
   })
 

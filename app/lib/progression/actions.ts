@@ -8,7 +8,7 @@ import { requireUser } from '@/app/lib/session'
 import { getEligiblePlayerSkills } from '@/app/lib/battle/queries'
 import { escolherLoadoutPadrao } from '@/app/lib/battle/ai'
 import { getLoadoutSlotCount } from './constants'
-import { colunaDe, ehAtributo } from './atributos'
+import { ATRIBUTO_POR_PONTO, colunaDe, ehAtributo } from './atributos'
 import { custoDoTreino } from './treino'
 import { getSelectedCharacter } from './queries'
 
@@ -214,11 +214,19 @@ export async function treinarAtributo(atributo: string): Promise<void> {
   // alcançável por POST direto, e o preço muda a cada compra.
   const [conta, personagem] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id }, select: { coins: true } }),
-    prisma.userCharacter.findUnique({ where: { id: userCharacter.id }, select: { treinos: true } }),
+    prisma.userCharacter.findUnique({
+      where: { id: userCharacter.id },
+      // A inteligência entra no preço, então precisa vir do banco junto: o
+      // valor que a tela mostrou não serve, pela mesma razão que o saldo não
+      // serve — esta action é alcançável por POST direto.
+      select: { treinos: true, allocIntelligence: true, character: { select: { intelligence: true } } },
+    }),
   ])
   if (!conta || !personagem) redirect('/treino?error=not_found')
 
-  const custo = custoDoTreino(personagem.treinos)
+  const inteligencia =
+    personagem.character.intelligence + personagem.allocIntelligence * ATRIBUTO_POR_PONTO.intelligence
+  const custo = custoDoTreino(personagem.treinos, inteligencia)
   if (conta.coins < custo) redirect('/treino?error=insufficient_coins')
 
   await prisma.$transaction([

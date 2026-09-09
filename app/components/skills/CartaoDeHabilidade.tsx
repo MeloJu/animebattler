@@ -83,6 +83,15 @@ export function CartaoDeHabilidade({
               <span className="font-medium tabular-nums">{skill.cooldown}</span>
             </span>
           )}
+          {/* Só aparece quando é MENOR que 100. Escrever "100% de precisão" em
+              quase todo cartão seria ruído: a informação útil é justamente a
+              habilidade que pode falhar, e ela precisa se destacar. */}
+          {(skill.precision ?? 100) < 100 && (
+            <span className="text-amber-600 dark:text-amber-400">
+              <span className="opacity-70">Precisão </span>
+              <span className="font-medium tabular-nums">{skill.precision}%</span>
+            </span>
+          )}
           {skill.power > 0 && (
             <span className="opacity-60">escala de {ESCALA_LABEL[skill.scalingStat]}</span>
           )}

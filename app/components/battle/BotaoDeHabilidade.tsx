@@ -70,6 +70,13 @@ function Interior({
         </span>
       </div>
 
+      {/* Na batalha a precisão é decisão, não referência: é o que separa
+          "aposto no golpe grande" de "garanto o médio". Sem ela na tela, o
+          jogador só descobre que o golpe podia errar quando erra. */}
+      {(skill.precision ?? 100) < 100 && (
+        <div className="text-xs mt-0.5 text-amber-600 dark:text-amber-400">{skill.precision}% de precisão</div>
+      )}
+
       {skill.effects.length > 0 && (
         <div className="text-xs opacity-60 mt-0.5">{skill.effects.map(describeEffect).join(' · ')}</div>
       )}

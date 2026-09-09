@@ -22,6 +22,43 @@ export const CRIT_MAX_CHANCE = 0.35
 export const CRIT_SPEED_COEFFICIENT = 0.01
 export const CRIT_MULTIPLIER = 1.5
 
+/**
+ * Valor neutro de acurácia, agilidade e inteligência.
+ *
+ * Importa que seja UM só para os três: acurácia igual à agilidade dá evasão
+ * zero, então um combatente que não declara nenhum dos dois — batalha gravada
+ * antes das colunas existirem, monstro de raid, qualquer caso não migrado —
+ * se comporta exatamente como se comportava antes de a mecânica existir.
+ */
+export const ATRIBUTO_NEUTRO = 11
+
+/**
+ * Teto da evasão. É baixo de propósito, e é a decisão mais importante daqui.
+ *
+ * Uma luta dura de 7 a 14 rodadas. Com evasão alta, uma sequência de erros
+ * decide a partida sem que ninguém tenha jogado melhor — e o jogador não tem
+ * como reagir a isso, porque não houve escolha errada, houve sorte. Errar
+ * precisa ser um custo real e ocasional, não um segundo dado de vitória.
+ *
+ * 15% significa aproximadamente um golpe perdido a cada sete: o suficiente
+ * para investir em agilidade valer a pena, longe do suficiente para virar a
+ * mecânica principal.
+ */
+export const EVASAO_MAXIMA = 0.15
+
+/** Quanto cada ponto de vantagem em agilidade sobre a acurácia do outro vira de evasão. */
+export const EVASAO_POR_PONTO = 0.01
+
+/**
+ * Piso da chance de acertar.
+ *
+ * Precisão e evasão se multiplicam, então uma habilidade imprecisa contra um
+ * alvo esquivo poderia empilhar para bem abaixo do que qualquer uma das duas
+ * prometia. O piso garante que nenhum golpe seja um chute: se você escolheu
+ * gastar a rodada e a energia, a chance nunca cai abaixo de dois terços.
+ */
+export const ACERTO_MINIMO = 0.66
+
 export const BASIC_ATTACK_POWER = 12
 
 /**

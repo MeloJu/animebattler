@@ -14,11 +14,17 @@ const zerado = {
   allocSpeed: 0,
   allocEnergy: 0,
   allocStamina: 0,
+  allocAccuracy: 0,
+  allocAgility: 0,
+  allocIntelligence: 0,
 }
 
 describe('atributos alocáveis', () => {
   it('sem ponto gasto, não dá bônus nenhum', () => {
-    expect(bonusDeAtributos(zerado)).toEqual({ hp: 0, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0 })
+    expect(bonusDeAtributos(zerado)).toEqual({
+      hp: 0, attack: 0, defense: 0, speed: 0, energy: 0, stamina: 0,
+      accuracy: 0, agility: 0, intelligence: 0,
+    })
   })
 
   it('converte pontos em bônus pelo valor de cada atributo', () => {
@@ -29,6 +35,9 @@ describe('atributos alocáveis', () => {
       speed: 0,
       energy: 0,
       stamina: 0,
+      accuracy: 0,
+      agility: 0,
+      intelligence: 0,
     })
   })
 
