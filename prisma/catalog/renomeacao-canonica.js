@@ -54,10 +54,120 @@ const renomeacoes = [
     fonte: 'anime/mangá — ele segue lutando através de ferimentos que derrubariam qualquer outro; é caracterização repetida, não uma técnica com nome.',
   },
   {
-    nomeAntigo: 'Reckless Slash',
+    // Renomeado uma SEGUNDA vez: "Golpe Bruto" já tinha saído do genérico
+    // "Reckless Slash" no commit anterior, mas era genérico ainda — o tipo
+    // de nome que serviria pra qualquer espadachim do elenco. nomeAntigo
+    // aponta pro nome ATUAL no banco (Golpe Bruto), não pro original — a
+    // função busca pelo nome de agora, não pela origem histórica.
+    nomeAntigo: 'Golpe Bruto',
     categoria: 'OTHER',
-    nomeNovo: 'Golpe Bruto',
-    fonte: 'GENÉRICO DE PROPÓSITO — ele não tem golpe básico nomeado na obra; dar um nome pomposo aqui seria inventar o que a obra deliberadamente não dá a ele.',
+    nomeNovo: 'Fio Cego',
+    fonte: 'anime/mangá — fato real e específico dele: a Nozarashi nunca é afiada, de propósito, porque ele não liga pra elegância na luta, só pro prazer do combate contra alguém forte.',
+  },
+
+  // IZURU KIRA. A marca dele é o autodesprezo — a linha mais famosa do
+  // personagem é se descrever como "o homem mais covarde do Seireitei".
+  {
+    nomeAntigo: 'Wabisuke: Heavy Blow',
+    categoria: 'OTHER',
+    nomeNovo: 'Wabisuke: Peso Redobrado',
+    fonte: 'anime/mangá — mais preciso que o nome antigo: o Wabisuke literalmente dobra o peso do que corta, não é só "um golpe pesado".',
+  },
+  {
+    nomeAntigo: 'Despairing Slash',
+    categoria: 'OTHER',
+    nomeNovo: 'Golpe do Desespero',
+    fonte: 'traço de personagem real, só traduzido — o autodesprezo do Kira é a marca mais conhecida dele.',
+  },
+  {
+    nomeAntigo: 'Quiet Resolve',
+    categoria: 'OTHER',
+    nomeNovo: 'Máscara de Indiferença',
+    fonte: 'traço de personagem — ele esconde o desespero atrás de uma calma fingida.',
+  },
+
+  // RENJI ABARAI. O arco dele em Soul Society é inteiro sobre superar a
+  // própria fraqueza para alcançar Ichigo e Byakuya, e proteger a Rukia.
+  {
+    nomeAntigo: 'Zabimaru Strike',
+    categoria: 'OTHER',
+    nomeNovo: 'Zabimaru: Chicotada',
+    fonte: 'mais preciso que o nome antigo — Zabimaru é uma lâmina segmentada tipo chicote/espinha, não um golpe genérico de espada.',
+  },
+  {
+    nomeAntigo: 'Fierce Resolve',
+    categoria: 'OTHER',
+    nomeNovo: 'Determinação de Superar',
+    fonte: 'traço de personagem — o motor de tudo que o Renji faz na Soul Society é superar a própria fraqueza.',
+  },
+  {
+    nomeAntigo: 'Tenacious Guard',
+    categoria: 'OTHER',
+    nomeNovo: 'Lealdade Inabalável',
+    fonte: 'traço de personagem — a devoção dele à Rukia e aos amigos, não uma postura defensiva genérica.',
+  },
+
+  // MAYURI KUROTSUCHI. Cientista louco sem empatia nenhuma — trata todo
+  // mundo, inclusive os próprios subordinados, como cobaia descartável.
+  {
+    nomeAntigo: 'Toxic Experiment',
+    categoria: 'OTHER',
+    nomeNovo: 'Cobaia Descartável',
+    fonte: 'traço de personagem — é assim que ele enxerga qualquer um à frente dele, aliado ou inimigo.',
+  },
+  {
+    nomeAntigo: 'Regenerative Formula',
+    categoria: 'OTHER',
+    nomeNovo: 'Corpo Descartável',
+    fonte: 'anime/mangá — fato real da obra: ele mantém corpos de reposição prontos para quando o atual for destruído.',
+  },
+
+  // BYAKUYA KUCHIKI. A obsessão dele com a honra do clã Kuchiki é o traço
+  // que define cada decisão que ele toma na Soul Society.
+  {
+    nomeAntigo: 'Noble Resolve',
+    categoria: 'OTHER',
+    nomeNovo: 'Orgulho dos Kuchiki',
+    fonte: 'traço de personagem — a nobreza do clã acima de tudo, inclusive dos próprios sentimentos.',
+  },
+  // "Shukumei" fica como está: não tenho fonte confiável para esse nome e
+  // prefiro não mexer sem confirmar de onde ele veio.
+
+  // GIN ICHIMARU. O sorriso perpétuo escondendo as intenções reais é o
+  // traço mais icônico do personagem — e o arco dele inteiro acaba sendo
+  // uma armação de anos contra o próprio Aizen.
+  {
+    nomeAntigo: 'Shinsō Extension',
+    categoria: 'OTHER',
+    nomeNovo: 'Shinsō: Investida',
+    fonte: 'anime/mangá — mesmo conceito (a lâmina dispara pra frente em alta velocidade), frase mais direta.',
+  },
+  {
+    nomeAntigo: 'Deceptive Smile',
+    categoria: 'OTHER',
+    nomeNovo: 'Sorriso Enganoso',
+    fonte: 'traço de personagem, só traduzido — o sorriso constante é a marca mais reconhecível do Gin.',
+  },
+  {
+    nomeAntigo: 'Sly Counter',
+    categoria: 'OTHER',
+    nomeNovo: 'Farsa Calculada',
+    fonte: 'traço de personagem — o arco dele inteiro foi uma armação calculada contra o Aizen.',
+  },
+
+  // SOSUKE AIZEN. Ter antecipado e planejado tudo com séculos de
+  // antecedência é o traço que define o personagem inteiro.
+  {
+    nomeAntigo: 'Perfect Anticipation',
+    categoria: 'OTHER',
+    nomeNovo: 'Tudo Conforme o Plano',
+    fonte: 'traço de personagem — a frase que resume o Aizen inteiro; ele sempre esteve um passo à frente.',
+  },
+  {
+    nomeAntigo: 'Shattered Shield',
+    categoria: 'OTHER',
+    nomeNovo: 'Ilusão de Fragilidade',
+    fonte: 'liga ao tema real de hipnose/ilusão do Kyōka Suigetsu, em vez de um "quebra-escudo" sem tema.',
   },
 ];
 

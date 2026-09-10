@@ -266,8 +266,8 @@ async function main() {
     // Mayuri Kurotsuchi
     { name: 'Ashisogi Jizō Spores', category: 'OTHER', power: 8, energyCost: 16, cooldown: 2, tags: ['poison'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 3 }] },
     { name: 'Konjiki Ashisogi Jizō', category: 'OTHER', power: 26, energyCost: 26, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 3 }] },
-    { name: 'Toxic Experiment', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['poison', 'debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 18, duration: 3 }] },
-    { name: 'Regenerative Formula', category: 'OTHER', power: 0, energyCost: 20, cooldown: 4, tags: ['heal'], effects: [{ type: 'HEAL', target: 'SELF', magnitude: 18 }] },
+    { name: 'Cobaia Descartável', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['poison', 'debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 18, duration: 3 }] },
+    { name: 'Corpo Descartável', category: 'OTHER', power: 0, energyCost: 20, cooldown: 4, tags: ['heal'], effects: [{ type: 'HEAL', target: 'SELF', magnitude: 18 }] },
 
     // Sajin Komamura
     { name: 'Tenken Strike', category: 'OTHER', power: 22, energyCost: 18, cooldown: 2, tags: [], effects: [] },
@@ -276,10 +276,10 @@ async function main() {
     { name: "Guardian's Resolve", category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 32, duration: 3 }] },
 
     // Gin Ichimaru
-    { name: 'Shinsō Extension', category: 'OTHER', power: 21, energyCost: 17, cooldown: 2, tags: [], effects: [] },
+    { name: 'Shinsō: Investida', category: 'OTHER', power: 21, energyCost: 17, cooldown: 2, tags: [], effects: [] },
     { name: 'Kamishini no Yari', category: 'OTHER', power: 27, energyCost: 26, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 0, duration: 1 }] },
-    { name: 'Deceptive Smile', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 18, duration: 3 }] },
-    { name: 'Sly Counter', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 50, duration: 2 }] },
+    { name: 'Sorriso Enganoso', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 18, duration: 3 }] },
+    { name: 'Farsa Calculada', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 50, duration: 2 }] },
 
     // Kaname Tosen
     { name: 'Suzumushi Strike', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: [], effects: [] },
@@ -298,9 +298,9 @@ async function main() {
     { name: 'Kido Focus', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 3 }] },
 
     // Izuru Kira
-    { name: 'Wabisuke: Heavy Blow', category: 'OTHER', power: 18, energyCost: 16, cooldown: 2, tags: ['debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 18, duration: 3 }] },
-    { name: 'Despairing Slash', category: 'OTHER', power: 19, energyCost: 17, cooldown: 3, tags: ['poison'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 7, duration: 3 }] },
-    { name: 'Quiet Resolve', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 26, duration: 3 }] },
+    { name: 'Wabisuke: Peso Redobrado', category: 'OTHER', power: 18, energyCost: 16, cooldown: 2, tags: ['debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 18, duration: 3 }] },
+    { name: 'Golpe do Desespero', category: 'OTHER', power: 19, energyCost: 17, cooldown: 3, tags: ['poison'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 7, duration: 3 }] },
+    { name: 'Máscara de Indiferença', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 26, duration: 3 }] },
 
     // Kisuke Urahara
     { name: 'Benihime: Crimson Strike', category: 'OTHER', power: 23, energyCost: 19, cooldown: 2, tags: [], effects: [] },
@@ -316,14 +316,14 @@ async function main() {
 
     // Sosuke Aizen
     { name: 'Kyōka Suigetsu: Complete Hypnosis', category: 'OTHER', power: 0, energyCost: 20, cooldown: 3, tags: ['illusion', 'debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'attack', magnitude: 25, duration: 3 }] },
-    { name: 'Shattered Shield', category: 'OTHER', power: 26, energyCost: 22, cooldown: 3, tags: [], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 2 }] },
-    { name: 'Perfect Anticipation', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 60, duration: 2 }] },
+    { name: 'Ilusão de Fragilidade', category: 'OTHER', power: 26, energyCost: 22, cooldown: 3, tags: [], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 2 }] },
+    { name: 'Tudo Conforme o Plano', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 60, duration: 2 }] },
 
     // Byakuya Kuchiki
     { name: 'Senbonzakura', category: 'OTHER', power: 24, energyCost: 20, cooldown: 2, tags: ['blades'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 7, duration: 3 }] },
     { name: 'Senbonzakura Kageyoshi', category: 'OTHER', power: 30, energyCost: 28, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 3 }] },
     { name: 'Shukumei', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: [], effects: [] },
-    { name: 'Noble Resolve', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 15, duration: 3 }] },
+    { name: 'Orgulho dos Kuchiki', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 15, duration: 3 }] },
 
     // Toshiro Hitsugaya
     { name: 'Hyōrinmaru: Ice Blade', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: ['ice'], effects: [] },
@@ -332,17 +332,17 @@ async function main() {
     { name: 'Frost Armor', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['ice', 'shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 28, duration: 3 }] },
 
     // Kenpachi Zaraki
-    { name: 'Golpe Bruto', category: 'OTHER', power: 24, energyCost: 16, cooldown: 2, tags: [], effects: [] },
+    { name: 'Fio Cego', category: 'OTHER', power: 24, energyCost: 16, cooldown: 2, tags: [], effects: [] },
     { name: 'Nozarashi', category: 'OTHER', power: 34, energyCost: 28, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'DEBUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 }] },
     { name: 'Remover o Tapa-Olho', category: 'OTHER', power: 0, energyCost: 20, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 30, duration: 3 }] },
     { name: 'Teimosia de Kenpachi', category: 'OTHER', power: 20, energyCost: 18, cooldown: 3, tags: [], effects: [{ type: 'LIFESTEAL', target: 'SELF', magnitude: 25 }] },
     { name: 'Pressão Assassina', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['stun'], effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 0, duration: 1 }] },
 
     // Renji Abarai
-    { name: 'Zabimaru Strike', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: [], effects: [] },
+    { name: 'Zabimaru: Chicotada', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: [], effects: [] },
     { name: 'Hihio Zabimaru', category: 'OTHER', power: 26, energyCost: 26, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 7, duration: 3 }] },
-    { name: 'Fierce Resolve', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 3 }] },
-    { name: 'Tenacious Guard', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 26, duration: 3 }] },
+    { name: 'Determinação de Superar', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 3 }] },
+    { name: 'Lealdade Inabalável', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 26, duration: 3 }] },
 
     // Orihime Inoue
     { name: 'Tsubaki: Koten Zanshun', category: 'OTHER', power: 18, energyCost: 16, cooldown: 2, tags: [], effects: [] },
@@ -511,20 +511,20 @@ async function main() {
     { character: charByName['Shunsui Kyōraku'], skills: ['Katen Kyōkotsu: Twin Strike', 'Bushōgoma', 'Lazy Confidence', 'Flower Wind Rondo'] },
     { character: charByName['Jūshirō Ukitake'], skills: ['Sōgyo no Kotowari: Twin Blade', 'Dual Strike Barrage', 'Resilient Spirit', 'Twin Blade Guard'] },
     { character: charByName['Suì-Fēng'], skills: ['Suzumebachi Sting', 'Nigeki Kessatsu: Death Sting', 'Shunkō Assault', "Assassin's Debuff"] },
-    { character: charByName['Mayuri Kurotsuchi'], skills: ['Ashisogi Jizō Spores', 'Konjiki Ashisogi Jizō', 'Toxic Experiment', 'Regenerative Formula'] },
+    { character: charByName['Mayuri Kurotsuchi'], skills: ['Ashisogi Jizō Spores', 'Konjiki Ashisogi Jizō', 'Cobaia Descartável', 'Corpo Descartável'] },
     { character: charByName['Sajin Komamura'], skills: ['Tenken Strike', 'Kokujō Tengen Myōō', 'Iron Wall', "Guardian's Resolve"] },
-    { character: charByName['Gin Ichimaru'], skills: ['Shinsō Extension', 'Kamishini no Yari', 'Deceptive Smile', 'Sly Counter'] },
+    { character: charByName['Gin Ichimaru'], skills: ['Shinsō: Investida', 'Kamishini no Yari', 'Sorriso Enganoso', 'Farsa Calculada'] },
     { character: charByName['Kaname Tosen'], skills: ['Suzumushi Strike', 'Suzumushi Tsuishiki: Enma Kōrogi', 'Blind Justice', 'Righteous Guard'] },
     { character: charByName['Rangiku Matsumoto'], skills: ['Haineko: Ash Slash', 'Growl, Haineko', 'Flashy Confidence', 'Ash Veil'] },
     { character: charByName['Momo Hinamori'], skills: ['Hadō #4: Byakurai', 'Hadō #63: Raikōhō', 'Tobiume: Plum Blossom Fire', 'Kido Focus'] },
-    { character: charByName['Izuru Kira'], skills: ['Hadō #4: Byakurai', 'Wabisuke: Heavy Blow', 'Despairing Slash', 'Quiet Resolve'] },
+    { character: charByName['Izuru Kira'], skills: ['Hadō #4: Byakurai', 'Wabisuke: Peso Redobrado', 'Golpe do Desespero', 'Máscara de Indiferença'] },
     { character: charByName['Kisuke Urahara'], skills: ['Benihime: Crimson Strike', 'Kageyoshi: Shield Wall', "Shopkeeper's Trick", 'Calculated Counter'] },
     { character: charByName['Retsu Unohana'], skills: ['Healing Touch', 'Minazuki: Mist Balm', 'Calm Composure', 'Glimpse of the True Blade'] },
-    { character: charByName['Sosuke Aizen'], skills: ['Kyōka Suigetsu: Complete Hypnosis', 'Shattered Shield', 'Perfect Anticipation', 'Hadō #90: Kurohitsugi'] },
-    { character: charByName['Byakuya Kuchiki'], skills: ['Senbonzakura', 'Senbonzakura Kageyoshi', 'Shukumei', 'Hadō #4: Byakurai', 'Noble Resolve'] },
+    { character: charByName['Sosuke Aizen'], skills: ['Kyōka Suigetsu: Complete Hypnosis', 'Ilusão de Fragilidade', 'Tudo Conforme o Plano', 'Hadō #90: Kurohitsugi'] },
+    { character: charByName['Byakuya Kuchiki'], skills: ['Senbonzakura', 'Senbonzakura Kageyoshi', 'Shukumei', 'Hadō #4: Byakurai', 'Orgulho dos Kuchiki'] },
     { character: charByName['Toshiro Hitsugaya'], skills: ['Hyōrinmaru: Ice Blade', 'Sōten ni Zase', 'Hyōten Hyakkasō', 'Hadō #4: Byakurai', 'Frost Armor'] },
-    { character: charByName['Kenpachi Zaraki'], skills: ['Golpe Bruto', 'Nozarashi', 'Remover o Tapa-Olho', 'Teimosia de Kenpachi', 'Pressão Assassina'] },
-    { character: charByName['Renji Abarai'], skills: ['Zabimaru Strike', 'Hihio Zabimaru', 'Hadō #4: Byakurai', 'Fierce Resolve', 'Tenacious Guard'] },
+    { character: charByName['Kenpachi Zaraki'], skills: ['Fio Cego', 'Nozarashi', 'Remover o Tapa-Olho', 'Teimosia de Kenpachi', 'Pressão Assassina'] },
+    { character: charByName['Renji Abarai'], skills: ['Zabimaru: Chicotada', 'Hihio Zabimaru', 'Hadō #4: Byakurai', 'Determinação de Superar', 'Lealdade Inabalável'] },
     { character: charByName['Orihime Inoue'], skills: ['Tsubaki: Koten Zanshun', 'Santen Kesshun', 'Sōten Kisshun', 'Dance of the Heavens: Full Reject', 'Encouraging Words'] },
     { character: charByName['Uryu Ishida'], skills: ['Hirenkyaku Shot', 'Ginrei Kojaku: Licht Regen', 'Seele Schneider', 'Quincy Focus', 'Blut Vene'] },
     { character: charByName['Yoruichi Shihoin'], skills: ['Flash Step Strike', 'Shunkō', 'Utsusemi', 'Goddess of Flash', 'Vital Point Strike'] },

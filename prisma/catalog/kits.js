@@ -74,7 +74,7 @@ const kits = [
     { skill: "Hadō #4: Byakurai", category: "HADO", level: 1 },
     { skill: "Shukumei", category: "OTHER", level: 1 },
     { skill: "Senbonzakura", category: "OTHER", level: 1 },
-    { skill: "Noble Resolve", category: "OTHER", level: 5 },
+    { skill: "Orgulho dos Kuchiki", category: "OTHER", level: 5 },
     { skill: "Senbonzakura Kageyoshi", category: "OTHER", level: 9 },
   ] },
   { character: "Chad", skills: [
@@ -102,9 +102,9 @@ const kits = [
     { skill: "Mental Domination", category: "OTHER", level: 5 },
   ] },
   { character: "Gin Ichimaru", skills: [
-    { skill: "Shinsō Extension", category: "OTHER", level: 1 },
-    { skill: "Deceptive Smile", category: "OTHER", level: 1 },
-    { skill: "Sly Counter", category: "OTHER", level: 1 },
+    { skill: "Shinsō: Investida", category: "OTHER", level: 1 },
+    { skill: "Sorriso Enganoso", category: "OTHER", level: 1 },
+    { skill: "Farsa Calculada", category: "OTHER", level: 1 },
     { skill: "Kamishini no Yari", category: "OTHER", level: 5 },
   ] },
   { character: "Goku", skills: [
@@ -128,9 +128,9 @@ const kits = [
   ] },
   { character: "Izuru Kira", skills: [
     { skill: "Hadō #4: Byakurai", category: "HADO", level: 1 },
-    { skill: "Wabisuke: Heavy Blow", category: "OTHER", level: 1 },
-    { skill: "Despairing Slash", category: "OTHER", level: 1 },
-    { skill: "Quiet Resolve", category: "OTHER", level: 5 },
+    { skill: "Wabisuke: Peso Redobrado", category: "OTHER", level: 1 },
+    { skill: "Golpe do Desespero", category: "OTHER", level: 1 },
+    { skill: "Máscara de Indiferença", category: "OTHER", level: 5 },
   ] },
   { character: "Jean Grey", skills: [
     { skill: "Telekinetic Slam", category: "OTHER", level: 1 },
@@ -151,7 +151,7 @@ const kits = [
     { skill: "Suzumushi Tsuishiki: Enma Kōrogi", category: "OTHER", level: 5 },
   ] },
   { character: "Kenpachi Zaraki", skills: [
-    { skill: "Golpe Bruto", category: "OTHER", level: 1 },
+    { skill: "Fio Cego", category: "OTHER", level: 1 },
     { skill: "Teimosia de Kenpachi", category: "OTHER", level: 1 },
     { skill: "Pressão Assassina", category: "OTHER", level: 1 },
     { skill: "Remover o Tapa-Olho", category: "OTHER", level: 5 },
@@ -165,8 +165,8 @@ const kits = [
   ] },
   { character: "Mayuri Kurotsuchi", skills: [
     { skill: "Ashisogi Jizō Spores", category: "OTHER", level: 1 },
-    { skill: "Toxic Experiment", category: "OTHER", level: 1 },
-    { skill: "Regenerative Formula", category: "OTHER", level: 1 },
+    { skill: "Cobaia Descartável", category: "OTHER", level: 1 },
+    { skill: "Corpo Descartável", category: "OTHER", level: 1 },
     { skill: "Konjiki Ashisogi Jizō", category: "OTHER", level: 5 },
   ] },
   { character: "Momo Hinamori", skills: [
@@ -202,9 +202,9 @@ const kits = [
   ] },
   { character: "Renji Abarai", skills: [
     { skill: "Hadō #4: Byakurai", category: "HADO", level: 1 },
-    { skill: "Zabimaru Strike", category: "OTHER", level: 1 },
-    { skill: "Fierce Resolve", category: "OTHER", level: 1 },
-    { skill: "Tenacious Guard", category: "OTHER", level: 5 },
+    { skill: "Zabimaru: Chicotada", category: "OTHER", level: 1 },
+    { skill: "Determinação de Superar", category: "OTHER", level: 1 },
+    { skill: "Lealdade Inabalável", category: "OTHER", level: 5 },
     { skill: "Hihio Zabimaru", category: "OTHER", level: 9 },
   ] },
   { character: "Retsu Unohana", skills: [
@@ -247,8 +247,8 @@ const kits = [
   ] },
   { character: "Sosuke Aizen", skills: [
     { skill: "Kyōka Suigetsu: Complete Hypnosis", category: "OTHER", level: 1 },
-    { skill: "Shattered Shield", category: "OTHER", level: 1 },
-    { skill: "Perfect Anticipation", category: "OTHER", level: 1 },
+    { skill: "Ilusão de Fragilidade", category: "OTHER", level: 1 },
+    { skill: "Tudo Conforme o Plano", category: "OTHER", level: 1 },
     { skill: "Hadō #90: Kurohitsugi", category: "HADO", level: 5 },
   ] },
   { character: "Superman", skills: [
