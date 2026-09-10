@@ -42,6 +42,13 @@ const novosAnimes = [
   { name: 'Pokémon', slug: 'pokemon', affiliations: ['Treinadores'] },
   { name: 'Jujutsu Kaisen', slug: 'jujutsu-kaisen', affiliations: ['Feiticeiros', 'Maldições'] },
   { name: 'Solo Leveling', slug: 'solo-leveling', affiliations: ['Caçadores'] },
+  // Marvel Universe já existe (Daredevil, Jean Grey, Emma Frost) — só ganha
+  // uma afiliação nova. O upsert por slug não mexe no que já está lá.
+  { name: 'Marvel Universe', slug: 'marvel-universe', affiliations: ['Mercenários'] },
+  // CARTOON é universo próprio, de propósito separado de anime — Patolino é
+  // o primeiro, mas a ideia é caber outros desenhos (Ben 10 e afins) como
+  // afiliações diferentes dentro do mesmo universo "cartoon".
+  { name: 'Cartoon', slug: 'cartoon', affiliations: ['Looney Tunes'] },
 ];
 
 const characters = [
@@ -117,6 +124,23 @@ const novosPersonagens = [
   { name: 'Mahito', slug: 'mahito', anime: 'jujutsu-kaisen', affiliation: 'Maldições', class: 'CONJURADOR', hp: 124, attack: 19, defense: 11, speed: 14, energy: 165, stamina: 75 },
   { name: 'Jogo', slug: 'jogo', anime: 'jujutsu-kaisen', affiliation: 'Maldições', class: 'CONJURADOR', hp: 125, attack: 21, defense: 10, speed: 13, energy: 160, stamina: 75 },
   { name: 'Hanami', slug: 'hanami', anime: 'jujutsu-kaisen', affiliation: 'Maldições', class: 'TANQUE', hp: 158, attack: 15, defense: 17, speed: 9, energy: 95, stamina: 150 },
+
+  // CROSSOVER GOOFY, a pedido do dono do projeto: os dois têm que ser
+  // insuportáveis de propósito, não força bruta.
+  //
+  // DEADPOOL é mercenário, não herói de time — "Mercenários" é afiliação
+  // nova dentro do Marvel Universe que já existe, em vez de forçá-lo pra
+  // dentro dos Avengers ou X-Men. ATACANTE com stamina ACIMA do perfil da
+  // classe: o resto do orçamento de um atacante vira ataque/velocidade, mas
+  // o fator de cura dele é literalmente "quantas vezes se protege por
+  // rodada" no vocabulário deste jogo.
+  { name: 'Deadpool', slug: 'deadpool', anime: 'marvel-universe', affiliation: 'Mercenários', class: 'ATACANTE', hp: 122, attack: 25, defense: 10, speed: 14, energy: 97, stamina: 92 },
+
+  // PATOLINO é CONJURADOR — a identidade é bagunça e status, não força bruta
+  // (ele não tem um ataque físico forte na obra nenhuma vez). Tem
+  // transformação própria (ver transformations.js): "Calça Nova da Loja"
+  // vira "O Mago", que libera um ultimate só depois de ativada.
+  { name: 'Patolino', slug: 'patolino', anime: 'cartoon', affiliation: 'Looney Tunes', class: 'CONJURADOR', hp: 115, attack: 17, defense: 11, speed: 13, energy: 155, stamina: 80 },
 ];
 
 module.exports = { characters, novosAnimes, novosPersonagens };

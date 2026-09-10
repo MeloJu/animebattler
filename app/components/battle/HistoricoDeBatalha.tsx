@@ -29,10 +29,13 @@ export function HistoricoDeBatalha({
   turns,
   playerName,
   enemyName,
+  skillDescriptions,
 }: {
   turns: TurnoGravado[]
   playerName: string
   enemyName: string
+  /** Fala da skill ao usar — ver o comentário em TurnLogEntry. */
+  skillDescriptions?: Record<string, string>
 }) {
   const rodadas = agruparPorRodada(turns)
 
@@ -73,7 +76,7 @@ export function HistoricoDeBatalha({
                           : 'border-red-500/40 opacity-75'
                       }`}
                     >
-                      <TurnLogEntry turn={t.result} playerName={playerName} enemyName={enemyName} />
+                      <TurnLogEntry turn={t.result} playerName={playerName} enemyName={enemyName} skillDescriptions={skillDescriptions} />
                     </li>
                   ))}
                 </ul>

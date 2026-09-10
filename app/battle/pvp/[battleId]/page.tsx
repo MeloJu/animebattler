@@ -28,7 +28,17 @@ export default async function PvpArenaPage({
 
   const { battle, me, foe, state, turns } = view
   const isActive = battle.status === 'ACTIVE'
-  const mySkills = await getEquippedSkills(me.userCharacter.id)
+  const [mySkills, foeSkills] = await Promise.all([
+    getEquippedSkills(me.userCharacter.id),
+    getEquippedSkills(foe.userCharacter.id),
+  ])
+  // Os dois lados são jogador de verdade em PvP — diferente da IA, dá pra
+  // mostrar a fala dos dois. Ver TurnLogEntry para onde isto é lido.
+  const skillDescriptions = Object.fromEntries(
+    [...Object.values(mySkills), ...Object.values(foeSkills)]
+      .filter((s): s is typeof s & { description: string } => Boolean(s.description))
+      .map((s) => [s.name, s.description])
+  )
 
   // O motor nomeia os lados como player/enemy; o desfecho precisa ser lido na
   // perspectiva de quem está olhando, senão o convidado veria "Vitória!" ao
@@ -118,6 +128,7 @@ export default async function PvpArenaPage({
             turns={turns.map((t) => ({ id: t.id, round: t.round, result: t.result as unknown as TurnResult }))}
             playerName={view.isHost ? me.userCharacter.nickname : foe.userCharacter.nickname}
             enemyName={view.isHost ? foe.userCharacter.nickname : me.userCharacter.nickname}
+            skillDescriptions={skillDescriptions}
           />
 
           {isActive && !me.submitted && (

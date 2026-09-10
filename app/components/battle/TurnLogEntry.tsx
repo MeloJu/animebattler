@@ -41,7 +41,24 @@ const VERBO_CRITICO: Record<NonNullable<TurnResult['severidade']>, string> = {
   devastador: 'não deu chance e arrebentou',
 }
 
-export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult; playerName: string; enemyName: string }) {
+/**
+ * Fala de personagem ao usar a skill — Skill.description existia no banco
+ * (198 delas já preenchidas, lore de kidō) sem NENHUM lugar que exibisse.
+ * Existe agora porque Deadpool e Patolino pedem isso: a graça do kit deles
+ * está na frase, não só no efeito. Opcional e silencioso pra quem não tem —
+ * a lore de kidō aparece de brinde, sem trabalho extra.
+ */
+export function TurnLogEntry({
+  turn,
+  playerName,
+  enemyName,
+  skillDescriptions,
+}: {
+  turn: TurnResult
+  playerName: string
+  enemyName: string
+  skillDescriptions?: Record<string, string>
+}) {
   const actorName = turn.side === 'PLAYER' ? playerName : enemyName
   const alvoName = turn.side === 'PLAYER' ? enemyName : playerName
 
@@ -147,6 +164,7 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
   // ATTACK ou SUPPORT.
   const acertou = typeof turn.damage === 'number' && turn.damage > 0 && !turn.countered
   const verbo = turn.severidade ? (turn.isCrit ? VERBO_CRITICO : VERBO)[turn.severidade] : 'acertou'
+  const fala = skillDescriptions?.[turn.skillName]
 
   return (
     <>
@@ -178,6 +196,7 @@ export function TurnLogEntry({ turn, playerName, enemyName }: { turn: TurnResult
         <> <span className="opacity-70">({turn.effectsApplied.map(describeEffect).join(', ')})</span></>
       )}
       .
+      {fala && <div className="italic opacity-70 text-xs mt-0.5">&ldquo;{fala}&rdquo;</div>}
     </>
   )
 }

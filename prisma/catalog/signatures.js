@@ -454,6 +454,153 @@ const urahara = {
   ],
 };
 
-const signatures = [goku, vegeta, broly, rukia, momo, aizen, ichigo, urahara];
+/**
+ * Deadpool — ATACANTE, personagem novo (crossover goofy, ver
+ * characters.js). Sem transformação, a pedido do dono do projeto: ele já é
+ * ele mesmo o tempo todo, o exagero é a própria personalidade, não uma forma
+ * escondida.
+ */
+const deadpool = {
+  character: 'Deadpool',
+  skills: [
+    {
+      name: 'Katanas em X: Corte Cruzado',
+      category: 'OTHER',
+      power: 20,
+      energyCost: 13,
+      cooldown: 1,
+      tags: ['espada'],
+      effects: [],
+      description: 'Duas espadas, um problema: você.',
+      level: 1,
+    },
+    {
+      name: 'Fator de Cura',
+      category: 'OTHER',
+      power: 0,
+      energyCost: 16,
+      cooldown: 3,
+      tags: ['heal'],
+      effects: [{ type: 'HEAL', target: 'SELF', magnitude: 28 }],
+      description: 'Já morri um monte de vezes essa semana. Essa nem doeu.',
+      level: 1,
+    },
+    {
+      name: 'Chimichanga Arremessada',
+      category: 'OTHER',
+      power: 18,
+      energyCost: 13,
+      cooldown: 2,
+      tags: ['fire'],
+      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 9, duration: 2 }],
+      description: 'Desperdício de chimichanga, eu sei. Valeu a pena ver sua cara.',
+      level: 2,
+    },
+    {
+      name: 'Quebra da Quarta Parede',
+      category: 'OTHER',
+      power: 0,
+      energyCost: 14,
+      cooldown: 3,
+      tags: ['debuff'],
+      effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 24, duration: 2 }],
+      description: 'Ei, você aí jogando — viu como ele parou de prestar atenção?',
+      level: 2,
+    },
+    {
+      name: 'Duplo Katana: Retalho Total',
+      category: 'OTHER',
+      power: 29,
+      energyCost: 24,
+      cooldown: 3,
+      tags: ['espada'],
+      effects: [{ type: 'LIFESTEAL', target: 'SELF', magnitude: 22 }],
+      description: 'Quanto mais eu corto, mais eu... ah, esquece, já curou de novo.',
+      level: 5,
+    },
+    {
+      name: 'Merc com Boca Grande',
+      category: 'OTHER',
+      power: 34,
+      energyCost: 28,
+      cooldown: 5,
+      tags: ['ultimate'],
+      effects: [{ type: 'PIERCE', target: 'SELF', magnitude: 40 }],
+      description: 'Guarda-costas, escudo, armadura — nada disso importa quando é PESSOAL.',
+      level: 9,
+    },
+  ],
+};
+
+/**
+ * Patolino — CONJURADOR, personagem novo (crossover goofy). Identidade é
+ * bagunça e status, não força bruta — ele não tem um golpe físico forte na
+ * obra nenhuma vez. Tem transformação própria em transformations.js: "Calça
+ * Nova da Loja" vira "O Mago", que teoricamente libera o ultimate abaixo
+ * (na prática, unlocksSkill não trava nada no motor hoje — ver o aviso no
+ * commit; a skill segue disponível por nível como qualquer outra).
+ */
+const patolino = {
+  character: 'Patolino',
+  skills: [
+    {
+      name: 'Temporada de Pato!',
+      category: 'OTHER',
+      power: 0,
+      energyCost: 14,
+      cooldown: 3,
+      tags: ['counter'],
+      effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 62, duration: 2 }],
+      description: 'Temporada de pato! Não, espera — temporada de VOCÊ.',
+      level: 1,
+    },
+    {
+      name: 'Charuto Explosivo',
+      category: 'OTHER',
+      power: 17,
+      energyCost: 11,
+      cooldown: 2,
+      tags: ['fire'],
+      effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 9, duration: 2 }],
+      description: 'Aceita um charuto? Ah, relaxa, é só... ih.',
+      level: 1,
+    },
+    {
+      name: 'Mine! Mine! Mine!',
+      category: 'OTHER',
+      power: 19,
+      energyCost: 14,
+      cooldown: 2,
+      tags: [],
+      effects: [{ type: 'LIFESTEAL', target: 'SELF', magnitude: 24 }],
+      description: 'É meu! Tudo meu! Inclusive isso que agora é meu!',
+      level: 2,
+    },
+    {
+      name: 'Yoicks e Fuga!',
+      category: 'OTHER',
+      power: 0,
+      energyCost: 13,
+      cooldown: 3,
+      tags: ['shield'],
+      effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 28, duration: 2 }],
+      description: 'Yoicks, e fuga! Covarde, mas um covarde ESPERTO.',
+      level: 2,
+    },
+    {
+      name: 'Feitiço da Fúria Emplumada',
+      category: 'OTHER',
+      power: 33,
+      energyCost: 27,
+      cooldown: 5,
+      tags: ['ultimate', 'magia'],
+      effects: [{ type: 'EXECUTE', target: 'SELF', magnitude: 54 }],
+      description: 'Abracadabra, seu azarado — o Mago não erra duas vezes!',
+      level: 9,
+    },
+  ],
+};
+
+const signatures = [goku, vegeta, broly, rukia, momo, aizen, ichigo, urahara, deadpool, patolino];
 
 module.exports = { signatures };

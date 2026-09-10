@@ -301,6 +301,12 @@ export type SkillDef = {
    * alguma coisa.
    */
   tags: string[]
+  /**
+   * Fala/lore exibida ao usar a skill — ver TurnLogEntry. Nunca lido pelo
+   * MOTOR (não afeta dano, custo, nada): é dado de apresentação carregado
+   * junto porque SkillDef é o que atravessa a fronteira banco->batalha.
+   */
+  description?: string
 }
 
 /** Traço passivo já resolvido para uso no motor. Ver model Trait. */

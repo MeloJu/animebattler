@@ -620,6 +620,21 @@ const transformations = [
     speedModifier: 0.12,
     energyModifier: 0.1,
   },
+
+  // ---- Cartoon: crossover goofy ----
+  //
+  // GASTA A RODADA de propósito, diferente do Bankai/Resurrección acima —
+  // ele PARA a luta pra trocar de roupa, e isso é a piada: um momento cômico
+  // de vulnerabilidade antes do poder chegar, igual o Super Saiyan do Goku.
+  {
+    character: 'Patolino',
+    name: 'Calça Nova da Loja: O Mago',
+    levelRequirement: 5,
+    attackModifier: 0.15,
+    energyModifier: 0.15,
+    defenseModifier: -0.05,
+    unlocksSkill: { name: 'Feitiço da Fúria Emplumada', category: 'OTHER' },
+  },
 ];
 
 module.exports = { transformations };
