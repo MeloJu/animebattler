@@ -131,6 +131,60 @@ const aplicacoes = [
     categoria: 'OTHER',
     efeitoNovo: { type: 'PIERCE', target: 'SELF', magnitude: 35 },
   },
+
+  // SEXTO AO NONO EXEMPLO: quatro Espada que ainda estavam com o ultimate
+  // (ou o golpe de assinatura) em dano puro.
+  //
+  //   Gran Caída (Nnoitra) ganha EXECUTE. A marca dele na obra é ser cruel
+  //   com quem já está machucado — ele goza de humilhar oponentes feridos
+  //   (Chad, Kenpachi) antes de terminar o serviço. EXECUTE é literalmente
+  //   isso: pune quem já está perto de cair.
+  {
+    nomeDaSkill: 'Gran Caída',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'EXECUTE', target: 'SELF', magnitude: 50 },
+  },
+  //   Cero Metralleta (Coyote Starrk) ganha PIERCE. É uma rajada de ceros
+  //   menores em sequência — volume que satura a guarda, não um golpe só.
+  {
+    nomeDaSkill: 'Cero Metralleta',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'PIERCE', target: 'SELF', magnitude: 35 },
+  },
+  //   Los Lobos (Starrk) ganha EXECUTE. Ele é o oposto do Nnoitra em
+  //   personalidade — não briga por prazer, só quer terminar rápido e
+  //   descansar. A alcatéia inteira cai em cima de quem já está fraco
+  //   porque pra ele decidir rápido é o próprio objetivo da luta.
+  {
+    nomeDaSkill: 'Los Lobos',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'EXECUTE', target: 'SELF', magnitude: 50 },
+  },
+  //   Ola Azul (Tia Harribel) ganha PIERCE — a onda de Tiburón varre por
+  //   cima de guarda, não precisa contorná-la.
+  {
+    nomeDaSkill: 'Ola Azul',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'PIERCE', target: 'SELF', magnitude: 35 },
+  },
+  //   E Tiburón: Sawing Sharks ganha COMBO_FOLLOWUP ligado a ela — a onda
+  //   cerca o alvo em água, e é dali que os tubarões de Tiburón emergem
+  //   pra cortar. Mesma lógica carga-e-finalização de Chad/Grimmjow/Kaname/
+  //   Ichigo, contada com o próprio zanpakutō dela.
+  {
+    nomeDaSkill: 'Tiburón: Sawing Sharks',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_FOLLOWUP', target: 'SELF', magnitude: 50, comboTag: 'combo:ola-azul' },
+  },
+  //   Respira: Decay (Baraggan) ganha EXECUTE. Ele é o Rei-Deus da decadência
+  //   e do tempo — sua ideia de poder é que tudo que ele toca já está
+  //   morrendo antes de cair. EXECUTE aproxima a decadência acelerando o fim
+  //   de quem já está perto dele.
+  {
+    nomeDaSkill: 'Respira: Decay',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'EXECUTE', target: 'SELF', magnitude: 45 },
+  },
 ];
 
 module.exports = { aplicacoes };

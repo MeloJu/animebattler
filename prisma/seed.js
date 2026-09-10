@@ -405,7 +405,7 @@ async function main() {
     { name: 'Decaying Touch', category: 'OTHER', power: 8, energyCost: 18, cooldown: 2, tags: ['decay'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 3 }] },
     { name: 'Respira: Decay', category: 'OTHER', power: 18, energyCost: 26, cooldown: 4, tags: ['ultimate', 'decay'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 12, duration: 3 }, { type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 15, duration: 3 }] },
     { name: "King's Authority", category: 'OTHER', power: 0, energyCost: 18, cooldown: 3, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 25, duration: 3 }] },
-    { name: 'Ancient Malice', category: 'OTHER', power: 21, energyCost: 17, cooldown: 2, tags: [], effects: [] },
+    { name: 'Golpe do Trono', category: 'OTHER', power: 21, energyCost: 17, cooldown: 2, tags: [], effects: [] },
 
     // Tia Harribel (Tercera Espada)
     { name: 'Ola Azul', category: 'OTHER', power: 22, energyCost: 18, cooldown: 2, tags: ['water'], effects: [] },
@@ -534,7 +534,7 @@ async function main() {
     { character: charByName['Bazz-B'], skills: ['Burner Finger', 'Burner Finger 1: Max', 'Heat Wave', 'Scorching Strike'] },
     { character: charByName['As Nödt'], skills: ['Arrow of Fear', 'Angstroem: Terror Incarnate', 'Paralyzing Screech', "Predator's Patience"] },
     { character: charByName['Coyote Starrk'], skills: ['Cero Metralleta', 'Los Lobos', "Lone Wolf's Focus", 'Pack Tactics'] },
-    { character: charByName['Baraggan Luisenbarn'], skills: ['Decaying Touch', 'Respira: Decay', "King's Authority", 'Ancient Malice'] },
+    { character: charByName['Baraggan Luisenbarn'], skills: ['Decaying Touch', 'Respira: Decay', "King's Authority", 'Golpe do Trono'] },
     { character: charByName['Tia Harribel'], skills: ['Ola Azul', 'Tiburón: Sawing Sharks', 'Glacial Barrier', 'Tidal Focus'] },
     { character: charByName['Ulquiorra Cifer'], skills: ['Lanza del Relámpago', 'Cero Oscuras', 'Emotionless Precision', 'Hierro Skin'] },
     { character: charByName['Nnoitra Gilga'], skills: ['Santa Teresa: Scythe Slash', 'Gran Caída', 'Arrogant Pressure', 'Bloodlust'] },

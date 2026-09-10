@@ -48,7 +48,7 @@ const kits = [
     { skill: "Angstroem: Terror Incarnate", category: "OTHER", level: 5 },
   ] },
   { character: "Baraggan Luisenbarn", skills: [
-    { skill: "Ancient Malice", category: "OTHER", level: 1 },
+    { skill: "Golpe do Trono", category: "OTHER", level: 1 },
     { skill: "Decaying Touch", category: "OTHER", level: 1 },
     { skill: "King's Authority", category: "OTHER", level: 1 },
     { skill: "Respira: Decay", category: "OTHER", level: 5 },

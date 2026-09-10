@@ -24,6 +24,7 @@ const tagsFaltantes = [
   { name: 'Desgarrón', category: 'OTHER', tags: ['combo:desgarron'] },
   { name: 'Suzumushi: Grito', category: 'OTHER', tags: ['combo:suzumushi'] },
   { name: 'Bankai Focus', category: 'OTHER', tags: ['combo:bankai'] },
+  { name: 'Ola Azul', category: 'OTHER', tags: ['combo:ola-azul'] },
 
   // Lâmina e flecha: o dano que continua depois do golpe é sangue.
   { name: 'Glimpse of the True Blade', category: 'OTHER', tags: ['espada'] },

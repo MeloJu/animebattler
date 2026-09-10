@@ -205,6 +205,18 @@ const renomeacoes = [
     nomeNovo: 'Shunpo: Investida',
     fonte: 'anime/mangá — Shunpo é o termo canônico (Flash Step); ela é chamada de "Deusa do Shunpo" na própria obra.',
   },
+
+  // BARAGGAN LUISENBARN. "Ancient Malice" lia como nome de técnica inventado
+  // — Título Em Maiúsculas sem fonte nenhuma. Ele não tem golpe básico
+  // nomeado na obra; a regra (3) do topo deste arquivo pede uma ação sem
+  // título pomposo nesse caso, então vira uma descrição simples ligada ao
+  // traço mais óbvio dele — o trono e a obsessão com ser rei.
+  {
+    nomeAntigo: 'Ancient Malice',
+    categoria: 'OTHER',
+    nomeNovo: 'Golpe do Trono',
+    fonte: 'sem nome de técnica na obra — descrição simples em vez de título inventado (regra 3), ligada à obsessão dele com o próprio trono.',
+  },
 ];
 
 module.exports = { renomeacoes };
