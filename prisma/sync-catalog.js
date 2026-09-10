@@ -30,6 +30,7 @@ const storyCatalog = require('./catalog/story');
 const atributosNovos = require('./catalog/atributos-novos');
 const precisaoCatalog = require('./catalog/precisao');
 const tagsFaltantes = require('./catalog/tags-faltantes');
+const renomeacaoCanonica = require('./catalog/renomeacao-canonica');
 const storyJujutsu = require('./catalog/story-jujutsu');
 const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
@@ -98,6 +99,42 @@ function registra(tipo, nome, d) {
 function comTagsPreservadas(atual, tags) {
   const extras = Array.isArray(atual?.tags) ? atual.tags.filter((t) => !tags.includes(t)) : [];
   return [...tags, ...extras];
+}
+
+/**
+ * Renomeia habilidades para o nome que a obra usa, sem tocar em mecânica.
+ * Ver prisma/catalog/renomeacao-canonica.js para a fonte de cada uma.
+ *
+ * RODA ANTES DE syncKits(), e a ordem é obrigatória: kits.js já referencia o
+ * nome NOVO, então se a skill ainda não tiver sido renomeada neste ponto do
+ * pipeline, syncKits() não encontra a habilidade e quebra a sincronização
+ * inteira.
+ */
+async function syncRenomeacoesCanonicas() {
+  for (const r of renomeacaoCanonica.renomeacoes) {
+    const jaRenomeada = await prisma.skill.findUnique({
+      where: { name_category: { name: r.nomeNovo, category: r.categoria } },
+      select: { id: true },
+    });
+    if (jaRenomeada) {
+      relatorio.iguais += 1;
+      continue;
+    }
+
+    const atual = await prisma.skill.findUnique({
+      where: { name_category: { name: r.nomeAntigo, category: r.categoria } },
+      select: { id: true },
+    });
+    if (!atual) {
+      console.log(`  (aviso) habilidade a renomear não existe neste banco: ${r.nomeAntigo}`);
+      continue;
+    }
+
+    registra('renomeação', `${r.nomeAntigo} -> ${r.nomeNovo}`, { acao: 'atualizar', campos: ['name'] });
+    if (!DRY_RUN) {
+      await prisma.skill.update({ where: { id: atual.id }, data: { name: r.nomeNovo } });
+    }
+  }
 }
 
 async function syncEquipmentSkills(animeId) {
@@ -782,6 +819,7 @@ async function main() {
   }
   await syncStory(jjk.id, storyJujutsu);
 
+  await syncRenomeacoesCanonicas();
   await syncKits();
   await syncSummoners();
   await syncCharacterImages();

@@ -151,11 +151,11 @@ const kits = [
     { skill: "Suzumushi Tsuishiki: Enma Kōrogi", category: "OTHER", level: 5 },
   ] },
   { character: "Kenpachi Zaraki", skills: [
-    { skill: "Reckless Slash", category: "OTHER", level: 1 },
-    { skill: "Berserker's Endurance", category: "OTHER", level: 1 },
-    { skill: "Intimidating Bloodlust", category: "OTHER", level: 1 },
-    { skill: "Battle Fury", category: "OTHER", level: 5 },
-    { skill: "Nozarashi Unleashed", category: "OTHER", level: 9 },
+    { skill: "Golpe Bruto", category: "OTHER", level: 1 },
+    { skill: "Teimosia de Kenpachi", category: "OTHER", level: 1 },
+    { skill: "Pressão Assassina", category: "OTHER", level: 1 },
+    { skill: "Remover o Tapa-Olho", category: "OTHER", level: 5 },
+    { skill: "Nozarashi", category: "OTHER", level: 9 },
   ] },
   { character: "Kisuke Urahara", skills: [
     { skill: "Benihime: Crimson Strike", category: "OTHER", level: 1 },

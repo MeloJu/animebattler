@@ -332,11 +332,11 @@ async function main() {
     { name: 'Frost Armor', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['ice', 'shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 28, duration: 3 }] },
 
     // Kenpachi Zaraki
-    { name: 'Reckless Slash', category: 'OTHER', power: 24, energyCost: 16, cooldown: 2, tags: [], effects: [] },
-    { name: 'Nozarashi Unleashed', category: 'OTHER', power: 34, energyCost: 28, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'DEBUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 }] },
-    { name: 'Battle Fury', category: 'OTHER', power: 0, energyCost: 20, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 30, duration: 3 }] },
-    { name: "Berserker's Endurance", category: 'OTHER', power: 20, energyCost: 18, cooldown: 3, tags: [], effects: [{ type: 'LIFESTEAL', target: 'SELF', magnitude: 25 }] },
-    { name: 'Intimidating Bloodlust', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['stun'], effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 0, duration: 1 }] },
+    { name: 'Golpe Bruto', category: 'OTHER', power: 24, energyCost: 16, cooldown: 2, tags: [], effects: [] },
+    { name: 'Nozarashi', category: 'OTHER', power: 34, energyCost: 28, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'DEBUFF', target: 'SELF', stat: 'defense', magnitude: 15, duration: 3 }] },
+    { name: 'Remover o Tapa-Olho', category: 'OTHER', power: 0, energyCost: 20, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 30, duration: 3 }] },
+    { name: 'Teimosia de Kenpachi', category: 'OTHER', power: 20, energyCost: 18, cooldown: 3, tags: [], effects: [{ type: 'LIFESTEAL', target: 'SELF', magnitude: 25 }] },
+    { name: 'Pressão Assassina', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['stun'], effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 0, duration: 1 }] },
 
     // Renji Abarai
     { name: 'Zabimaru Strike', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: [], effects: [] },
@@ -523,7 +523,7 @@ async function main() {
     { character: charByName['Sosuke Aizen'], skills: ['Kyōka Suigetsu: Complete Hypnosis', 'Shattered Shield', 'Perfect Anticipation', 'Hadō #90: Kurohitsugi'] },
     { character: charByName['Byakuya Kuchiki'], skills: ['Senbonzakura', 'Senbonzakura Kageyoshi', 'Shukumei', 'Hadō #4: Byakurai', 'Noble Resolve'] },
     { character: charByName['Toshiro Hitsugaya'], skills: ['Hyōrinmaru: Ice Blade', 'Sōten ni Zase', 'Hyōten Hyakkasō', 'Hadō #4: Byakurai', 'Frost Armor'] },
-    { character: charByName['Kenpachi Zaraki'], skills: ['Reckless Slash', 'Nozarashi Unleashed', 'Battle Fury', "Berserker's Endurance", 'Intimidating Bloodlust'] },
+    { character: charByName['Kenpachi Zaraki'], skills: ['Golpe Bruto', 'Nozarashi', 'Remover o Tapa-Olho', 'Teimosia de Kenpachi', 'Pressão Assassina'] },
     { character: charByName['Renji Abarai'], skills: ['Zabimaru Strike', 'Hihio Zabimaru', 'Hadō #4: Byakurai', 'Fierce Resolve', 'Tenacious Guard'] },
     { character: charByName['Orihime Inoue'], skills: ['Tsubaki: Koten Zanshun', 'Santen Kesshun', 'Sōten Kisshun', 'Dance of the Heavens: Full Reject', 'Encouraging Words'] },
     { character: charByName['Uryu Ishida'], skills: ['Hirenkyaku Shot', 'Ginrei Kojaku: Licht Regen', 'Seele Schneider', 'Quincy Focus', 'Blut Vene'] },
