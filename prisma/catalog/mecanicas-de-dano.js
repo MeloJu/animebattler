@@ -135,14 +135,15 @@ const aplicacoes = [
   // SEXTO AO NONO EXEMPLO: quatro Espada que ainda estavam com o ultimate
   // (ou o golpe de assinatura) em dano puro.
   //
-  //   Gran Caída (Nnoitra) ganha EXECUTE. A marca dele na obra é ser cruel
-  //   com quem já está machucado — ele goza de humilhar oponentes feridos
-  //   (Chad, Kenpachi) antes de terminar o serviço. EXECUTE é literalmente
-  //   isso: pune quem já está perto de cair.
+  //   Gran Caída (Nnoitra) ganha SANGRAMENTO EMPILHÁVEL, não EXECUTE — troca
+  //   feita depois do primeiro commit, a pedido do dono do projeto: Santa
+  //   Teresa é uma FOICE, e sangramento que piora a cada golpe é mais fiel à
+  //   arma do que um bônus contra alvo fraco. EXECUTE media a crueldade dele
+  //   como PERSONALIDADE; isto mede o dano da própria lâmina.
   {
     nomeDaSkill: 'Gran Caída',
     categoria: 'OTHER',
-    efeitoNovo: { type: 'EXECUTE', target: 'SELF', magnitude: 50 },
+    efeitoNovo: { type: 'DOT', target: 'ENEMY', magnitude: 8, duration: 3, stack: true },
   },
   //   Cero Metralleta (Coyote Starrk) ganha PIERCE. É uma rajada de ceros
   //   menores em sequência — volume que satura a guarda, não um golpe só.

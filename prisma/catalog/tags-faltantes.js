@@ -31,6 +31,8 @@ const tagsFaltantes = [
   { name: 'Hihio Zabimaru', category: 'OTHER', tags: ['espada'] },
   { name: 'Zabimaru: Chicotada', category: 'OTHER', tags: ['espada'] },
   { name: 'Senbonzakura: Chire', category: 'OTHER', tags: ['espada'] },
+  // Santa Teresa é foice, não fogo nem veneno — o sangramento é literal.
+  { name: 'Gran Caída', category: 'OTHER', tags: ['espada'] },
   { name: 'Silver Arrow Barrage', category: 'OTHER', tags: ['quincy', 'pierce'] },
   { name: 'Seele Schneider', category: 'OTHER', tags: ['quincy', 'espada'] },
 
