@@ -217,6 +217,28 @@ const renomeacoes = [
     nomeNovo: 'Golpe do Trono',
     fonte: 'sem nome de técnica na obra — descrição simples em vez de título inventado (regra 3), ligada à obsessão dele com o próprio trono.',
   },
+
+  // YAMAMOTO GENRYŪSAI. "Commander's Will" era um buff genérico sem fonte —
+  // vira a liberação do Bankai em si, a pedido do dono do projeto: o shikai
+  // dele é descrito na obra como "só uma espada normal", e Bankai é
+  // literalmente onde toda a força dele mora. Ganha a combo-tag que a liga
+  // à Zanka no Tachi: Cremation em mecanicas-de-dano.js.
+  {
+    nomeAntigo: "Commander's Will",
+    categoria: 'OTHER',
+    nomeNovo: 'Zanka no Tachi: Ativação',
+    fonte: 'anime/mangá — Zanka no Tachi é o nome real do Bankai dele; liberar é o próprio ato de virar a luta.',
+  },
+
+  // KISUKE URAHARA. "Kageyoshi: Shield Wall" usava um nome que NÃO é dele —
+  // Kageyoshi é o Bankai do Byakuya (Senbonzakura Kageyoshi), claramente uma
+  // referência colada errada. A defesa de Benihime vira o nome certo.
+  {
+    nomeAntigo: 'Kageyoshi: Shield Wall',
+    categoria: 'OTHER',
+    nomeNovo: 'Benihime: Muralha Carmesim',
+    fonte: 'correção — "Kageyoshi" pertence ao Byakuya (Senbonzakura Kageyoshi), não ao Urahara; Benihime é a zanpakutō real dele.',
+  },
 ];
 
 module.exports = { renomeacoes };

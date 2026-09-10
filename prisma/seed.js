@@ -243,7 +243,7 @@ async function main() {
     // Yamamoto Genryūsai
     { name: 'Ryūjin Jakka: Flame Strike', category: 'OTHER', power: 26, energyCost: 22, cooldown: 2, tags: ['fire'], effects: [] },
     { name: 'Zanka no Tachi: Cremation', category: 'OTHER', power: 36, energyCost: 34, cooldown: 5, tags: ['fire', 'ultimate'], effects: [{ type: 'DOT', target: 'ENEMY', magnitude: 10, duration: 3 }] },
-    { name: "Commander's Will", category: 'OTHER', power: 0, energyCost: 22, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 20, duration: 3 }] },
+    { name: 'Zanka no Tachi: Ativação', category: 'OTHER', power: 0, energyCost: 22, cooldown: 4, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 20, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 20, duration: 3 }] },
 
     // Shunsui Kyōraku
     { name: 'Katen Kyōkotsu: Twin Strike', category: 'OTHER', power: 21, energyCost: 17, cooldown: 2, tags: [], effects: [] },
@@ -304,7 +304,7 @@ async function main() {
 
     // Kisuke Urahara
     { name: 'Benihime: Crimson Strike', category: 'OTHER', power: 23, energyCost: 19, cooldown: 2, tags: [], effects: [] },
-    { name: 'Kageyoshi: Shield Wall', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 34, duration: 3 }] },
+    { name: 'Benihime: Muralha Carmesim', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 34, duration: 3 }] },
     { name: "Shopkeeper's Trick", category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 20, duration: 3 }] },
     { name: 'Calculated Counter', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 55, duration: 2 }] },
 
@@ -507,7 +507,7 @@ async function main() {
     { character: rukia, skills: ['Hadō #33: Sōkatsui', 'Bakudō #61: Rikujōkōrō'] },
 
     // Bleach roster expansion
-    { character: charByName['Yamamoto Genryūsai'], skills: ['Ryūjin Jakka: Flame Strike', 'Zanka no Tachi: Cremation', "Commander's Will", 'Hadō #96: Ittō Kasō'] },
+    { character: charByName['Yamamoto Genryūsai'], skills: ['Ryūjin Jakka: Flame Strike', 'Zanka no Tachi: Cremation', 'Zanka no Tachi: Ativação', 'Hadō #96: Ittō Kasō'] },
     { character: charByName['Shunsui Kyōraku'], skills: ['Katen Kyōkotsu: Twin Strike', 'Bushōgoma', 'Lazy Confidence', 'Flower Wind Rondo'] },
     { character: charByName['Jūshirō Ukitake'], skills: ['Sōgyo no Kotowari: Twin Blade', 'Dual Strike Barrage', 'Resilient Spirit', 'Twin Blade Guard'] },
     { character: charByName['Suì-Fēng'], skills: ['Suzumebachi Sting', 'Nigeki Kessatsu: Death Sting', 'Shunkō Assault', "Assassin's Debuff"] },
@@ -518,7 +518,7 @@ async function main() {
     { character: charByName['Rangiku Matsumoto'], skills: ['Haineko: Ash Slash', 'Growl, Haineko', 'Flashy Confidence', 'Ash Veil'] },
     { character: charByName['Momo Hinamori'], skills: ['Hadō #4: Byakurai', 'Hadō #63: Raikōhō', 'Tobiume: Plum Blossom Fire', 'Kido Focus'] },
     { character: charByName['Izuru Kira'], skills: ['Hadō #4: Byakurai', 'Wabisuke: Peso Redobrado', 'Golpe do Desespero', 'Máscara de Indiferença'] },
-    { character: charByName['Kisuke Urahara'], skills: ['Benihime: Crimson Strike', 'Kageyoshi: Shield Wall', "Shopkeeper's Trick", 'Calculated Counter'] },
+    { character: charByName['Kisuke Urahara'], skills: ['Benihime: Crimson Strike', 'Benihime: Muralha Carmesim', "Shopkeeper's Trick", 'Calculated Counter'] },
     { character: charByName['Retsu Unohana'], skills: ['Healing Touch', 'Minazuki: Mist Balm', 'Calm Composure', 'Glimpse of the True Blade'] },
     { character: charByName['Sosuke Aizen'], skills: ['Kyōka Suigetsu: Complete Hypnosis', 'Ilusão de Fragilidade', 'Tudo Conforme o Plano', 'Hadō #90: Kurohitsugi'] },
     { character: charByName['Byakuya Kuchiki'], skills: ['Senbonzakura', 'Senbonzakura Kageyoshi', 'Shukumei', 'Hadō #4: Byakurai', 'Orgulho dos Kuchiki'] },

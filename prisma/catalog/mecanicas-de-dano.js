@@ -240,6 +240,30 @@ const aplicacoes = [
     categoria: 'OTHER',
     efeitoNovo: { type: 'COMBO_STUN', target: 'SELF', magnitude: 40 },
   },
+
+  // YAMAMOTO — BURST PURO PELO BANKAI, a pedido do dono do projeto: fora do
+  // Bankai ele é "só uma espada" (ninguém via o shikai dele em séculos,
+  // porque nunca precisava); Zanka no Tachi é onde a força inteira mora.
+  // Zanka no Tachi: Ativação já virou a carga (renomeacao-canonica.js);
+  // aqui o ultimate ganha o pagamento.
+  {
+    nomeDaSkill: 'Zanka no Tachi: Cremation',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_FOLLOWUP', target: 'SELF', magnitude: 50, comboTag: 'combo:zanka-no-tachi' },
+  },
+
+  // URAHARA — ESTRATEGISTA, não combo literal (variando de propósito: nem
+  // todo mundo carrega-e-solta). Ele não tinha NENHUMA fonte de
+  // atordoamento própria, então o COMBO_STUN da nova Corte Certeiro (ver
+  // signatures.js) não tinha o que aproveitar. Shopkeeper's Trick vira a
+  // armadilha de verdade: já enfraquecia a defesa do alvo, agora também
+  // trava — mesma lógica de trap-e-punição de Suì-Fēng/Zommari/Rukia/
+  // Hitsugaya, só que a armadilha é dele mesmo, e não o próprio golpe final.
+  {
+    nomeDaSkill: "Shopkeeper's Trick",
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'STUN', target: 'ENEMY', duration: 1, magnitude: 0 },
+  },
 ];
 
 module.exports = { aplicacoes };

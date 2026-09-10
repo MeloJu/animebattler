@@ -405,6 +405,55 @@ const ichigo = {
   ],
 };
 
-const signatures = [goku, vegeta, broly, rukia, momo, aizen, ichigo];
+/**
+ * Kisuke Urahara — CONJURADOR, e o mesmo defeito clássico desta passagem:
+ * um golpe ofensivo (Benihime: Crimson Strike) e três utilitários de poder
+ * 0 (escudo, debuff, counter). Zero opção de dano barata antes do nível 5.
+ *
+ * A identidade dele é ESTRATEGISTA, não combo-carrega-e-solta como Chad/
+ * Grimmjow/Ichigo/Yamamoto — ele é o tipo que prepara o terreno com
+ * antecedência (o campo de treino no porão, o Hōgyoku, a rede de captura),
+ * não quem anuncia um golpe grande chegando. Ganha uma segunda opção de
+ * dano barata que aproveita a armadilha que "Shopkeeper's Trick" virou
+ * (STUN acrescentado em mecanicas-de-dano.js), e o Bankai raríssimo dele —
+ * mostrado uma vez só na obra inteira.
+ */
+const urahara = {
+  character: 'Kisuke Urahara',
+  skills: [
+    {
+      name: 'Benihime: Corte Certeiro',
+      category: 'OTHER',
+      power: 14,
+      energyCost: 13,
+      cooldown: 1,
+      tags: [],
+      // COMBO_STUN: pune quem já está preso na armadilha do Shopkeeper's
+      // Trick — não precisa de combo-tag, porque olha o STATUS do alvo.
+      effects: [{ type: 'COMBO_STUN', target: 'SELF', magnitude: 40 }],
+      level: 2,
+    },
+    {
+      name: 'Kannonbiraki Benihime Aratame',
+      category: 'OTHER',
+      power: 30,
+      energyCost: 28,
+      cooldown: 5,
+      tags: ['ultimate'],
+      // PIERCE: o Bankai que ele libera contra o Askin Nakk Le Vaar no arco
+      // Wandenreich — o único combate em que aparece na obra inteira —,
+      // costurando o próprio olho como parte do ritual. Ignora defesa do
+      // jeito que superou até o veneno "Deathdealing" do Askin. LIFESTEAL:
+      // o poder também restaura vida, a pedido do dono do projeto.
+      effects: [
+        { type: 'PIERCE', target: 'SELF', magnitude: 45 },
+        { type: 'LIFESTEAL', target: 'SELF', magnitude: 25 },
+      ],
+      level: 9,
+    },
+  ],
+};
+
+const signatures = [goku, vegeta, broly, rukia, momo, aizen, ichigo, urahara];
 
 module.exports = { signatures };

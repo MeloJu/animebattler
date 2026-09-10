@@ -160,7 +160,7 @@ const kits = [
   { character: "Kisuke Urahara", skills: [
     { skill: "Benihime: Crimson Strike", category: "OTHER", level: 1 },
     { skill: "Shopkeeper's Trick", category: "OTHER", level: 1 },
-    { skill: "Kageyoshi: Shield Wall", category: "OTHER", level: 1 },
+    { skill: "Benihime: Muralha Carmesim", category: "OTHER", level: 1 },
     { skill: "Calculated Counter", category: "OTHER", level: 5 },
   ] },
   { character: "Mayuri Kurotsuchi", skills: [
@@ -308,7 +308,7 @@ const kits = [
   ] },
   { character: "Yamamoto Genryūsai", skills: [
     { skill: "Ryūjin Jakka: Flame Strike", category: "OTHER", level: 1 },
-    { skill: "Commander's Will", category: "OTHER", level: 1 },
+    { skill: "Zanka no Tachi: Ativação", category: "OTHER", level: 1 },
     { skill: "Hadō #96: Ittō Kasō", category: "HADO", level: 1 },
     { skill: "Zanka no Tachi: Cremation", category: "OTHER", level: 5 },
   ] },
