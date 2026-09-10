@@ -103,6 +103,22 @@ function comTagsPreservadas(atual, tags) {
 }
 
 /**
+ * Mesmo princípio de comTagsPreservadas, para EFFECTS: dedup por `type`
+ * (a mesma chave que syncMecanicasDeDano já usa), não por igualdade exata do
+ * objeto — um DEBUFF do catálogo e um STUN acrescentado depois não são "o
+ * mesmo efeito com valores diferentes", são efeitos DIFERENTES que coexistem
+ * no array. Sem isto, syncSummoners sobrescrevia effects com o literal do
+ * catálogo de assinatura a cada sync, apagando qualquer mecânica acrescentada
+ * depois por mecanicas-de-dano.js — a mesma classe de oscilação perpétua que
+ * comTagsPreservadas já resolveu para tags, agora achada em effects.
+ */
+function comEfeitosPreservados(atual, efeitos) {
+  const tiposConhecidos = new Set(efeitos.map((e) => e.type));
+  const extras = Array.isArray(atual?.effects) ? atual.effects.filter((e) => !tiposConhecidos.has(e.type)) : [];
+  return [...efeitos, ...extras];
+}
+
+/**
  * Renomeia habilidades para o nome que a obra usa, sem tocar em mecânica.
  * Ver prisma/catalog/renomeacao-canonica.js para a fonte de cada uma.
  *
@@ -649,10 +665,18 @@ async function syncSummoners() {
     if (!c) throw new Error(`Invocador inexistente no banco: ${inv.character}`);
 
     for (const def of inv.skills) {
-      const { level, ...skill } = def;
+      const { level, ...skillLiteral } = def;
       const atual = await prisma.skill.findUnique({
-        where: { name_category: { name: skill.name, category: skill.category } },
+        where: { name_category: { name: skillLiteral.name, category: skillLiteral.category } },
       });
+      // Preserva tag e efeito acrescentados depois (tags-faltantes.js,
+      // mecanicas-de-dano.js) em vez de sobrescrever com o literal puro do
+      // catálogo de assinatura/invocação — ver comEfeitosPreservados.
+      const skill = {
+        ...skillLiteral,
+        tags: comTagsPreservadas(atual, skillLiteral.tags),
+        effects: comEfeitosPreservados(atual, skillLiteral.effects),
+      };
       registra('invocacao', skill.name, diff(atual, skill));
 
       if (DRY_RUN) continue;

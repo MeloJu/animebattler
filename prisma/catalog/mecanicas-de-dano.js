@@ -209,6 +209,37 @@ const aplicacoes = [
     categoria: 'OTHER',
     efeitoNovo: { type: 'DOT', target: 'ENEMY', magnitude: 6, duration: 2, stack: true },
   },
+
+  // GELO DE VERDADE: Rukia e Hitsugaya, a pedido do dono do projeto — os
+  // dois já tinham pedaços de tema gelo espalhados (slow, escudo), mas
+  // nenhum congelava de fato. Reaproveita COMBO_STUN, que já existe desde
+  // Suì-Fēng/Zommari: não precisa de combo-tag, porque olha o STATUS do
+  // alvo (atordoado/congelado), não quem foi que congelou.
+  //
+  //   Hyōten Hyakkasō (Toshiro) já tinha STUN no ultimate — faltava o pagamento.
+  //   Hyōrinmaru: Ice Blade (o básico barato) ganha COMBO_STUN: congela com
+  //   o ultimate, acerta em sequência com o básico enquanto ele não reage.
+  {
+    nomeDaSkill: 'Hyōrinmaru: Ice Blade',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_STUN', target: 'SELF', magnitude: 40 },
+  },
+  //   Tsugi no Mai: Hakuren (Rukia) ganha STUN — a obra mostra essa técnica
+  //   congelando o que toca (paredes, o chão, hollows inteiros), não só
+  //   desacelerando. Ela ainda não tinha nenhum congelamento de verdade.
+  {
+    nomeDaSkill: 'Tsugi no Mai: Hakuren',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'STUN', target: 'ENEMY', duration: 1, magnitude: 0 },
+  },
+  //   Sode no Shirayuki: Lâmina de Gelo (o básico barato dela) ganha
+  //   COMBO_STUN — mesma lógica do Toshiro: congela com o Hakuren, finaliza
+  //   com o golpe barato.
+  {
+    nomeDaSkill: 'Sode no Shirayuki: Lâmina de Gelo',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_STUN', target: 'SELF', magnitude: 40 },
+  },
 ];
 
 module.exports = { aplicacoes };
