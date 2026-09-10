@@ -369,7 +369,7 @@ async function main() {
     { name: 'El Directo', category: 'OTHER', power: 26, energyCost: 20, cooldown: 2, tags: [], effects: [] },
     { name: 'Brazo Izquierda del Diablo: Guard', category: 'OTHER', power: 0, energyCost: 18, cooldown: 4, tags: ['shield'], effects: [{ type: 'SHIELD', target: 'SELF', magnitude: 36, duration: 3 }] },
     { name: 'Iron Resolve', category: 'OTHER', power: 0, energyCost: 18, cooldown: 3, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'defense', magnitude: 20, duration: 3 }] },
-    { name: 'Overwhelming Force', category: 'OTHER', power: 24, energyCost: 20, cooldown: 3, tags: [], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 15, duration: 2 }] },
+    { name: 'Brazo Derecho del Gigante: Carga', category: 'OTHER', power: 24, energyCost: 20, cooldown: 3, tags: [], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 15, duration: 2 }] },
 
     // Yhwach
     { name: "The Almighty's Strike", category: 'OTHER', power: 28, energyCost: 22, cooldown: 2, tags: [], effects: [] },
@@ -528,7 +528,7 @@ async function main() {
     { character: charByName['Orihime Inoue'], skills: ['Tsubaki: Koten Zanshun', 'Santen Kesshun', 'Sōten Kisshun', 'Dance of the Heavens: Full Reject', 'Encouraging Words'] },
     { character: charByName['Uryu Ishida'], skills: ['Hirenkyaku Shot', 'Ginrei Kojaku: Licht Regen', 'Seele Schneider', 'Quincy Focus', 'Blut Vene'] },
     { character: charByName['Yoruichi Shihoin'], skills: ['Flash Step Strike', 'Shunkō', 'Utsusemi', 'Goddess of Flash', 'Vital Point Strike'] },
-    { character: charByName['Chad'], skills: ['El Directo', 'Brazo Izquierda del Diablo: Guard', 'Iron Resolve', 'Overwhelming Force'] },
+    { character: charByName['Chad'], skills: ['El Directo', 'Brazo Izquierda del Diablo: Guard', 'Iron Resolve', 'Brazo Derecho del Gigante: Carga'] },
     { character: charByName['Yhwach'], skills: ["The Almighty's Strike", 'Auswählen: Absolute Judgment', 'Der Sarg: Distortion', "The Almighty's Foresight"] },
     { character: charByName['Ryuken Ishida'], skills: ['Precision Shot', 'Cold Calculation', "Doctor's Composure", 'Silver Arrow Barrage'] },
     { character: charByName['Bazz-B'], skills: ['Burner Finger', 'Burner Finger 1: Max', 'Heat Wave', 'Scorching Strike'] },

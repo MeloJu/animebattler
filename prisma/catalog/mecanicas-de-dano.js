@@ -47,6 +47,25 @@ const aplicacoes = [
     categoria: 'OTHER',
     efeitoNovo: { type: 'COMBO_STUN', target: 'SELF', magnitude: 40 },
   },
+
+  // COMBO DE SEQUÊNCIA: carrega numa rodada, finaliza na outra. Quebra com
+  // qualquer ação diferente no meio — bloquear, se transformar ou ficar
+  // atordoado sem escolher isso apagam a carga do mesmo jeito que atacar
+  // com outra coisa.
+  //
+  //   Chad carrega o braço direito e solta o punho de assinatura.
+  {
+    nomeDaSkill: 'El Directo',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_FOLLOWUP', target: 'SELF', magnitude: 50, comboTag: 'combo:braco-direito-gigante' },
+  },
+  //   Grimmjow escala Desgarrón pro Gran Rey Cero — o mesmo golpe que já
+  //   ganhou PIERCE acima também paga a sequência.
+  {
+    nomeDaSkill: 'Gran Rey Cero',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_FOLLOWUP', target: 'SELF', magnitude: 50, comboTag: 'combo:desgarron' },
+  },
 ];
 
 module.exports = { aplicacoes };

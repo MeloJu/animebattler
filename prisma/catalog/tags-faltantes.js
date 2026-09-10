@@ -17,6 +17,12 @@
 // dado ausente por um dado errado.
 
 const tagsFaltantes = [
+  // COMBO-TAGS: marcam uma habilidade como CARGA de uma sequência de duas
+  // ações. Ver prisma/catalog/mecanicas-de-dano.js para a finalização de
+  // cada uma e o porquê da dupla.
+  { name: 'Brazo Derecho del Gigante: Carga', category: 'OTHER', tags: ['combo:braco-direito-gigante'] },
+  { name: 'Desgarrón', category: 'OTHER', tags: ['combo:desgarron'] },
+
   // Lâmina e flecha: o dano que continua depois do golpe é sangue.
   { name: 'Glimpse of the True Blade', category: 'OTHER', tags: ['espada'] },
   { name: 'Hihio Zabimaru', category: 'OTHER', tags: ['espada'] },

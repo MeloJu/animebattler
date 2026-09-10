@@ -80,7 +80,7 @@ const kits = [
   { character: "Chad", skills: [
     { skill: "El Directo", category: "OTHER", level: 1 },
     { skill: "Iron Resolve", category: "OTHER", level: 1 },
-    { skill: "Overwhelming Force", category: "OTHER", level: 1 },
+    { skill: "Brazo Derecho del Gigante: Carga", category: "OTHER", level: 1 },
     { skill: "Brazo Izquierda del Diablo: Guard", category: "OTHER", level: 5 },
   ] },
   { character: "Coyote Starrk", skills: [

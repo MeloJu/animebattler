@@ -40,6 +40,7 @@ const EFFECT_ICON: Record<EffectType, string> = {
   EXECUTE: '☠️',
   PIERCE: '🗡️',
   COMBO_STUN: '⚡',
+  COMBO_FOLLOWUP: '🔗',
 }
 
 export function describeEffect(e: EffectLike): string {
@@ -75,6 +76,8 @@ export function describeEffect(e: EffectLike): string {
       return `${EFFECT_ICON.PIERCE} Ignora ${e.magnitude}% da defesa do alvo`
     case 'COMBO_STUN':
       return `${EFFECT_ICON.COMBO_STUN} +${e.magnitude}% de dano contra alvo atordoado`
+    case 'COMBO_FOLLOWUP':
+      return `${EFFECT_ICON.COMBO_FOLLOWUP} +${e.magnitude}% de dano em sequência`
   }
 }
 

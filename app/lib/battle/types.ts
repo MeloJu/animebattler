@@ -46,6 +46,14 @@ export type EffectType =
   | 'PIERCE'
   /** Dano bônus quando o alvo está atordoado — a jogada de quem prende com Bakudō e finaliza com Hadō. */
   | 'COMBO_STUN'
+  /**
+   * Dano bônus quando a ÚLTIMA AÇÃO do lançador carregava a combo-tag exigida
+   * (ver `comboTag` abaixo e `comboPreparado` em CombatantState). É a
+   * finalização de uma sequência de duas ações — carrega numa rodada,
+   * finaliza na outra — e quebra com qualquer ação diferente no meio,
+   * inclusive bloquear, se transformar ou ficar atordoado.
+   */
+  | 'COMBO_FOLLOWUP'
 
 // Mechanical definition attached to a Skill (Skill.effects in the DB). A
 // skill can carry several of these alongside its normal power-based damage
@@ -58,6 +66,15 @@ export type SkillEffect = {
    * ressurreição cairia no ramo de 'ENEMY' e seria aplicado no adversário.
    */
   target: 'SELF' | 'ENEMY' | 'ALIADO_CAIDO'
+  /**
+   * SÓ para COMBO_FOLLOWUP: a combo-tag que precisa ter sido a última
+   * carregada pelo lançador. Uma STRING e não um vínculo direto a outra
+   * habilidade de propósito — várias cargas diferentes podem alimentar a
+   * mesma finalização (ou uma finalização escolher entre mais de uma linha
+   * de abertura), do jeito que a tag já funciona pra clash e pra sabor de
+   * DOT em outros lugares do motor.
+   */
+  comboTag?: string
   stat?: Stat // BUFF/DEBUFF only
   magnitude: number // % for BUFF/DEBUFF/LIFESTEAL, flat amount for DOT/SHIELD/HEAL, % reflected for COUNTER
   duration?: number // rounds; absent = instantaneous (HEAL, LIFESTEAL)
@@ -139,6 +156,12 @@ export type CombatantState = {
    */
   accuracy?: number
   agility?: number
+  /**
+   * A combo-tag da ÚLTIMA AÇÃO deste combatente, se ela carregava uma —
+   * ver COMBO_FOLLOWUP. `undefined` quando não há combo preparado: nem
+   * declarado ainda, nem quebrado por uma ação diferente no meio.
+   */
+  comboPreparado?: string
   cooldowns: Record<string, number> // skillId -> rounds remaining
   activeTransformationId: string | null
   /**

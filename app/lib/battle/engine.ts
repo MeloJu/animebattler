@@ -584,6 +584,15 @@ function computeDamage(
     raw *= 1 + comboStun.magnitude / 100
   }
 
+  // COMBO_FOLLOWUP: a finalização de uma sequência de duas ações. Só rende
+  // se a ÚLTIMA ação do atacante carregava exatamente a combo-tag exigida —
+  // ver comboPreparado em CombatantState e por que ele quebra com qualquer
+  // ação diferente no meio.
+  const finalizacao = effects.find((e) => e.type === 'COMBO_FOLLOWUP')
+  if (finalizacao && finalizacao.comboTag !== undefined && attacker.comboPreparado === finalizacao.comboTag) {
+    raw *= 1 + finalizacao.magnitude / 100
+  }
+
   const mitigated = raw * (100 / (100 + def))
   const critChance = clamp(
     CRIT_BASE_CHANCE + Math.max(0, atkSpeed - defSpeed) * CRIT_SPEED_COEFFICIENT,
@@ -624,6 +633,16 @@ function computeDamage(
  *    os dois lançarem no mesmo turno e por isso quase nunca dispara: aqui
  *    basta um domínio estar aberto quando o outro abre, que é situação comum.
  */
+/**
+ * A combo-tag que esta habilidade carrega como CARGA, se ela carregar
+ * alguma — a primeira tag prefixada `combo:` que ela tiver. Uma habilidade
+ * sem tag de combo devolve undefined, e usá-la limpa qualquer combo que
+ * estivesse preparado (ver o uso em performSkillUse).
+ */
+function tagDeComboDaHabilidade(skill: SkillDef | null): string | undefined {
+  return skill?.tags.find((t) => t.startsWith('combo:'))
+}
+
 function dominioAberto(c: CombatantState): StatusEffectInstance | undefined {
   return c.statusEffects.find((e) => e.type === 'DOMAIN' && e.remainingRounds > 0)
 }
@@ -933,6 +952,10 @@ function performSkillUse(
       ? Math.max(0, (attacker.currentStamina ?? 0) - energyCost)
       : attacker.currentStamina,
     cooldowns: skill ? { ...attacker.cooldowns, [skill.id]: skill.cooldown } : attacker.cooldowns,
+    // comboPreparado NÃO muda aqui, de propósito: ele ainda precisa valer
+    // COMO ESTAVA (a carga da rodada passada) na hora de computeDamage
+    // decidir se ESTE golpe é a finalização dela. Só é atualizado pro valor
+    // desta habilidade no FIM da função — ver o retorno.
   }
   let newDefender = defender
 
@@ -1017,7 +1040,7 @@ function performSkillUse(
   // PIERCE/EXECUTE/COMBO_STUN já foram totalmente consumidos dentro de
   // computeDamage — chegam até aqui e, sem este filtro, cairiam no caminho
   // genérico e virariam status persistente em alguém, o que não são.
-  const MODIFICADORES_DE_DANO = new Set(['PIERCE', 'EXECUTE', 'COMBO_STUN'])
+  const MODIFICADORES_DE_DANO = new Set(['PIERCE', 'EXECUTE', 'COMBO_STUN', 'COMBO_FOLLOWUP'])
   const supportEffects = effects.filter(
     (e) =>
       e.type !== 'LIFESTEAL' &&
@@ -1066,6 +1089,13 @@ function performSkillUse(
       skillName: skill?.name ?? 'Ataque Básico',
     })
   }
+
+  // SÓ AGORA comboPreparado passa a valer o desta habilidade — depois que
+  // computeDamage já leu o valor ANTIGO (a carga da rodada passada) pra
+  // decidir se ESTE golpe era a finalização dela. Atualizar antes teria
+  // feito toda finalização se auto-anular, porque a finalização em si não
+  // carrega combo-tag nenhuma.
+  newAttacker = { ...newAttacker, comboPreparado: tagDeComboDaHabilidade(skill) }
 
   return {
     attacker: newAttacker,
@@ -1571,7 +1601,9 @@ export function resolveRound(
     if (isStunned(c) || !podeBloquear(c)) continue
 
     const custo = custoDeErguerGuarda(c)
-    atual = comCombatenteEm(atual, p, erguerGuarda(c))
+    // Bloquear é uma ação diferente de continuar a sequência — quebra
+    // qualquer combo que estivesse preparado.
+    atual = comCombatenteEm(atual, p, { ...erguerGuarda(c), comboPreparado: undefined })
     bloqueando.add(chave(p))
     turnResults.push({
       version: 1,
@@ -1671,6 +1703,9 @@ export function resolveRound(
 
     if (isStunned(c)) {
       turnResults.push(makeStunResult(p.lado))
+      // Ficar atordoado não foi uma escolha, mas a janela da sequência
+      // passou do mesmo jeito — o combo quebra aqui também.
+      if (c.comboPreparado !== undefined) atual = comCombatenteEm(atual, p, { ...c, comboPreparado: undefined })
       continue
     }
 
@@ -1679,7 +1714,8 @@ export function resolveRound(
     if (acao?.kind === 'TRANSFORM' && p.lado === LADO_ALIADO && p.indice === 0) {
       const t = ctx.playerTransformations[acao.transformationId]
       if (t) {
-        atual = comCombatenteEm(atual, p, applyTransformation(c, t))
+        // Se transformar também é uma ação diferente — quebra o combo.
+        atual = comCombatenteEm(atual, p, { ...applyTransformation(c, t), comboPreparado: undefined })
         turnResults.push(makeTransformResult(p.lado, t))
       }
       continue

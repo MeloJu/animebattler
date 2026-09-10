@@ -169,6 +169,17 @@ const renomeacoes = [
     nomeNovo: 'Ilusão de Fragilidade',
     fonte: 'liga ao tema real de hipnose/ilusão do Kyōka Suigetsu, em vez de um "quebra-escudo" sem tema.',
   },
+
+  // CHAD. "Overwhelming Force" era exatamente o molde genérico que este
+  // catálogo existe pra corrigir — serviria a qualquer brawler do elenco.
+  // Vira a carga real do braço direito, e ganha a combo-tag que a liga ao
+  // El Directo em prisma/catalog/mecanicas-de-dano.js.
+  {
+    nomeAntigo: 'Overwhelming Force',
+    categoria: 'OTHER',
+    nomeNovo: 'Brazo Derecho del Gigante: Carga',
+    fonte: 'anime/mangá — o nome real do braço direito dele; carregar poder nele antes de socar é como ele luta na obra.',
+  },
 ];
 
 module.exports = { renomeacoes };
