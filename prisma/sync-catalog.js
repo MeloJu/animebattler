@@ -31,6 +31,7 @@ const atributosNovos = require('./catalog/atributos-novos');
 const precisaoCatalog = require('./catalog/precisao');
 const tagsFaltantes = require('./catalog/tags-faltantes');
 const renomeacaoCanonica = require('./catalog/renomeacao-canonica');
+const mecanicasDeDano = require('./catalog/mecanicas-de-dano');
 const storyJujutsu = require('./catalog/story-jujutsu');
 const equipmentCatalog = require('./catalog/equipment');
 const ladderCatalog = require('./catalog/skill-ladders');
@@ -133,6 +134,38 @@ async function syncRenomeacoesCanonicas() {
     registra('renomeação', `${r.nomeAntigo} -> ${r.nomeNovo}`, { acao: 'atualizar', campos: ['name'] });
     if (!DRY_RUN) {
       await prisma.skill.update({ where: { id: atual.id }, data: { name: r.nomeNovo } });
+    }
+  }
+}
+
+/**
+ * Acrescenta EXECUTE/PIERCE/COMBO_STUN a habilidades existentes.
+ * Ver prisma/catalog/mecanicas-de-dano.js para a razão de cada uma.
+ *
+ * ACRESCENTA AO ARRAY, nunca substitui — mesmo princípio do
+ * comTagsPreservadas: uma skill que já carregue aquele tipo de efeito não
+ * ganha duplicata.
+ */
+async function syncMecanicasDeDano() {
+  for (const def of mecanicasDeDano.aplicacoes) {
+    const sk = await prisma.skill.findUnique({
+      where: { name_category: { name: def.nomeDaSkill, category: def.categoria } },
+      select: { id: true, name: true, effects: true },
+    });
+    if (!sk) {
+      console.log(`  (aviso) habilidade para mecânica de dano não existe neste banco: ${def.nomeDaSkill}`);
+      continue;
+    }
+
+    const atuais = Array.isArray(sk.effects) ? sk.effects : [];
+    if (atuais.some((e) => e.type === def.efeitoNovo.type)) {
+      relatorio.iguais += 1;
+      continue;
+    }
+
+    registra('mecânica', `${sk.name} +${def.efeitoNovo.type}`, { acao: 'atualizar', campos: ['effects'] });
+    if (!DRY_RUN) {
+      await prisma.skill.update({ where: { id: sk.id }, data: { effects: [...atuais, def.efeitoNovo] } });
     }
   }
 }
@@ -830,6 +863,7 @@ async function main() {
   await syncSkillScaling();
   // Por ultimo: depende de toda habilidade ja existir com o poder final.
   await syncPrecisao();
+  await syncMecanicasDeDano();
 
   console.log(`sem alteração: ${relatorio.iguais}`);
   if (relatorio.criados.length) {

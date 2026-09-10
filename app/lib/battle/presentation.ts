@@ -37,6 +37,9 @@ const EFFECT_ICON: Record<EffectType, string> = {
   LIFESTEAL: '🩸',
   DOMAIN: '🌌',
   REVIVE: '🕊️',
+  EXECUTE: '☠️',
+  PIERCE: '🗡️',
+  COMBO_STUN: '⚡',
 }
 
 export function describeEffect(e: EffectLike): string {
@@ -66,6 +69,12 @@ export function describeEffect(e: EffectLike): string {
       return `${EFFECT_ICON.DOMAIN} Domínio · acerto garantido · ${e.magnitude} EN e ST/rodada`
     case 'REVIVE':
       return `${EFFECT_ICON.REVIVE} Traz um aliado caído de volta com ${e.magnitude}% da vida`
+    case 'EXECUTE':
+      return `${EFFECT_ICON.EXECUTE} +${e.magnitude}% de dano contra alvo com pouca vida`
+    case 'PIERCE':
+      return `${EFFECT_ICON.PIERCE} Ignora ${e.magnitude}% da defesa do alvo`
+    case 'COMBO_STUN':
+      return `${EFFECT_ICON.COMBO_STUN} +${e.magnitude}% de dano contra alvo atordoado`
   }
 }
 

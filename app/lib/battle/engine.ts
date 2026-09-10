@@ -15,6 +15,7 @@ import {
   GUARDA_QUEBRADA_ATORDOA,
   SEVERIDADE,
   DOMAIN_DAMAGE_BONUS,
+  EXECUCAO_LIMIAR_HP,
   EVASAO_MAXIMA,
   EVASAO_POR_PONTO,
   SCALING_BASE,
@@ -545,19 +546,44 @@ export function resolverAcerto(
   return { acertou: rand() < chance, chance }
 }
 
+/**
+ * Três golpes com o mesmo poder deixam de dar o mesmo dano quando um deles
+ * pune quem já está fraco, outro passa direto pela defesa, e o terceiro
+ * pesa mais em quem não pode reagir. `effects` traz PIERCE/EXECUTE/COMBO_STUN
+ * quando a habilidade os carrega — nenhum dos três vira status em ninguém,
+ * são lidos aqui e só aqui, dentro do mesmo golpe que os declarou.
+ */
 function computeDamage(
   attacker: CombatantState,
   defender: CombatantState,
   power: number,
   scalingStat: ScalingStat,
-  rand: () => number
+  rand: () => number,
+  effects: SkillEffect[] = []
 ): { damage: number; isCrit: boolean } {
-  const def = getCombatStat(defender, 'defense')
+  const perfurante = effects.find((e) => e.type === 'PIERCE')
+  const defBase = getCombatStat(defender, 'defense')
+  const def = perfurante ? defBase * (1 - perfurante.magnitude / 100) : defBase
   const atkSpeed = getCombatStat(attacker, 'speed')
   const defSpeed = getCombatStat(defender, 'speed')
   // Dentro do próprio domínio a técnica é amplificada — ver DOMAIN_DAMAGE_BONUS.
   const amplificacao = dominioAberto(attacker) ? 1 + DOMAIN_DAMAGE_BONUS : 1
-  const raw = (power + scaledBonus(attacker, scalingStat)) * amplificacao
+  let raw = (power + scaledBonus(attacker, scalingStat)) * amplificacao
+
+  // EXECUTE: golpe de acabamento — o alvo já está abaixo do limiar de vida.
+  const execucao = effects.find((e) => e.type === 'EXECUTE')
+  if (execucao && defender.maxHp > 0 && defender.currentHp / defender.maxHp <= EXECUCAO_LIMIAR_HP) {
+    raw *= 1 + execucao.magnitude / 100
+  }
+
+  // COMBO_STUN: a jogada de quem prende com Bakudō e finaliza com Hadō —
+  // vale tanto para quem acabou de atordoar quanto pra quem chega depois e
+  // aproveita, já que o status de STUN não distingue quem o causou.
+  const comboStun = effects.find((e) => e.type === 'COMBO_STUN')
+  if (comboStun && isStunned(defender)) {
+    raw *= 1 + comboStun.magnitude / 100
+  }
+
   const mitigated = raw * (100 / (100 + def))
   const critChance = clamp(
     CRIT_BASE_CHANCE + Math.max(0, atkSpeed - defSpeed) * CRIT_SPEED_COEFFICIENT,
@@ -940,7 +966,7 @@ function performSkillUse(
     const counterIdx = acertoGarantido
       ? -1
       : newDefender.statusEffects.findIndex((e) => e.type === 'COUNTER' && e.remainingRounds > 0)
-    const computed = computeDamage(newAttacker, newDefender, power, scalingStat, rand)
+    const computed = computeDamage(newAttacker, newDefender, power, scalingStat, rand, effects)
 
     if (counterIdx !== -1) {
       countered = true
@@ -988,8 +1014,16 @@ function performSkillUse(
   // ele não encostou. O que é lançado em si mesmo continua valendo, porque o
   // lançador agiu de qualquer forma.
   const naoEncostou = countered || errou
+  // PIERCE/EXECUTE/COMBO_STUN já foram totalmente consumidos dentro de
+  // computeDamage — chegam até aqui e, sem este filtro, cairiam no caminho
+  // genérico e virariam status persistente em alguém, o que não são.
+  const MODIFICADORES_DE_DANO = new Set(['PIERCE', 'EXECUTE', 'COMBO_STUN'])
   const supportEffects = effects.filter(
-    (e) => e.type !== 'LIFESTEAL' && e.type !== 'REVIVE' && (!naoEncostou || e.target === 'SELF')
+    (e) =>
+      e.type !== 'LIFESTEAL' &&
+      e.type !== 'REVIVE' &&
+      !MODIFICADORES_DE_DANO.has(e.type) &&
+      (!naoEncostou || e.target === 'SELF')
   )
   // A ressurreição não é anulada por counter nem por erro: ela não vai no
   // adversário, então não há nada para o adversário aparar. Quem lançou pagou

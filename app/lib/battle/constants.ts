@@ -129,6 +129,20 @@ export const GUARDA_QUEBRADA_ATORDOA = 1
  */
 export const SEVERIDADE = { raspao: 0.05, solido: 0.12, pesado: 0.22 }
 
+/**
+ * Abaixo de que fração da vida máxima o efeito EXECUTE dá o bônus de dano.
+ *
+ * Um número SÓ, e não um por habilidade — a mesma escolha já feita para
+ * BLOQUEIO_REDUCAO e DOMAIN_DAMAGE_BONUS: cada habilidade varia SÓ o quanto
+ * de bônus dá (a magnitude), não o limiar. Um limiar por skill seria uma
+ * variável a mais que ninguém pediria e que só serviria para inflar o número
+ * de uma até parecer "sempre executa".
+ *
+ * 30% é baixo o bastante para não substituir dano normal na maior parte da
+ * luta — é uma jogada de acabamento, não a estratégia inteira.
+ */
+export const EXECUCAO_LIMIAR_HP = 0.3
+
 export const BASIC_ATTACK_POWER = 12
 
 /**

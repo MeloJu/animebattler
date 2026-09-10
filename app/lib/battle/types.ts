@@ -32,6 +32,20 @@ export type EffectType =
    * como os demais: só resolveRound conhece os dois times.
    */
   | 'REVIVE'
+  /**
+   * Os três a seguir NÃO viram status persistente em ninguém — são
+   * modificadores da fórmula de dano, consumidos inteiramente dentro do
+   * mesmo golpe que os carrega. Por isso `target` neles é sempre 'SELF' por
+   * convenção (descrevem uma propriedade do ATAQUE, não algo infligido no
+   * adversário), e applySkillEffects os filtra para fora do caminho que cria
+   * StatusEffectInstance — do mesmo jeito que já faz com LIFESTEAL e REVIVE.
+   */
+  /** Dano bônus quando o alvo está com a vida abaixo do limiar (ver EXECUCAO_LIMIAR_HP). */
+  | 'EXECUTE'
+  /** Ignora uma fração da defesa do alvo neste golpe. */
+  | 'PIERCE'
+  /** Dano bônus quando o alvo está atordoado — a jogada de quem prende com Bakudō e finaliza com Hadō. */
+  | 'COMBO_STUN'
 
 // Mechanical definition attached to a Skill (Skill.effects in the DB). A
 // skill can carry several of these alongside its normal power-based damage
