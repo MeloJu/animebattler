@@ -145,7 +145,7 @@ const kits = [
     { skill: "Resilient Spirit", category: "OTHER", level: 5 },
   ] },
   { character: "Kaname Tosen", skills: [
-    { skill: "Suzumushi Strike", category: "OTHER", level: 1 },
+    { skill: "Suzumushi: Grito", category: "OTHER", level: 1 },
     { skill: "Blind Justice", category: "OTHER", level: 1 },
     { skill: "Righteous Guard", category: "OTHER", level: 1 },
     { skill: "Suzumushi Tsuishiki: Enma Kōrogi", category: "OTHER", level: 5 },
@@ -325,7 +325,7 @@ const kits = [
     { skill: "Auswählen: Absolute Judgment", category: "OTHER", level: 5 },
   ] },
   { character: "Yoruichi Shihoin", skills: [
-    { skill: "Flash Step Strike", category: "OTHER", level: 1 },
+    { skill: "Shunpo: Investida", category: "OTHER", level: 1 },
     { skill: "Vital Point Strike", category: "OTHER", level: 1 },
     { skill: "Goddess of Flash", category: "OTHER", level: 1 },
     { skill: "Utsusemi", category: "OTHER", level: 5 },

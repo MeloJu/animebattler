@@ -66,6 +66,71 @@ const aplicacoes = [
     categoria: 'OTHER',
     efeitoNovo: { type: 'COMBO_FOLLOWUP', target: 'SELF', magnitude: 50, comboTag: 'combo:desgarron' },
   },
+  //   Kaname abre com Suzumushi (shikai) e finaliza com Enma Kōrogi (bankai)
+  //   — a mesma lógica de carga-e-finalização, só que contada com a ordem
+  //   real de liberação da zanpakutō em vez de um combo inventado.
+  {
+    nomeDaSkill: 'Suzumushi Tsuishiki: Enma Kōrogi',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_FOLLOWUP', target: 'SELF', magnitude: 50, comboTag: 'combo:suzumushi' },
+  },
+
+  // QUARTO E QUINTO EXEMPLOS de EXECUTE/PIERCE, escolhidos por serem os
+  // golpes mais reconhecíveis do elenco que ainda estavam com dano puro.
+  //
+  //   Getsuga Tenshō (Ichigo) ganha PIERCE. É o golpe mais icônico da obra
+  //   inteira, e hoje era só "número maior" — nada nele dizia por que uma
+  //   onda de pressão espiritual cortante deveria ser mecanicamente diferente
+  //   de um soco. PIERCE captura o que a obra mostra: atravessa guardas,
+  //   paredes, hollows inteiros.
+  {
+    nomeDaSkill: 'Getsuga Tenshō',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'PIERCE', target: 'SELF', magnitude: 40 },
+  },
+  //   E ganha COMBO_FOLLOWUP também. A luta do Ichigo é canonicamente burst:
+  //   quase todo confronto grande dele é "carrega poder, solta um Getsuga
+  //   Tenshō decisivo" — Bankai Focus já É essa carga no kit dele, só nunca
+  //   tinha sido ligada a nada. Vira a mesma lógica de shikai→bankai do
+  //   Kaname, contada com a progressão real do Ichigo em vez de inventada.
+  {
+    nomeDaSkill: 'Getsuga Tenshō',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'COMBO_FOLLOWUP', target: 'SELF', magnitude: 50, comboTag: 'combo:bankai' },
+  },
+  //   Lanza del Relámpago (Ulquiorra) ganha PIERCE. É a lança relâmpago que
+  //   ele crava com Sonído — velocidade e precisão cirúrgica, não força
+  //   bruta, então perfurar a defesa é mais fiel que só somar poder.
+  {
+    nomeDaSkill: 'Lanza del Relámpago',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'PIERCE', target: 'SELF', magnitude: 35 },
+  },
+  //   E ganha LIFESTEAL. Ulquiorra regenera de ferimento que mataria qualquer
+  //   um — Hierro e a cura hollow compartilhada já contam essa parte dele,
+  //   mas nenhuma habilidade PRÓPRIA fazia isso acontecer no meio do ataque.
+  {
+    nomeDaSkill: 'Lanza del Relámpago',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'LIFESTEAL', target: 'SELF', magnitude: 20 },
+  },
+  //   Cero Oscuras (Ulquiorra) ganha EXECUTE. O cero negro é tratado na obra
+  //   como poder de outro patamar — quase matou o Ichigo com máscara de
+  //   Vasto Lorde de um só golpe. EXECUTE aproxima isso sem ser instakill:
+  //   pune quem já está no fio contra o cero mais forte do elenco Espada.
+  {
+    nomeDaSkill: 'Cero Oscuras',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'EXECUTE', target: 'SELF', magnitude: 50 },
+  },
+  //   Shunpo: Investida (Yoruichi) ganha PIERCE. É a mestra do Shunpo do
+  //   elenco inteiro — rápida demais pra qualquer guarda se ajustar a tempo,
+  //   então perfurar a defesa é mais fiel que só bater mais forte.
+  {
+    nomeDaSkill: 'Shunpo: Investida',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'PIERCE', target: 'SELF', magnitude: 35 },
+  },
 ];
 
 module.exports = { aplicacoes };

@@ -282,7 +282,7 @@ async function main() {
     { name: 'Farsa Calculada', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 50, duration: 2 }] },
 
     // Kaname Tosen
-    { name: 'Suzumushi Strike', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: [], effects: [] },
+    { name: 'Suzumushi: Grito', category: 'OTHER', power: 20, energyCost: 16, cooldown: 2, tags: [], effects: [] },
     { name: 'Suzumushi Tsuishiki: Enma Kōrogi', category: 'OTHER', power: 22, energyCost: 24, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'STUN', target: 'ENEMY', magnitude: 0, duration: 1 }] },
     { name: 'Blind Justice', category: 'OTHER', power: 0, energyCost: 16, cooldown: 3, tags: ['debuff'], effects: [{ type: 'DEBUFF', target: 'ENEMY', stat: 'defense', magnitude: 18, duration: 3 }] },
     { name: 'Righteous Guard', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 55, duration: 2 }] },
@@ -359,7 +359,7 @@ async function main() {
     { name: 'Blut Vene', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 55, duration: 2 }] },
 
     // Yoruichi Shihoin
-    { name: 'Flash Step Strike', category: 'OTHER', power: 19, energyCost: 15, cooldown: 2, tags: [], effects: [] },
+    { name: 'Shunpo: Investida', category: 'OTHER', power: 19, energyCost: 15, cooldown: 2, tags: [], effects: [] },
     { name: 'Shunkō', category: 'OTHER', power: 26, energyCost: 28, cooldown: 4, tags: ['ultimate'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'speed', magnitude: 20, duration: 2 }] },
     { name: 'Utsusemi', category: 'OTHER', power: 0, energyCost: 16, cooldown: 4, tags: ['counter'], effects: [{ type: 'COUNTER', target: 'SELF', magnitude: 60, duration: 2 }] },
     { name: 'Goddess of Flash', category: 'OTHER', power: 0, energyCost: 18, cooldown: 3, tags: ['buff'], effects: [{ type: 'BUFF', target: 'SELF', stat: 'speed', magnitude: 25, duration: 3 }, { type: 'BUFF', target: 'SELF', stat: 'attack', magnitude: 15, duration: 3 }] },
@@ -514,7 +514,7 @@ async function main() {
     { character: charByName['Mayuri Kurotsuchi'], skills: ['Ashisogi Jizō Spores', 'Konjiki Ashisogi Jizō', 'Cobaia Descartável', 'Corpo Descartável'] },
     { character: charByName['Sajin Komamura'], skills: ['Tenken Strike', 'Kokujō Tengen Myōō', 'Iron Wall', "Guardian's Resolve"] },
     { character: charByName['Gin Ichimaru'], skills: ['Shinsō: Investida', 'Kamishini no Yari', 'Sorriso Enganoso', 'Farsa Calculada'] },
-    { character: charByName['Kaname Tosen'], skills: ['Suzumushi Strike', 'Suzumushi Tsuishiki: Enma Kōrogi', 'Blind Justice', 'Righteous Guard'] },
+    { character: charByName['Kaname Tosen'], skills: ['Suzumushi: Grito', 'Suzumushi Tsuishiki: Enma Kōrogi', 'Blind Justice', 'Righteous Guard'] },
     { character: charByName['Rangiku Matsumoto'], skills: ['Haineko: Ash Slash', 'Growl, Haineko', 'Flashy Confidence', 'Ash Veil'] },
     { character: charByName['Momo Hinamori'], skills: ['Hadō #4: Byakurai', 'Hadō #63: Raikōhō', 'Tobiume: Plum Blossom Fire', 'Kido Focus'] },
     { character: charByName['Izuru Kira'], skills: ['Hadō #4: Byakurai', 'Wabisuke: Peso Redobrado', 'Golpe do Desespero', 'Máscara de Indiferença'] },
@@ -527,7 +527,7 @@ async function main() {
     { character: charByName['Renji Abarai'], skills: ['Zabimaru: Chicotada', 'Hihio Zabimaru', 'Hadō #4: Byakurai', 'Determinação de Superar', 'Lealdade Inabalável'] },
     { character: charByName['Orihime Inoue'], skills: ['Tsubaki: Koten Zanshun', 'Santen Kesshun', 'Sōten Kisshun', 'Dance of the Heavens: Full Reject', 'Encouraging Words'] },
     { character: charByName['Uryu Ishida'], skills: ['Hirenkyaku Shot', 'Ginrei Kojaku: Licht Regen', 'Seele Schneider', 'Quincy Focus', 'Blut Vene'] },
-    { character: charByName['Yoruichi Shihoin'], skills: ['Flash Step Strike', 'Shunkō', 'Utsusemi', 'Goddess of Flash', 'Vital Point Strike'] },
+    { character: charByName['Yoruichi Shihoin'], skills: ['Shunpo: Investida', 'Shunkō', 'Utsusemi', 'Goddess of Flash', 'Vital Point Strike'] },
     { character: charByName['Chad'], skills: ['El Directo', 'Brazo Izquierda del Diablo: Guard', 'Iron Resolve', 'Brazo Derecho del Gigante: Carga'] },
     { character: charByName['Yhwach'], skills: ["The Almighty's Strike", 'Auswählen: Absolute Judgment', 'Der Sarg: Distortion', "The Almighty's Foresight"] },
     { character: charByName['Ryuken Ishida'], skills: ['Precision Shot', 'Cold Calculation', "Doctor's Composure", 'Silver Arrow Barrage'] },

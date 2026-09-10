@@ -180,6 +180,31 @@ const renomeacoes = [
     nomeNovo: 'Brazo Derecho del Gigante: Carga',
     fonte: 'anime/mangá — o nome real do braço direito dele; carregar poder nele antes de socar é como ele luta na obra.',
   },
+
+  // KANAME TOSEN. "Suzumushi Strike" misturava o nome real da zanpakutō com
+  // um sufixo em inglês sem fonte — o comando de liberação dela na obra é
+  // "Nake, Suzumushi" ("Cante/Grite, Suzumushi"), e é o som do grilo-sino que
+  // a torna capaz de silenciar sentidos e amplificar kidō. Ganha a combo-tag
+  // que a liga ao Enma Kōrogi em prisma/catalog/mecanicas-de-dano.js — shikai
+  // abrindo caminho pro bankai é a mesma lógica de carga-e-finalização do
+  // Chad e do Grimmjow, só que contada com a progressão real da obra.
+  {
+    nomeAntigo: 'Suzumushi Strike',
+    categoria: 'OTHER',
+    nomeNovo: 'Suzumushi: Grito',
+    fonte: 'anime/mangá — "Nake, Suzumushi" é o comando de liberação real da zanpakutō; o grito é o som do grilo-sino.',
+  },
+
+  // YORUICHI SHIHOIN. "Flash Step Strike" traduzia Shunpo pro inglês em vez
+  // de usar o termo que a obra já usa — ela é conhecida como a "Deusa do
+  // Shunpo" precisamente por essa técnica, não por um golpe genérico com
+  // nome de efeito sonoro.
+  {
+    nomeAntigo: 'Flash Step Strike',
+    categoria: 'OTHER',
+    nomeNovo: 'Shunpo: Investida',
+    fonte: 'anime/mangá — Shunpo é o termo canônico (Flash Step); ela é chamada de "Deusa do Shunpo" na própria obra.',
+  },
 ];
 
 module.exports = { renomeacoes };

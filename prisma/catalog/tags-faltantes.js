@@ -22,6 +22,8 @@ const tagsFaltantes = [
   // cada uma e o porquê da dupla.
   { name: 'Brazo Derecho del Gigante: Carga', category: 'OTHER', tags: ['combo:braco-direito-gigante'] },
   { name: 'Desgarrón', category: 'OTHER', tags: ['combo:desgarron'] },
+  { name: 'Suzumushi: Grito', category: 'OTHER', tags: ['combo:suzumushi'] },
+  { name: 'Bankai Focus', category: 'OTHER', tags: ['combo:bankai'] },
 
   // Lâmina e flecha: o dano que continua depois do golpe é sangue.
   { name: 'Glimpse of the True Blade', category: 'OTHER', tags: ['espada'] },
