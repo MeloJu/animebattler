@@ -78,6 +78,17 @@ export type SkillEffect = {
   stat?: Stat // BUFF/DEBUFF only
   magnitude: number // % for BUFF/DEBUFF/LIFESTEAL, flat amount for DOT/SHIELD/HEAL, % reflected for COUNTER
   duration?: number // rounds; absent = instantaneous (HEAL, LIFESTEAL)
+  /**
+   * EMPILHÁVEL — pensado pra DOT/DEBUFF. Reaplicar a MESMA habilidade
+   * enquanto o efeito anterior dela ainda está de pé SOMA a magnitude em vez
+   * de só renovar a duração (o comportamento padrão, sem isto). Sem `stack`,
+   * bater duas vezes com a mesma queimadura não deixa a queimadura mais
+   * forte — só a mantém viva. Com `stack`, cada golpe piora o que já estava
+   * lá, até o teto de `maxStacks`.
+   */
+  stack?: boolean
+  /** Só COM `stack: true`. Teto em NÚMERO DE PILHAS, não em magnitude — o teto real é magnitude-base × maxStacks. Ausente vale 3. */
+  maxStacks?: number
 }
 
 // A live instance of an effect sitting on a combatant mid-battle.

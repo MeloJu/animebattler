@@ -683,6 +683,18 @@ function applyDamageWithShield(target: CombatantState, amount: number): { target
  * Habilidades DIFERENTES continuam somando — dois venenos distintos empilham,
  * que é o comportamento desejado. O que não pode é o mesmo veneno consigo.
  */
+/**
+ * Soma a magnitude de um efeito EMPILHÁVEL à instância que já estava de pé,
+ * até o teto de maxStacks (padrão 3) multiplicado pela magnitude-base — não
+ * um contador de pilhas à parte, porque nada mais no motor (DOT tick,
+ * leitura de DEBUFF) precisaria saber quantas pilhas existem: só a
+ * magnitude final, que já é o que eles leem hoje.
+ */
+function magnitudeEmpilhada(magnitudeAtual: number, efeito: SkillEffect): number {
+  const teto = efeito.magnitude * (efeito.maxStacks ?? 3)
+  return Math.min(magnitudeAtual + efeito.magnitude, teto)
+}
+
 function semDuplicataDaMesmaSkill(
   efeitos: StatusEffectInstance[],
   novo: StatusEffectInstance
@@ -785,11 +797,21 @@ function applySkillEffects(
       continue
     }
 
+    // EMPILHÁVEL: busca a instância anterior DESTA MESMA habilidade antes de
+    // decidir a magnitude — só faz sentido procurar quando o efeito pede
+    // stack, senão qualquer DOT comum pagaria o custo de uma busca à toa.
+    const colecaoAtual = effect.target === 'SELF' ? newUser.statusEffects : newTarget.statusEffects
+    const pilhaAnterior = effect.stack
+      ? colecaoAtual.find((e) => e.sourceSkillName === skillName && e.type === effect.type && e.stat === effect.stat)
+      : undefined
+    const magnitudeBase = effect.type === 'SHIELD' ? effect.magnitude + bonus : effect.magnitude
+    const magnitude = pilhaAnterior ? magnitudeEmpilhada(pilhaAnterior.magnitude, effect) : magnitudeBase
+
     const instance: StatusEffectInstance = {
       id: makeEffectId(),
       type: effect.type,
       stat: effect.stat,
-      magnitude: effect.type === 'SHIELD' ? effect.magnitude + bonus : effect.magnitude,
+      magnitude,
       remainingRounds: effect.duration ?? 1,
       sourceSkillName: skillName,
       ...(effect.type === 'DOT' ? { flavor: saborDoDot(skillTags) } : {}),

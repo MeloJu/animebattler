@@ -29,6 +29,7 @@ const tagsFaltantes = [
   // Lâmina e flecha: o dano que continua depois do golpe é sangue.
   { name: 'Glimpse of the True Blade', category: 'OTHER', tags: ['espada'] },
   { name: 'Hihio Zabimaru', category: 'OTHER', tags: ['espada'] },
+  { name: 'Zabimaru: Chicotada', category: 'OTHER', tags: ['espada'] },
   { name: 'Senbonzakura: Chire', category: 'OTHER', tags: ['espada'] },
   { name: 'Silver Arrow Barrage', category: 'OTHER', tags: ['quincy', 'pierce'] },
   { name: 'Seele Schneider', category: 'OTHER', tags: ['quincy', 'espada'] },

@@ -2,7 +2,7 @@ import { resolveErrorMessage } from '@/app/lib/error-messages'
 import { saborDoDot } from './engine'
 import type { DotFlavor, EffectType, Stat } from './types'
 
-export type EffectLike = { type: EffectType; stat?: Stat; magnitude: number; flavor?: DotFlavor }
+export type EffectLike = { type: EffectType; stat?: Stat; magnitude: number; flavor?: DotFlavor; stack?: boolean }
 
 /**
  * Ícone e nome de cada natureza de dano contínuo.
@@ -48,11 +48,11 @@ export function describeEffect(e: EffectLike): string {
     case 'BUFF':
       return `${EFFECT_ICON.BUFF} ${e.stat ? STAT_LABEL[e.stat] : ''} +${e.magnitude}%`
     case 'DEBUFF':
-      return `${EFFECT_ICON.DEBUFF} ${e.stat ? STAT_LABEL[e.stat] : ''} -${e.magnitude}%`
+      return `${EFFECT_ICON.DEBUFF} ${e.stat ? STAT_LABEL[e.stat] : ''} -${e.magnitude}%${e.stack ? ' (empilha)' : ''}`
     // O ícone segue a NATUREZA quando ela é conhecida. Antes era 🔥 fixo, e
     // era o que fazia todo dano contínuo parecer fogo no cartão da habilidade.
     case 'DOT':
-      return `${(e.flavor ? DOT_SABOR[e.flavor] : DOT_GENERICO).icone} ${e.magnitude}/rodada`
+      return `${(e.flavor ? DOT_SABOR[e.flavor] : DOT_GENERICO).icone} ${e.magnitude}/rodada${e.stack ? ' (empilha)' : ''}`
     case 'STUN':
       return `${EFFECT_ICON.STUN} Atordoa`
     case 'COUNTER':

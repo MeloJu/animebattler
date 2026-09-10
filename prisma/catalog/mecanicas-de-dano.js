@@ -185,6 +185,29 @@ const aplicacoes = [
     categoria: 'OTHER',
     efeitoNovo: { type: 'EXECUTE', target: 'SELF', magnitude: 45 },
   },
+
+  // EMPILHÁVEL (stack): ver o campo em app/lib/battle/types.ts. Reaplicar a
+  // MESMA habilidade enquanto o efeito anterior dela ainda está de pé SOMA a
+  // magnitude em vez de só renovar — pensado pra golpe repetido que piora a
+  // cada acerto, até um teto (3× a magnitude-base por padrão).
+  //
+  //   Zabimaru: Chicotada (Renji) e Burner Finger (Bazz-B) estavam entre as
+  //   38 skills de dano puro do levantamento original — os dois primeiros
+  //   exemplos, e não por acaso os dois vieram do próprio pedido do dono do
+  //   projeto. Zabimaru é uma lâmina segmentada tipo chicote: cada chicotada
+  //   reabre o corte anterior mais fundo. Burner Finger é o poder de
+  //   assinatura do Bazz-B — Quincy que concentra calor no próprio corpo, e
+  //   a obra mostra ele ficando mais quente quanto mais luta.
+  {
+    nomeDaSkill: 'Zabimaru: Chicotada',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'DOT', target: 'ENEMY', magnitude: 6, duration: 2, stack: true },
+  },
+  {
+    nomeDaSkill: 'Burner Finger',
+    categoria: 'OTHER',
+    efeitoNovo: { type: 'DOT', target: 'ENEMY', magnitude: 6, duration: 2, stack: true },
+  },
 ];
 
 module.exports = { aplicacoes };
