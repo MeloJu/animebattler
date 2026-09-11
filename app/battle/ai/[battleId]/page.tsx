@@ -12,9 +12,9 @@ import { BotaoDeHabilidade } from '@/app/components/battle/BotaoDeHabilidade'
 import { HistoricoDeBatalha } from '@/app/components/battle/HistoricoDeBatalha'
 import { CartaAnimada } from '@/app/components/battle/CartaAnimada'
 import { BotaoDeBloqueio } from '@/app/components/battle/BotaoDeBloqueio'
-import { custoDeErguerGuarda, heroi, vilao } from '@/app/lib/battle/engine'
+import { custoDeErguerGuarda, heroi, migrarEstado, vilao } from '@/app/lib/battle/engine'
 import { impactoDaRodada } from '@/app/lib/battle/rodada'
-import type { BattleState, TurnResult } from '@/app/lib/battle/types'
+import type { BattleStateGravado, TurnResult } from '@/app/lib/battle/types'
 
 export default async function BattleArenaPage({
   params,
@@ -33,7 +33,12 @@ export default async function BattleArenaPage({
   if (!view) notFound()
   const { battle, userCharacter, enemy, turns } = view
 
-  const state = battle.state as unknown as BattleState
+  // MIGRA NA FRONTEIRA — battle.state pode ter sido gravado antes do time
+  // (versão 1, { player, enemy }); sem isto, heroi()/vilao() quebram lendo
+  // state.aliados de um objeto que nunca teve esse campo. getPvpBattleView já
+  // faz isto; esta página não fazia, e batalha antiga (nenhum turno desde a
+  // migração) caía com 500 ao abrir.
+  const state = migrarEstado(battle.state as unknown as BattleStateGravado)
   const isActive = battle.status === 'ACTIVE'
   // A origem manda no rótulo e no "voltar". Uma batalha de história contra um
   // Hollow é um Monster como a raid, mas mandar o jogador pra /battle/raid o
