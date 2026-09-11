@@ -10,8 +10,10 @@ import { FighterCard } from '@/app/components/battle/FighterCard'
 import { BotaoDeForma } from '@/app/components/battle/BotaoDeForma'
 import { BotaoDeHabilidade } from '@/app/components/battle/BotaoDeHabilidade'
 import { HistoricoDeBatalha } from '@/app/components/battle/HistoricoDeBatalha'
+import { CartaAnimada } from '@/app/components/battle/CartaAnimada'
 import { BotaoDeBloqueio } from '@/app/components/battle/BotaoDeBloqueio'
 import { custoDeErguerGuarda, heroi, vilao } from '@/app/lib/battle/engine'
+import { impactoDaRodada } from '@/app/lib/battle/rodada'
 import type { BattleState, TurnResult } from '@/app/lib/battle/types'
 
 export default async function BattleArenaPage({
@@ -54,6 +56,15 @@ export default async function BattleArenaPage({
     Object.values(playerSkills)
       .filter((s): s is typeof s & { description: string } => Boolean(s.description))
       .map((s) => [s.name, s.description])
+  )
+
+  // O que cada lutador SOFREU na rodada mais recente, para a tela poder
+  // encenar o golpe em vez de só mostrar o número novo. Os turnos chegam em
+  // ordem decrescente, então a primeira rodada que aparece é a última que
+  // aconteceu. Ver app/lib/battle/rodada.ts.
+  const ultimaRodada = turns[0]?.round ?? 0
+  const impacto = impactoDaRodada(
+    turns.filter((t) => t.round === ultimaRodada).map((t) => t.result as unknown as TurnResult)
   )
 
   // Desfecho do estágio, encenado no momento em que o inimigo cai. Só é
@@ -126,13 +137,15 @@ export default async function BattleArenaPage({
             ESTADO DE QUEM VOCÊ É, não um golpe no adversário. Agrupada com o
             próprio retrato, ela se lê como parte do personagem. */}
         <div className="space-y-4">
-          <FighterCard
-            name={userCharacter.nickname}
-            imageUrl={userCharacter.character.imageUrl}
-            levelBadge={userCharacter.level}
-            transformationName={formaAtivaDoJogador?.name}
-            combatant={heroi(state)}
-          />
+          <CartaAnimada impacto={impacto.PLAYER} rodada={ultimaRodada}>
+            <FighterCard
+              name={userCharacter.nickname}
+              imageUrl={userCharacter.character.imageUrl}
+              levelBadge={userCharacter.level}
+              transformationName={formaAtivaDoJogador?.name}
+              combatant={heroi(state)}
+            />
+          </CartaAnimada>
 
           {isActive && availableTransformations.length > 0 && (
             <div className="card p-4 space-y-2">
@@ -153,7 +166,9 @@ export default async function BattleArenaPage({
           skillDescriptions={skillDescriptions}
         />
 
-        <FighterCard name={enemy.name} imageUrl={enemy.imageUrl} combatant={vilao(state)} />
+        <CartaAnimada impacto={impacto.ENEMY} rodada={ultimaRodada}>
+          <FighterCard name={enemy.name} imageUrl={enemy.imageUrl} combatant={vilao(state)} />
+        </CartaAnimada>
       </div>
 
       {/* AS AÇÕES OCUPAM A LARGURA INTEIRA, e não a coluna do meio.

@@ -8,7 +8,9 @@ import { isLegalMove } from '@/app/lib/battle/engine'
 import { battleErrorMessage, descreverEfeitosDaHabilidade } from '@/app/lib/battle/presentation'
 import { FighterCard } from '@/app/components/battle/FighterCard'
 import { HistoricoDeBatalha } from '@/app/components/battle/HistoricoDeBatalha'
+import { CartaAnimada } from '@/app/components/battle/CartaAnimada'
 import { LiveBattleSync } from '@/app/components/pvp/LiveBattleSync'
+import { impactoDaRodada } from '@/app/lib/battle/rodada'
 import type { TurnResult } from '@/app/lib/battle/types'
 
 export default async function PvpArenaPage({
@@ -39,6 +41,16 @@ export default async function PvpArenaPage({
       .filter((s): s is typeof s & { description: string } => Boolean(s.description))
       .map((s) => [s.name, s.description])
   )
+
+  // O log é gravado na perspectiva do MOTOR (host = PLAYER), então o lado de
+  // cada impacto depende de quem está olhando — mesma inversão que os nomes
+  // do histórico logo abaixo já fazem. Ver app/lib/battle/rodada.ts.
+  const ultimaRodada = turns[0]?.round ?? 0
+  const impacto = impactoDaRodada(
+    turns.filter((t) => t.round === ultimaRodada).map((t) => t.result as unknown as TurnResult)
+  )
+  const meuImpacto = view.isHost ? impacto.PLAYER : impacto.ENEMY
+  const impactoDoOutro = view.isHost ? impacto.ENEMY : impacto.PLAYER
 
   // O motor nomeia os lados como player/enemy; o desfecho precisa ser lido na
   // perspectiva de quem está olhando, senão o convidado veria "Vitória!" ao
@@ -92,12 +104,14 @@ export default async function PvpArenaPage({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        <FighterCard
-          name={me.userCharacter.nickname}
-          imageUrl={me.userCharacter.character.imageUrl}
-          levelBadge={me.userCharacter.level}
-          combatant={me.combatant}
-        />
+        <CartaAnimada impacto={meuImpacto} rodada={ultimaRodada}>
+          <FighterCard
+            name={me.userCharacter.nickname}
+            imageUrl={me.userCharacter.character.imageUrl}
+            levelBadge={me.userCharacter.level}
+            combatant={me.combatant}
+          />
+        </CartaAnimada>
 
         <div className="space-y-4">
           {isActive && (
@@ -158,12 +172,14 @@ export default async function PvpArenaPage({
           )}
         </div>
 
-        <FighterCard
-          name={foe.userCharacter.nickname}
-          imageUrl={foe.userCharacter.character.imageUrl}
-          levelBadge={foe.userCharacter.level}
-          combatant={foe.combatant}
-        />
+        <CartaAnimada impacto={impactoDoOutro} rodada={ultimaRodada}>
+          <FighterCard
+            name={foe.userCharacter.nickname}
+            imageUrl={foe.userCharacter.character.imageUrl}
+            levelBadge={foe.userCharacter.level}
+            combatant={foe.combatant}
+          />
+        </CartaAnimada>
       </div>
     </main>
   )
