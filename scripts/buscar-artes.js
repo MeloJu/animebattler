@@ -28,21 +28,7 @@ const path = require('path');
 const UA = 'animebattler-educational/1.0 (projeto de estudo; creditos em /creditos)';
 const MAX_POR_PERSONAGEM = 4;
 
-const ALVOS = [
-  { slug: 'satoru-gojo',      wiki: 'jujutsu-kaisen', titulo: 'Satoru Gojo',       nome: 'Satoru Gojo' },
-  { slug: 'yuji-itadori',     wiki: 'jujutsu-kaisen', titulo: 'Yuji Itadori',      nome: 'Yuji Itadori' },
-  { slug: 'megumi-fushiguro', wiki: 'jujutsu-kaisen', titulo: 'Megumi Fushiguro',  nome: 'Megumi Fushiguro' },
-  { slug: 'nobara-kugisaki',  wiki: 'jujutsu-kaisen', titulo: 'Nobara Kugisaki',   nome: 'Nobara Kugisaki' },
-  { slug: 'ryomen-sukuna',    wiki: 'jujutsu-kaisen', titulo: 'Sukuna',            nome: 'Sukuna' },
-  { slug: 'suguru-geto',      wiki: 'jujutsu-kaisen', titulo: 'Suguru Geto',       nome: 'Suguru Geto' },
-  { slug: 'mahito',           wiki: 'jujutsu-kaisen', titulo: 'Mahito',            nome: 'Mahito' },
-  { slug: 'jogo',             wiki: 'jujutsu-kaisen', titulo: 'Jogo',              nome: 'Jogo' },
-  { slug: 'hanami',           wiki: 'jujutsu-kaisen', titulo: 'Hanami',            nome: 'Hanami' },
-  { slug: 'sung-jin-woo',     wiki: 'solo-leveling',  titulo: 'Sung Jinwoo',       nome: 'Sung Jinwoo' },
-  { slug: 'deadpool',         wiki: 'marvel',         titulo: 'Wade Wilson (Earth-616)', nome: 'Wade Wilson' },
-  { slug: 'patolino',         wiki: 'looneytunes',    titulo: 'Daffy Duck',        nome: 'Daffy Duck' },
-  { slug: 'red',              wiki: 'pokemon',        titulo: 'Red (Origins)',     nome: 'Red' },
-];
+const ALVOS = require('./artes-alvos.json');
 
 function curlJson(url) {
   const out = execFileSync('curl', ['-s', '--max-time', '25', '-A', UA, url], { maxBuffer: 20e6 });
@@ -67,24 +53,32 @@ function ehRetrato(titulo, nome) {
 }
 
 (async () => {
-  const destino = path.join(__dirname, 'baixadas');
+  const destino = path.join(__dirname, '..', '.artes-baixadas');
   fs.mkdirSync(destino, { recursive: true });
   const relatorio = [];
 
-  for (const alvo of ALVOS) {
+  const filtro = process.argv.slice(2);
+  const lista_alvos = filtro.length ? ALVOS.filter((a) => filtro.includes(a.slug)) : ALVOS;
+
+  for (const alvo of lista_alvos) {
     try {
       const lista = curlJson(`https://${alvo.wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(alvo.titulo)}&prop=images&format=json&imlimit=60`);
       const pagina = Object.values(lista?.query?.pages ?? {})[0];
       if (!pagina || pagina.missing !== undefined) { relatorio.push({ slug: alvo.slug, erro: 'página não existe: ' + alvo.titulo }); continue; }
 
       const candidatos = (pagina.images ?? []).map((i) => i.title).filter((t) => ehRetrato(t, alvo.nome)).slice(0, 14);
-      if (candidatos.length === 0) { relatorio.push({ slug: alvo.slug, erro: 'nenhum retrato entre ' + (pagina.images?.length ?? 0) + ' imagens' }); continue; }
 
       // O retrato da INFOBOX é o canônico da página — é ele que vira _default.
       const infobox = curlJson(`https://${alvo.wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(alvo.titulo)}&prop=pageimages&format=json&piprop=name`);
       const nomeInfobox = Object.values(infobox?.query?.pages ?? {})[0]?.pageimage;
       const tituloInfobox = nomeInfobox ? 'File:' + nomeInfobox.replace(/_/g, ' ') : null;
       if (tituloInfobox && !candidatos.includes(tituloInfobox)) candidatos.unshift(tituloInfobox);
+      // O check de vazio vem DEPOIS da infobox, nao antes: varias wikis (Bleach
+      // e a pior) nomeiam tudo como screenshot de episodio ("162Ichigo holds"),
+      // entao o filtro derruba a pagina inteira - e o unico retrato de verdade,
+      // o da infobox, ficava de fora junto. Mesmo erro de ordem que ja tinha
+      // custado uma rodada com o corte dos N primeiros candidatos.
+      if (candidatos.length === 0) { relatorio.push({ slug: alvo.slug, erro: 'nenhum retrato nem infobox' }); console.log('VAZIO ' + alvo.slug); continue; }
 
       const info = curlJson(`https://${alvo.wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(candidatos.join('|'))}&prop=imageinfo&iiprop=url|size&iiurlwidth=1200&format=json`);
 
@@ -128,7 +122,7 @@ function ehRetrato(titulo, nome) {
     }
   }
 
-  fs.writeFileSync(path.join(__dirname, 'relatorio.json'), JSON.stringify(relatorio, null, 2));
+  fs.writeFileSync(path.join(destino, 'relatorio.json'), JSON.stringify(relatorio, null, 2));
   for (const r of relatorio) {
     if (r.erro) { console.log(`FALHA ${r.slug.padEnd(18)} ${r.erro}`); continue; }
     console.log(`${r.ok ? 'OK   ' : 'VAZIO'} ${r.slug.padEnd(18)} ${r.arquivos.map((a) => a.dim + ' (' + a.prop + ') ' + a.kb + 'K').join(', ')}`);

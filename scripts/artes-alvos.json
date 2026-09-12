@@ -1,0 +1,374 @@
+[
+  {
+    "slug": "aaroniero-arruruerie",
+    "wiki": "bleach",
+    "titulo": "Aaroniero Arruruerie",
+    "nome": "Aaroniero Arruruerie"
+  },
+  {
+    "slug": "as-nodt",
+    "wiki": "bleach",
+    "titulo": "As Nödt",
+    "nome": "As Nödt"
+  },
+  {
+    "slug": "baraggan-luisenbarn",
+    "wiki": "bleach",
+    "titulo": "Baraggan Luisenbarn",
+    "nome": "Baraggan Luisenbarn"
+  },
+  {
+    "slug": "batman",
+    "wiki": "dc",
+    "titulo": "Batman",
+    "nome": "Batman"
+  },
+  {
+    "slug": "bazz-b",
+    "wiki": "bleach",
+    "titulo": "Bazz-B",
+    "nome": "Bazz-B"
+  },
+  {
+    "slug": "broly",
+    "wiki": "dragonball",
+    "titulo": "Broly",
+    "nome": "Broly"
+  },
+  {
+    "slug": "byakuya-kuchiki",
+    "wiki": "bleach",
+    "titulo": "Byakuya Kuchiki",
+    "nome": "Byakuya Kuchiki"
+  },
+  {
+    "slug": "chad",
+    "wiki": "bleach",
+    "titulo": "Yasutora Sado",
+    "nome": "Chad"
+  },
+  {
+    "slug": "coyote-starrk",
+    "wiki": "bleach",
+    "titulo": "Coyote Starrk",
+    "nome": "Coyote Starrk"
+  },
+  {
+    "slug": "daredevil",
+    "wiki": "marvel",
+    "titulo": "Matthew Murdock (Earth-616)",
+    "nome": "Daredevil"
+  },
+  {
+    "slug": "deadpool",
+    "wiki": "marvel",
+    "titulo": "Wade Wilson (Earth-616)",
+    "nome": "Deadpool"
+  },
+  {
+    "slug": "emma-frost",
+    "wiki": "marvel",
+    "titulo": "Emma Frost (Earth-616)",
+    "nome": "Emma Frost"
+  },
+  {
+    "slug": "gin-ichimaru",
+    "wiki": "bleach",
+    "titulo": "Gin Ichimaru",
+    "nome": "Gin Ichimaru"
+  },
+  {
+    "slug": "goku",
+    "wiki": "dragonball",
+    "titulo": "Goku",
+    "nome": "Goku"
+  },
+  {
+    "slug": "grimmjow-jaegerjaquez",
+    "wiki": "bleach",
+    "titulo": "Grimmjow Jaegerjaquez",
+    "nome": "Grimmjow Jaegerjaquez"
+  },
+  {
+    "slug": "hanami",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Hanami",
+    "nome": "Hanami"
+  },
+  {
+    "slug": "ichigo-kurosaki",
+    "wiki": "bleach",
+    "titulo": "Ichigo Kurosaki",
+    "nome": "Ichigo Kurosaki"
+  },
+  {
+    "slug": "izuru-kira",
+    "wiki": "bleach",
+    "titulo": "Izuru Kira",
+    "nome": "Izuru Kira"
+  },
+  {
+    "slug": "jean-grey",
+    "wiki": "marvel",
+    "titulo": "Jean Grey (Earth-616)",
+    "nome": "Jean Grey"
+  },
+  {
+    "slug": "jogo",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Jogo",
+    "nome": "Jogo"
+  },
+  {
+    "slug": "jushiro-ukitake",
+    "wiki": "bleach",
+    "titulo": "Jūshirō Ukitake",
+    "nome": "Jūshirō Ukitake"
+  },
+  {
+    "slug": "kaname-tosen",
+    "wiki": "bleach",
+    "titulo": "Kaname Tosen",
+    "nome": "Kaname Tosen"
+  },
+  {
+    "slug": "kenpachi-zaraki",
+    "wiki": "bleach",
+    "titulo": "Kenpachi Zaraki",
+    "nome": "Kenpachi Zaraki"
+  },
+  {
+    "slug": "kisuke-urahara",
+    "wiki": "bleach",
+    "titulo": "Kisuke Urahara",
+    "nome": "Kisuke Urahara"
+  },
+  {
+    "slug": "mahito",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Mahito",
+    "nome": "Mahito"
+  },
+  {
+    "slug": "mayuri-kurotsuchi",
+    "wiki": "bleach",
+    "titulo": "Mayuri Kurotsuchi",
+    "nome": "Mayuri Kurotsuchi"
+  },
+  {
+    "slug": "megumi-fushiguro",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Megumi Fushiguro",
+    "nome": "Megumi Fushiguro"
+  },
+  {
+    "slug": "momo-hinamori",
+    "wiki": "bleach",
+    "titulo": "Momo Hinamori",
+    "nome": "Momo Hinamori"
+  },
+  {
+    "slug": "naruto-uzumaki",
+    "wiki": "naruto",
+    "titulo": "Naruto Uzumaki",
+    "nome": "Naruto Uzumaki"
+  },
+  {
+    "slug": "nnoitra-gilga",
+    "wiki": "bleach",
+    "titulo": "Nnoitra Gilga",
+    "nome": "Nnoitra Gilga"
+  },
+  {
+    "slug": "nobara-kugisaki",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Nobara Kugisaki",
+    "nome": "Nobara Kugisaki"
+  },
+  {
+    "slug": "orihime-inoue",
+    "wiki": "bleach",
+    "titulo": "Orihime Inoue",
+    "nome": "Orihime Inoue"
+  },
+  {
+    "slug": "patolino",
+    "wiki": "looneytunes",
+    "titulo": "Daffy Duck",
+    "nome": "Patolino"
+  },
+  {
+    "slug": "rangiku-matsumoto",
+    "wiki": "bleach",
+    "titulo": "Rangiku Matsumoto",
+    "nome": "Rangiku Matsumoto"
+  },
+  {
+    "slug": "red",
+    "wiki": "pokemon",
+    "titulo": "Red (Origins)",
+    "nome": "Red"
+  },
+  {
+    "slug": "renji-abarai",
+    "wiki": "bleach",
+    "titulo": "Renji Abarai",
+    "nome": "Renji Abarai"
+  },
+  {
+    "slug": "retsu-unohana",
+    "wiki": "bleach",
+    "titulo": "Retsu Unohana",
+    "nome": "Retsu Unohana"
+  },
+  {
+    "slug": "rukia-kuchiki",
+    "wiki": "bleach",
+    "titulo": "Rukia Kuchiki",
+    "nome": "Rukia Kuchiki"
+  },
+  {
+    "slug": "ryomen-sukuna",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Sukuna",
+    "nome": "Ryomen Sukuna"
+  },
+  {
+    "slug": "ryuken-ishida",
+    "wiki": "bleach",
+    "titulo": "Ryuken Ishida",
+    "nome": "Ryuken Ishida"
+  },
+  {
+    "slug": "sajin-komamura",
+    "wiki": "bleach",
+    "titulo": "Sajin Komamura",
+    "nome": "Sajin Komamura"
+  },
+  {
+    "slug": "sasuke-uchiha",
+    "wiki": "naruto",
+    "titulo": "Sasuke Uchiha",
+    "nome": "Sasuke Uchiha"
+  },
+  {
+    "slug": "satoru-gojo",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Satoru Gojo",
+    "nome": "Satoru Gojo"
+  },
+  {
+    "slug": "shunsui-kyoraku",
+    "wiki": "bleach",
+    "titulo": "Shunsui Kyōraku",
+    "nome": "Shunsui Kyōraku"
+  },
+  {
+    "slug": "sosuke-aizen",
+    "wiki": "bleach",
+    "titulo": "Sosuke Aizen",
+    "nome": "Sosuke Aizen"
+  },
+  {
+    "slug": "suguru-geto",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Suguru Geto",
+    "nome": "Suguru Geto"
+  },
+  {
+    "slug": "sung-jin-woo",
+    "wiki": "solo-leveling",
+    "titulo": "Sung Jinwoo",
+    "nome": "Sung Jin Woo"
+  },
+  {
+    "slug": "superman",
+    "wiki": "dc",
+    "titulo": "Superman",
+    "nome": "Superman"
+  },
+  {
+    "slug": "sui-feng",
+    "wiki": "bleach",
+    "titulo": "Suì-Fēng",
+    "nome": "Suì-Fēng"
+  },
+  {
+    "slug": "szayelaporro-granz",
+    "wiki": "bleach",
+    "titulo": "Szayelaporro Granz",
+    "nome": "Szayelaporro Granz"
+  },
+  {
+    "slug": "tia-harribel",
+    "wiki": "bleach",
+    "titulo": "Tia Harribel",
+    "nome": "Tia Harribel"
+  },
+  {
+    "slug": "toshiro-hitsugaya",
+    "wiki": "bleach",
+    "titulo": "Toshiro Hitsugaya",
+    "nome": "Toshiro Hitsugaya"
+  },
+  {
+    "slug": "ulquiorra-cifer",
+    "wiki": "bleach",
+    "titulo": "Ulquiorra Cifer",
+    "nome": "Ulquiorra Cifer"
+  },
+  {
+    "slug": "uryu-ishida",
+    "wiki": "bleach",
+    "titulo": "Uryu Ishida",
+    "nome": "Uryu Ishida"
+  },
+  {
+    "slug": "vegeta",
+    "wiki": "dragonball",
+    "titulo": "Vegeta",
+    "nome": "Vegeta"
+  },
+  {
+    "slug": "wonder-woman",
+    "wiki": "dc",
+    "titulo": "Wonder Woman",
+    "nome": "Wonder Woman"
+  },
+  {
+    "slug": "yamamoto-genryusai",
+    "wiki": "bleach",
+    "titulo": "Yamamoto Genryūsai",
+    "nome": "Yamamoto Genryūsai"
+  },
+  {
+    "slug": "yammy-llargo",
+    "wiki": "bleach",
+    "titulo": "Yammy Llargo",
+    "nome": "Yammy Llargo"
+  },
+  {
+    "slug": "yhwach",
+    "wiki": "bleach",
+    "titulo": "Yhwach",
+    "nome": "Yhwach"
+  },
+  {
+    "slug": "yoruichi-shihoin",
+    "wiki": "bleach",
+    "titulo": "Yoruichi Shihoin",
+    "nome": "Yoruichi Shihoin"
+  },
+  {
+    "slug": "yuji-itadori",
+    "wiki": "jujutsu-kaisen",
+    "titulo": "Yuji Itadori",
+    "nome": "Yuji Itadori"
+  },
+  {
+    "slug": "zommari-rureaux",
+    "wiki": "bleach",
+    "titulo": "Zommari Rureaux",
+    "nome": "Zommari Rureaux"
+  }
+]
