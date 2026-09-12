@@ -112,7 +112,7 @@ export function CenaDeDialogo({
                   alt={fala.speaker}
                   width={128}
                   height={128}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover object-top"
                 />
               ) : (
                 <CharacterMonogram name={fala.speaker} />

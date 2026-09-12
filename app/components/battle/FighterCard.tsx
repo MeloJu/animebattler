@@ -25,7 +25,7 @@ export function FighterCard({
     <div className={`card p-4 space-y-3 ${transformationName ? 'forma-ativa' : ''}`}>
       <div className="relative h-40 w-full rounded-lg overflow-hidden bg-background-alt">
         {imageUrl ? (
-          <Image src={imageUrl} alt={name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 320px" />
+          <Image src={imageUrl} alt={name} fill className="object-cover object-top" sizes="(max-width: 1024px) 100vw, 320px" />
         ) : (
           <CharacterMonogram name={name} />
         )}

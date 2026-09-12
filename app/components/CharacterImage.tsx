@@ -101,7 +101,7 @@ export function CharacterImage({
   return (
     <div className={containerClassName}>
       {src ? (
-        <Image src={src} alt={alt} fill className="object-cover" sizes={sizes} />
+        <Image src={src} alt={alt} fill className="object-cover object-top" sizes={sizes} />
       ) : (
         <CharacterMonogram name={alt} className={placeholderClassName} />
       )}

@@ -22,7 +22,7 @@ export default async function CharactersPage() {
                     alt={c.name}
                     width={160}
                     height={160}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover object-top"
                     sizes="(max-width: 768px) 80px, 96px"
                     quality={90}
                   />
