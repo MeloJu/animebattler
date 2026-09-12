@@ -32,7 +32,7 @@ export function CharacterMonogram({ name, className = '' }: { name: string; clas
 
   return (
     <div
-      className={`h-full w-full flex items-center justify-center font-semibold text-white select-none ${className}`}
+      className={`retrato-aura relative h-full w-full flex items-center justify-center overflow-hidden font-semibold text-white select-none ${className}`}
       style={{
         background: `linear-gradient(135deg, hsl(${matiz} 45% 42%), hsl(${(matiz + 40) % 360} 45% 28%))`,
         // O contêiner é quem declara containerType; o texto abaixo usa cqw
@@ -42,7 +42,38 @@ export function CharacterMonogram({ name, className = '' }: { name: string; clas
       }}
       aria-hidden
     >
-      <span className="text-[clamp(0.9rem,28cqw,2.5rem)] tracking-wide">
+      {/* AURA: brilho radial que pulsa devagar, atrás das iniciais. É o que
+          separa "placeholder esquecido" de "personagem cuja arte ainda não
+          chegou" — o quadrado chapado parecia defeito. Tudo CSS: nada aqui é
+          baixado, pelo mesmo motivo do monograma existir. */}
+      <span
+        className="retrato-aura-brilho absolute inset-0"
+        style={{
+          background: `radial-gradient(circle at 50% 58%, hsl(${(matiz + 20) % 360} 85% 62% / .55), transparent 62%)`,
+        }}
+      />
+
+      {/* Linhas de energia diagonais, bem discretas — a textura de fundo que
+          quadrinho e anime usam para dizer "tem pressão aqui". */}
+      <span
+        className="absolute inset-0 opacity-[0.13]"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(112deg, transparent 0 7px, rgba(255,255,255,.9) 7px 8px, transparent 8px 20px)',
+        }}
+      />
+
+      {/* Vinheta: escurece as bordas e empurra o olho para o centro, onde
+          está a inicial. */}
+      <span
+        className="absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.42))' }}
+      />
+
+      <span
+        className="relative text-[clamp(0.9rem,28cqw,2.5rem)] tracking-wide"
+        style={{ textShadow: `0 0 18px hsl(${(matiz + 20) % 360} 90% 70% / .85), 0 2px 6px rgba(0,0,0,.55)` }}
+      >
         {iniciais}
       </span>
     </div>

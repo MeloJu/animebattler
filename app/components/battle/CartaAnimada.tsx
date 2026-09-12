@@ -10,23 +10,29 @@ import type { ImpactoNoLutador } from '@/app/lib/battle/rodada'
  * POR QUE ENVOLVE a carta em vez de animar dentro dela: FighterCard é
  * componente de servidor e lê o estado do banco. Ele continua sendo a fonte
  * do "depois"; o que falta é o MOMENTO entre um estado e outro, e isso é
- * necessariamente cliente. Envolver mantém a divisão onde ela já estava.
+ * necessariamente cliente.
  *
- * A INTENSIDADE VEM DO MOTOR, não de gosto: `severidade` já é calculada em
- * cima da vida máxima do alvo (ver TurnResult), então o mesmo 30 de dano
- * treme pouco num tanque e muito num conjurador — exatamente como o texto do
- * log já narra. Duas telas contando a mesma história.
+ * O NÚMERO DO DANO NÃO MORA AQUI. Ele nasceu em cima do retrato e ficava
+ * horrível — texto grande atravessando a arte do personagem. O lugar dele é
+ * a barra que perdeu o recurso, junto do próprio número: ver StatBar, que
+ * calcula o próprio delta e ainda ganha o rastro do valor anterior de brinde.
+ * Aqui fica só o que é da CARTA INTEIRA: o baque e a marca de quem apanhou.
+ *
+ * A INTENSIDADE VEM DO MOTOR: `severidade` já é calculada sobre a vida máxima
+ * do alvo, então o mesmo 30 de dano sacode pouco num tanque e muito num
+ * conjurador — igual ao texto do log, que escolhe entre "raspou em" e
+ * "arrebentou" pela mesma medida.
  *
  * TOCA NA CHEGADA DA PÁGINA, e isso é deliberado: a rodada é resolvida no
  * servidor e a página re-renderiza logo depois do clique, então chegar na
- * tela É o instante em que o golpe aconteceu. Mesma decisão já tomada pela
- * animação de forma liberada em globals.css.
+ * tela É o instante em que o golpe aconteceu.
  *
- * SOB prefers-reduced-motion nada se move — o número do dano ainda aparece,
- * porque ele é informação, não enfeite. O que se perde é só o movimento.
+ * SOB prefers-reduced-motion nada se move. O que se perde aqui é só ênfase —
+ * a informação (quanto caiu, de quanto para quanto) está na barra, que
+ * continua mostrando o número.
  */
 
-/** Quanto a carta se desloca, em pixels, por severidade do pior golpe. */
+/** Deslocamento do baque, em pixels, pela severidade do pior golpe. */
 const DESLOCAMENTO: Record<NonNullable<ImpactoNoLutador['severidade']>, number> = {
   raspao: 3,
   solido: 7,
@@ -34,7 +40,7 @@ const DESLOCAMENTO: Record<NonNullable<ImpactoNoLutador['severidade']>, number> 
   devastador: 18,
 }
 
-type Golpe = { chave: number; dano: number; deslocamento: number; critico: boolean; guardaQuebrada: boolean }
+type Golpe = { chave: number; deslocamento: number; critico: boolean; guardaQuebrada: boolean; teveDano: boolean }
 
 export function CartaAnimada({
   impacto,
@@ -53,83 +59,92 @@ export function CartaAnimada({
     if (impacto.dano <= 0 && !impacto.guardaQuebrada) return
     setGolpe({
       chave: rodada,
-      dano: impacto.dano,
       // Dano contínuo chega sem severidade: é a mesma mordida toda rodada, e
-      // sacudir a carta por ela diria "você levou um golpe agora" quando não
-      // levou. Fica com o mínimo, só para o número subir.
+      // sacudir a carta por ela diria "você levou um golpe AGORA" quando não
+      // levou. Fica sem baque — a barra ainda conta a perda.
       deslocamento: impacto.severidade ? DESLOCAMENTO[impacto.severidade] : 0,
       critico: impacto.critico,
       guardaQuebrada: impacto.guardaQuebrada,
+      teveDano: impacto.dano > 0,
     })
     // Depende SÓ da rodada: qualquer re-render sem rodada nova (navegação,
     // revalidação) não pode re-encenar um golpe que já passou.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rodada])
 
-  const tremor = golpe && !semMovimento && golpe.deslocamento > 0
+  const baque = golpe && !semMovimento && golpe.deslocamento > 0
   const d = golpe?.deslocamento ?? 0
+  // Golpe forte merece linha de velocidade; raspão não. O corte é o mesmo que
+  // separa "acertou" de "acertou em cheio" no texto do log.
+  const forte = golpe ? golpe.deslocamento >= DESLOCAMENTO.pesado : false
 
   return (
     <div className="relative">
       <motion.div
-        animate={
-          tremor
-            ? { x: [0, -d, d, -d * 0.6, d * 0.4, 0] }
-            : { x: 0 }
-        }
+        animate={baque ? { x: [0, -d, d, -d * 0.6, d * 0.4, 0] } : { x: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
         {children}
       </motion.div>
 
-      {/* Clarão vermelho por cima da carta inteira: diz "foi AQUI" antes de
-          qualquer número ser lido. pointer-events-none para não roubar o
-          clique dos botões que ficam por baixo em telas estreitas. */}
+      {/* ANEL DE IMPACTO em vez de lavar a carta de vermelho: a arte do
+          personagem fica limpa (importa mais ainda quando ela for de verdade,
+          e não monograma), e a borda ainda diz "foi ESTE que apanhou".
+          Âmbar no crítico, mesmo par de cores que o log já usa. */}
       <AnimatePresence>
-        {golpe && !semMovimento && golpe.dano > 0 && (
+        {golpe?.teveDano && !semMovimento && (
           <motion.div
-            key={`clarao-${golpe.chave}`}
-            className="absolute inset-0 rounded-lg pointer-events-none bg-red-500"
-            initial={{ opacity: golpe.critico ? 0.28 : 0.18 }}
-            animate={{ opacity: 0 }}
+            key={`anel-${golpe.chave}`}
+            className={`absolute inset-0 rounded-lg pointer-events-none ring-2 ${
+              golpe.critico ? 'ring-amber-400' : 'ring-red-500'
+            }`}
+            initial={{ opacity: 0.95, boxShadow: `0 0 0 0 ${golpe.critico ? 'rgba(251,191,36,.55)' : 'rgba(239,68,68,.5)'}` }}
+            animate={{ opacity: 0, boxShadow: `0 0 0 16px rgba(0,0,0,0)` }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={{ duration: 0.65, ease: 'easeOut' }}
           />
         )}
       </AnimatePresence>
 
-      {/* O número sobe e some. Aparece mesmo sem movimento: é informação. */}
+      {/* LINHAS DE VELOCIDADE — o corte diagonal que passa na tela quando o
+          golpe entra forte. É o vocabulário visual de impacto de anime, e sai
+          inteiro de CSS: nenhuma arte para baixar, nada com dono. */}
       <AnimatePresence>
-        {golpe && golpe.dano > 0 && (
+        {forte && !semMovimento && (
           <motion.div
-            key={`dano-${golpe.chave}`}
-            className="absolute inset-x-0 top-12 flex justify-center pointer-events-none"
-            initial={semMovimento ? { opacity: 1 } : { opacity: 0, y: 10, scale: 0.8 }}
-            animate={semMovimento ? { opacity: 1 } : { opacity: 1, y: -22, scale: 1 }}
+            key={`vento-${golpe!.chave}`}
+            className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none"
+            initial={{ opacity: 0.85 }}
+            animate={{ opacity: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: semMovimento ? 0 : 0.9, ease: 'easeOut' }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
           >
-            <span
-              className={`font-bold tabular-nums drop-shadow-lg ${
-                golpe.critico ? 'text-3xl text-amber-400' : 'text-2xl text-red-400'
-              }`}
-            >
-              −{golpe.dano}
-              {golpe.critico && <span className="text-sm ml-1">CRÍTICO</span>}
-            </span>
+            <motion.div
+              className="absolute -inset-x-1/2 inset-y-0"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(107deg, transparent 0 9px, rgba(255,255,255,.55) 9px 11px, transparent 11px 26px)',
+                maskImage: 'linear-gradient(90deg, transparent, black 35%, black 65%, transparent)',
+                WebkitMaskImage: 'linear-gradient(90deg, transparent, black 35%, black 65%, transparent)',
+              }}
+              initial={{ x: '-30%' }}
+              animate={{ x: '30%' }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Guarda partida é consequência, não dano: quem apanhou perde a rodada
-          seguinte. Merece aviso próprio, separado do número. */}
+          seguinte. Fica no RODAPÉ da carta — em cima do retrato era o mesmo
+          erro do número de dano. */}
       <AnimatePresence>
         {golpe?.guardaQuebrada && (
           <motion.div
             key={`guarda-${golpe.chave}`}
-            className="absolute inset-x-0 top-2 flex justify-center pointer-events-none"
-            initial={semMovimento ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+            className="absolute inset-x-0 bottom-2 flex justify-center pointer-events-none"
+            initial={semMovimento ? { opacity: 1 } : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: semMovimento ? 0 : 0.3 }}
           >

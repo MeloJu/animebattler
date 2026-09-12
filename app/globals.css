@@ -341,7 +341,19 @@ body {
   animation: forma-liberada 900ms ease-out 1;
 }
 
+/* Aura do retrato sem arte: respira devagar, para o placeholder parecer
+   presença e não ausência. Ver CharacterMonogram. */
+@keyframes aura-respirando {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+.retrato-aura-brilho {
+  animation: aura-respirando 4.5s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .retrato-aura-brilho,
   .forma-ativa,
   [class*="animate-[tremular"],
   [class*="animate-[pulsar"],
