@@ -89,3 +89,38 @@ jobs:
 
       - name: Smoke test
         run: bash scripts/smoke-test.sh animebattler:ci
+
+  # Segredo commitado é o tipo de erro que não dá para desfazer: uma vez no
+  # histórico de um repositório PÚBLICO, considera-se vazado mesmo depois de
+  # removido — o commit antigo continua acessível e provavelmente já foi
+  # clonado. Por isso a checagem é automática e bloqueia o merge, em vez de
+  # depender de alguém lembrar de olhar.
+  #
+  # RODA O HISTÓRICO INTEIRO (fetch-depth: 0), não só o diff: o custo é de
+  # segundos num repo deste tamanho, e limitar ao diff deixaria passar
+  # qualquer coisa que já estivesse lá atrás. A primeira execução veio limpa
+  # nos 114 commits de então.
+  #
+  # BINÁRIO DIRETO em vez da action oficial, de propósito: uma action de
+  # terceiro roda com acesso ao contexto do workflow, e aqui basta um
+  # executável com versão fixada. Mesmo raciocínio do comentário sobre
+  # actions em .github/dependabot.yml.
+  segredos:
+    name: Segredos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        env:
+          VERSAO: 8.30.1
+        run: |
+          curl -sSL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${VERSAO}/gitleaks_${VERSAO}_linux_x64.tar.gz"
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks version
+
+      - name: Varrer o histórico
+        run: ./gitleaks git --redact --verbose

@@ -1,0 +1,32 @@
+#!/bin/sh
+# Barra o push quando há segredo no que está prestes a subir.
+#
+# POR QUE UM HOOK, JÁ QUE O CI TAMBÉM VARRE: neste projeto tudo vai direto
+# para o master, sem PR. O CI roda DEPOIS do push — quando um segredo já
+# estaria público no GitHub, e segredo que chegou num repositório público
+# conta como vazado mesmo se removido no minuto seguinte. O CI é a rede de
+# segurança; quem previne é isto aqui.
+#
+# PARA ATIVAR (uma vez por clone):
+#   git config core.hooksPath .githooks
+#
+# FALHA ABERTA se o gitleaks não estiver instalado: avisa alto e deixa
+# passar, em vez de travar todo push de quem ainda não instalou. É decisão
+# consciente — o CI continua barrando do outro lado, então o custo do aviso
+# ignorado é um build vermelho, não um segredo publicado.
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "AVISO: gitleaks não encontrado — push liberado SEM varredura local." >&2
+  echo "       Instale em https://github.com/gitleaks/gitleaks/releases" >&2
+  echo "       (o CI ainda varre, mas aí o segredo já estaria no GitHub)." >&2
+  exit 0
+fi
+
+echo "gitleaks: varrendo antes do push..."
+if ! gitleaks git --redact --verbose; then
+  echo "" >&2
+  echo "PUSH BLOQUEADO: o gitleaks encontrou segredo no histórico." >&2
+  echo "Reescreva o commit antes de publicar — depois de subir, considere" >&2
+  echo "a credencial vazada e ROTACIONE, não basta remover." >&2
+  exit 1
+fi
