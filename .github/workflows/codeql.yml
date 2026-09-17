@@ -1,0 +1,55 @@
+name: CodeQL
+
+# SAST — analisa o CÓDIGO em busca de padrão de vulnerabilidade (injeção,
+# path traversal, uso perigoso de regex, etc.), diferente do gitleaks
+# (procura segredo) e do Dependabot (procura CVE em dependência de terceiro).
+# As três ferramentas cobrem coisas diferentes; nenhuma substitui as outras.
+#
+# GRATUITO para repositório público e nativo do GitHub — resultado aparece
+# na aba Security do repo, não só no log do workflow.
+#
+# build-mode: none porque JavaScript/TypeScript é analisado por parsing do
+# fonte, não por compilação — não existe artefato a gerar aqui. `none` é a
+# recomendação oficial da action para esta linguagem; só faria diferença se
+# o código dependesse de um passo de build para EXISTIR (geração de código),
+# que não é o caso.
+#
+# NO SCHEDULE, além de push/pull_request: a análise não pega só o que muda
+# num commit — CodeQL rastreia fluxo de dado entre arquivos, e uma varredura
+# periódica pega regra nova do CodeQL contra código antigo que nunca mudou.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    # Segunda de manhã, fora do horário de commit — só para não competir por
+    # runner com um push real.
+    - cron: '17 6 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      # security-events:write é o que permite a action publicar o resultado
+      # na aba Security — sem ele a análise roda e o achado se perde.
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:javascript-typescript"

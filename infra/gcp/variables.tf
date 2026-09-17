@@ -36,3 +36,19 @@ variable "ssh_user" {
   type        = string
   default     = "ubuntu"
 }
+
+variable "ssh_allowed_cidr" {
+  description = <<-EOT
+    Faixa de origem liberada pra SSH (porta 22) no firewall. NUNCA
+    0.0.0.0/0 — mesmo com chave pública barrando senha, deixar a porta
+    aberta pro mundo é ruído de bot de brute-force e superfície de ataque
+    à toa.
+
+    Descoberta com `curl -s https://rdap.org/ip/SEU_IP`: o campo
+    "handle"/"cidr" da resposta é a faixa alocada pro seu provedor. Para
+    IP residencial DINÂMICO, use essa faixa (geralmente um /22 ou /20) em
+    vez do /32 exato — sobrevive à troca de IP dentro do mesmo provedor.
+    Trocou de provedor? Repita a consulta e atualize aqui.
+  EOT
+  type        = string
+}

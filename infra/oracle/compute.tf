@@ -43,6 +43,25 @@ resource "oci_core_instance" "app" {
     assign_public_ip = true
   }
 
+  # O endpoint LEGADO de metadados (v1) não exige o cabeçalho de
+  # autorização que o v2 exige — um SSRF na aplicação rodando dentro da VM
+  # conseguiria ler segredo da instância só com uma requisição GET simples.
+  # Desabilitar não quebra nada aqui: nada neste projeto lê metadata da
+  # instância via v1.
+  instance_options {
+    are_legacy_imds_endpoints_disabled = true
+  }
+
+  # Sem custo extra nem exigência de shape especial — só criptografa o
+  # tráfego entre a instância e o volume de boot, que por padrão vai em
+  # texto claro na rede interna da Oracle. Dentro de launch_options (em vez
+  # do atalho is_pv_encryption_in_transit_enabled de nível superior) porque
+  # é essa a forma que ferramenta de análise estática (Checkov CKV_OCI_4)
+  # reconhece — as duas formas configuram o mesmo campo na API da Oracle.
+  launch_options {
+    is_pv_encryption_in_transit_enabled = true
+  }
+
   source_details {
     source_type = "image"
     source_id   = data.oci_core_images.ubuntu.images[0].id
@@ -74,6 +93,25 @@ resource "oci_core_instance" "ampere" {
   create_vnic_details {
     subnet_id        = oci_core_subnet.main.id
     assign_public_ip = true
+  }
+
+  # O endpoint LEGADO de metadados (v1) não exige o cabeçalho de
+  # autorização que o v2 exige — um SSRF na aplicação rodando dentro da VM
+  # conseguiria ler segredo da instância só com uma requisição GET simples.
+  # Desabilitar não quebra nada aqui: nada neste projeto lê metadata da
+  # instância via v1.
+  instance_options {
+    are_legacy_imds_endpoints_disabled = true
+  }
+
+  # Sem custo extra nem exigência de shape especial — só criptografa o
+  # tráfego entre a instância e o volume de boot, que por padrão vai em
+  # texto claro na rede interna da Oracle. Dentro de launch_options (em vez
+  # do atalho is_pv_encryption_in_transit_enabled de nível superior) porque
+  # é essa a forma que ferramenta de análise estática (Checkov CKV_OCI_4)
+  # reconhece — as duas formas configuram o mesmo campo na API da Oracle.
+  launch_options {
+    is_pv_encryption_in_transit_enabled = true
   }
 
   source_details {

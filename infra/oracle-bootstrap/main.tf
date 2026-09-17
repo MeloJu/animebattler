@@ -34,6 +34,13 @@ data "oci_objectstorage_namespace" "ns" {
 }
 
 resource "oci_objectstorage_bucket" "tfstate" {
+  # checkov:skip=CKV_OCI_7: emitir evento é pra disparar função/notificação
+  # quando um objeto muda — não existe consumidor disso aqui, o bucket só
+  # guarda o próprio state do Terraform.
+  # checkov:skip=CKV_OCI_9: Customer Managed Key exige provisionar o OCI
+  # Vault (custo e peça de infra a mais) pra um bucket que hoje só tem
+  # metadado de outro bucket (ver docs/seguranca.md — conferido: nenhum
+  # segredo mora no tfstate deste projeto).
   compartment_id = var.compartment_ocid
   namespace      = data.oci_objectstorage_namespace.ns.namespace
   name           = var.bucket_name

@@ -34,7 +34,10 @@ resource "oci_core_security_list" "main" {
   }
 
   ingress_security_rules {
-    source   = "0.0.0.0/0"
+    # Restrito à faixa do provedor de quem administra — ver
+    # var.ssh_allowed_cidr. 0.0.0.0/0 aqui significa todo bot de
+    # brute-force da internet batendo nesta porta o dia inteiro.
+    source   = var.ssh_allowed_cidr
     protocol = "6" # tcp
     tcp_options {
       min = 22

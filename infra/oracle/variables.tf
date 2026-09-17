@@ -57,3 +57,20 @@ variable "enable_ampere" {
   type        = bool
   default     = false
 }
+
+variable "ssh_allowed_cidr" {
+  description = <<-EOT
+    Faixa de origem liberada pra SSH (porta 22) no security list. NUNCA
+    0.0.0.0/0: bot de brute-force varre a internet inteira procurando porta
+    22 aberta, e chave pública barra senha mas não barra tentativa —
+    continua sendo ruído e superfície de ataque à toa.
+
+    Descoberta com `curl -s https://rdap.registro.br/ip/SEU_IP`: o campo
+    "handle" da resposta é a faixa alocada pro seu provedor. Para IP
+    residencial DINÂMICO, use essa faixa (geralmente um /22 ou /20) em vez
+    do /32 exato — sobrevive à troca de IP dentro do mesmo provedor, sem
+    abrir pro resto da internet. Trocou de provedor ou de cidade? Repita a
+    consulta e atualize aqui.
+  EOT
+  type        = string
+}

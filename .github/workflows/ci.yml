@@ -124,3 +124,32 @@ jobs:
 
       - name: Varrer o histórico
         run: ./gitleaks git --redact --verbose
+
+  # Analisa os .tf de infra/ contra política de segurança (SSH aberto pro
+  # mundo, disco sem criptografia em trânsito, etc.) — achado real que já
+  # apareceu neste projeto: security list da Oracle e firewall do GCP com
+  # 0.0.0.0/0 na porta 22 antes desta passagem.
+  #
+  # NÃO PRECISA de credencial de nuvem: Checkov lê o .tf estaticamente, não
+  # chama a API de ninguém. Roda sem `terraform init`, de propósito — a
+  # varredura independe do provider estar baixado.
+  #
+  # ACHADO SEM CORREÇÃO ACEITÁVEL fica com `# checkov:skip=ID: motivo`
+  # dentro do próprio bloco do recurso (ver infra/gcp/main.tf e
+  # infra/oracle-bootstrap/main.tf) — a ferramenta reporta como "skipped",
+  # não como sucesso silencioso, e o motivo fica registrado ao lado do
+  # recurso, não perdido num comentário de PR.
+  infra:
+    name: Infraestrutura (checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra
+          quiet: true
+          compact: true
+          soft_fail: false

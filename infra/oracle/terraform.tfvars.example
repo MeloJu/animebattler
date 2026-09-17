@@ -25,3 +25,11 @@ ssh_public_key_path = "~/.ssh/animebattler.pub"
 # disputada e pode dar "out of host capacity" por horas/dias. Se acontecer,
 # testar o shape fixo AMD, sem contenção conhecida:
 # instance_shape = "VM.Standard.E2.1.Micro"
+
+# Faixa de origem liberada pra SSH — NUNCA 0.0.0.0/0 (ver a descrição da
+# variável em variables.tf). Descubra a faixa do seu provedor com:
+#   curl -s https://rdap.registro.br/ip/SEU_IP_PUBLICO
+# e use o campo "handle" da resposta. Fora do Brasil, troque pelo RDAP
+# regional (rdap.arin.net, rdap.db.ripe.net, etc.) — ou use https://rdap.org/ip/SEU_IP,
+# que redireciona pro registro certo.
+ssh_allowed_cidr = "203.0.113.0/24"
