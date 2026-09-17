@@ -133,6 +133,34 @@ externo apontar problema em `docker-compose.prod.yml`. O que mudou:
 - **Achado real**: SSH aberto para o mundo (ver seção Checkov acima) — não
   achado pela auditoria de segredo, mas pela de configuração, o que foi o
   motivo de trazer o Checkov pra este projeto no mesmo pente-fino.
+- **O achado mais grave dos dois**: ligar o Dependabot Security Updates (ver
+  tabela no topo) revelou 63 vulnerabilidades que já existiam e estavam
+  simplesmente invisíveis — 3 delas **RCE não-autenticado** em Next.js
+  (API de otimização de imagem com AVIF, servidor Windows, protocolo React
+  Flight), todas na faixa `>= 16.0.0`, exatamente a versão que estava
+  pinada. Corrigido subindo pra `16.3.5`. As outras ~60 (a maioria também
+  Next.js, o resto dependência transitiva de ferramenta de dev) resolveram
+  junto ou com `npm audit fix`.
+
+  `next` e `eslint-config-next` saíram de pin EXATO (`"16.0.0"`) pra
+  `"^16.3.5"` — de propósito: o pin exato foi o que deixou o projeto três
+  versões menores atrás de três correções críticas sem nenhum aviso. Com
+  faixa, o Dependabot Version Updates (que já existia, mas só abre PR —
+  precisa de alguém revisar e mergear) tem margem pra propor patch/minor
+  sem esperar uma decisão manual de subir de major.
+
+  **Dois grupos de vulnerabilidade ficaram, deliberadamente, sem correção
+  agora** — os dois exigem bump de MAJOR version, categoria diferente de
+  risco/esforço de um patch:
+  - `vitest` (moderate, via `@vitest/mocker`) — a versão 5 já foi avaliada
+    antes nesta esteira e incompatibiliza com Node 20. Fica pendente até o
+    projeto migrar de runtime.
+  - `prisma`/`@prisma/config`/`deepmerge-ts` (high) — Prisma já foi pra
+    major 7 e RC de 8; a faixa vulnerável cobre até prerelease de 8.1. A
+    exposição real é baixa (é dependência da CLI/tooling do Prisma —
+    `prisma generate`/`migrate`, não do `@prisma/client` que serve
+    requisição em produção), então subir de major pelo ORM inteiro fica
+    pra uma migração própria, não misturado numa auditoria de segurança.
 
 ## O que ainda falta
 
