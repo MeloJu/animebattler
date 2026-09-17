@@ -145,6 +145,22 @@ jobs:
               echo "IMAGE_TAG=$IMAGE_TAG" >> .env
             fi
 
+            # LIMPA ANTES DE BAIXAR, não só depois — achado real: a limpeza
+            # antiga só rodava no FIM deste script, então um deploy que
+            # falhasse antes de chegar lá (por qualquer motivo) nunca liberava
+            # espaço, e o PRÓXIMO deploy tinha ainda menos disco livre que o
+            # anterior. Bastou uma sequência de deploys sem falha nenhuma pra
+            # entupir o disco de 45GB só de imagem antiga (~25 acumuladas,
+            # 1.3GB cada) e todo deploy seguinte falhar com "no space left on
+            # device" — inclusive um que carregava correção de RCE crítico.
+            #
+            # -a (não só dangling): cada deploy marca a imagem com o SHA do
+            # commit, então ela nunca fica "dangling" — fica tagueada e
+            # esquecida. Sem -a, prune nunca tocava nela. Seguro mesmo assim:
+            # prune -a só remove imagem sem NENHUM container (rodando ou
+            # parado) referenciando ela — a que está de pé fica de fora.
+            docker image prune -af
+
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
@@ -209,5 +225,3 @@ jobs:
             fi
             echo "✔ versão confirmada no ar: $no_ar"
 
-            # Imagens antigas acumulam a cada deploy e enchem o disco da VM.
-            docker image prune -f
